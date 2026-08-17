@@ -1,0 +1,224 @@
+﻿
+
+<style>
+	.card-container {
+		display: flex;
+		gap: 20px;
+		flex-wrap: wrap;
+		justify-content: center;
+		margin-top: 16px;
+	}
+
+	.custom-card {
+		max-width: 250px;
+		max-height: 184.18px;
+		width: 100%;
+		border-radius: 12px;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+		transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* Transição suave para transform e box-shadow */
+		cursor: pointer; /* Muda o cursor para indicar que é clicável */
+	}
+
+		.custom-card:hover {
+			/* Efeito ao passar o mouse */
+			transform: translateY(-2px); /* Move o card 5px para cima */
+			box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.1); /* Aumenta a sombra para dar mais profundidade */
+		}
+
+	.card-header {
+		text-align: center;
+		padding: 20px;
+	}
+
+	.card-header-icon {
+		padding: 10px;
+		background-color: #3b82f6;
+		border-radius: 8px;
+		color: white;
+		font-size: 2.5rem;
+	}
+
+
+
+	.card-title {
+		font-size: 1.1rem;
+		margin: 0px;
+		font-weight: 500;
+		color: #374151;
+	}
+
+	.card-subtitle {
+		font-size: 0.85rem;
+		color: #6b7280;
+	}
+
+	.card-value {
+		font-size: 1rem;
+		font-weight: bold;
+		color: #1f2937;
+	}
+
+	.blue-line-top {
+		border-top: 4px solid #3b82f6;
+	}
+
+	.blue-line-bottom {
+		border-bottom: 6px solid #3b82f6;
+	}
+
+	.background-circle-card-siiad {
+		background-color: #3b82f6;
+		border-radius: 14px;
+		padding: 12px;
+		width: 50px;
+		height: 50px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+	}
+</style>
+
+@if (!StatusChip)
+{
+	<MudCard @onclick="HandleClick" Class="custom-card blue-line-bottom pa-3">
+		<MudStack Row="false" Justify="Justify.Center" AlignItems="AlignItems.Center" StretchItems="StretchItems.None">
+			<div class="background-circle-card-siiad">
+				<MudIcon Icon="@GetIconStatus(IconCard)" Size="Size.Medium" Style="color:white; fill: white" />
+			</div>
+		</MudStack>
+		<MudStack Row="false" Justify="Justify.Center" AlignItems="AlignItems.Center" Class="mt-2" Spacing="2">
+			<MudText Class="card-title">@Titulo</MudText>
+			@if (PageIsLoading)
+			{
+				<MudSkeleton Width="100px" Height="24px" />
+
+			}
+			else
+			{
+				
+				<MudText Class="card-subtitle"> @(QuantidadeContrato == null || QuantidadeContrato == 0 ? "Sem registros" : $"Quantidade {QuantidadeContrato}")</MudText>
+			}
+
+			<MudDivider Style="height:2px" />
+			@if (PageIsLoading)
+			{
+				<MudSkeleton Width="100px" Height="24px" />
+			}
+			else
+			{
+				<MudText Class="card-value">
+					@($"R$ {(ValorTotal?.ToString("N2") ?? "0,00")}")
+				</MudText>
+			}
+		</MudStack>
+	</MudCard>
+}
+else
+{
+	<MudCard @onclick="HandleClick" Class="custom-card blue-line-bottom pa-3" Style="height:100%;">
+		<MudStack Row="false" Justify="Justify.Center" AlignItems="AlignItems.Center" StretchItems="StretchItems.None">
+			<div class="background-circle-card-siiad">
+				<MudIcon Icon="@GetIconStatus(IconCard)" Size="Size.Medium" Style="color:white; fill: white" />
+			</div>
+		</MudStack>
+		<MudStack Row="false" Justify="Justify.Center" AlignItems="AlignItems.Center" Class="mt-2" Spacing="2">
+			<MudText Class="card-title">@Titulo</MudText>
+			@if (PageIsLoading)
+			{
+				<MudSkeleton Width="100px" Height="24px" />
+
+			}
+			else
+			{
+				if (QuantidadeContrato == null)
+				{
+					<MudText Class="card-subtitle">Sem registro</MudText>
+				}
+				else
+				{
+					<MudText Class="card-subtitle"> @(QuantidadeContrato == null ? "Sem registros" : $"Quantidade {QuantidadeContrato}")</MudText>
+				}
+			}
+			@* <MudChip Class="my-0" T="string" Text="@ObterTextoDoStatus(FaseDaAnalise)" *@
+
+			@if (ObterCorDoStatus(FaseDaAnalise!) == Color.Warning)
+			{
+				<MudChip Class="my-0" T="string" Text="@FaseDaAnalise"
+						 Variant="Variant.Text"
+						 Color="@ObterCorDoStatus(FaseDaAnalise!)">
+				</MudChip>
+			}		 
+		</MudStack>
+	</MudCard>
+}
+
+
+@code {
+	[Parameter]
+	public string? Titulo { get; set; } = "";
+	[Parameter]
+	public string? TextoStatusChip { get; set; } = "";
+	[Parameter]
+	public string? FaseDaAnalise { get; set; } = "";
+	[Parameter]
+	public bool StatusChip { get; set; } = false;
+	[Parameter]
+	public decimal? ValorTotal { get; set; }
+	[Parameter]
+	public int? QuantidadeContrato { get; set; }
+	[Parameter]
+	public string IconCard { get; set; } = "";
+	[Parameter]
+	public string MaxWidth { get; set; } = "300px";
+	[Parameter]
+	public EventCallback OnClick { get; set; }
+	[Parameter]
+	public bool PageIsLoading { get; set; } = false;
+
+
+
+	private async Task HandleClick()
+	{
+		if (OnClick.HasDelegate)
+		{
+			await OnClick.InvokeAsync(null);
+		}
+	}
+
+
+
+	private Color ObterCorDoStatus(string status)
+	{
+		return status switch
+		{
+			"Pendente" => Color.Warning,
+			"Finalizado" => Color.Success,
+			"Aguardando" => Color.Info,
+			_ => Color.Default
+		};
+	}
+	private string ObterTextoDoStatus(string status)
+	{
+		return status switch
+		{
+			"Status Analisar" => "Necessária análise",
+			"Status Concluido" => "Finalizado",
+			"Status Pendente" => "Pendentes",
+			_ => "Desconhecido"
+		};
+	}
+
+	public string GetIconStatus(string icon)
+	{
+		return icon?.ToLower() switch
+		{
+			"total" => Icons.Material.Filled.LibraryBooks,
+			"cci" => Icons.Material.Filled.AssignmentTurnedIn,
+			"drp" => Icons.Material.Filled.Payment,
+			"analisar" => Icons.Material.Filled.Search,
+			_ => Icons.Material.Filled.AttachMoney,
+		};
+	}
+
+
+}

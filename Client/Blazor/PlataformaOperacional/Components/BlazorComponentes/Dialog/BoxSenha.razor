@@ -1,0 +1,234 @@
+﻿@implements IDisposable
+
+<MudDialog Class="blur dialog-background"
+		   TitleClass="dialog-background-title"
+		   ContentClass="dialog-background-surface py-10 mt-0 mb-0 rounded-0"
+		   ActionsClass="dialog-background-surface"
+		   Style="min-width:400px">
+	<TitleContent>
+		<MudElement HtmlTag="div" Class="d-flex">
+			<MudIcon Icon="@Icons.Material.Filled.PlayCircleOutline" Class="mr-2" />
+			<MudText Style="font-size: 125%">
+				@Title
+			</MudText>
+		</MudElement>
+	</TitleContent>
+	<DialogContent>
+		<MudText>Informe sua senha para logar o Rede CAIXA:</MudText><br />
+		<MudForm @bind-IsValid="_validado">
+			<MudTextField @ref="_mudTextField"
+						  T="char[]"
+						  MaxLength="8"
+						  @bind-Value="_senha"
+						  Converter="new CharArrayConverter()"
+						  Label="Senha"
+						  OnBlur="LimparMemoria"
+						  InputType="@_passwordInput"
+						  Variant="Variant.Outlined"
+						  Immediate
+						  Required
+						  RequiredError="Campo de preenchimento obrigatório."
+						  Adornment="Adornment.End"
+						  AdornmentIcon="@_passwordInputIcon"
+						  AdornmentAriaLabel="Mostrar senha"
+						  Validation="new Func<char[]?, string?>(value => ValidarSenha(value!))"
+						  OnAdornmentClick="VisibilityButtonClicked" />
+		</MudForm>
+	</DialogContent>
+	<DialogActions>
+		<MudButton Variant="Variant.Outlined"
+				   Color="Color.Error"
+				   OnClick="Cancel"
+				   Style="min-width:100px">
+			<MudText>Cancelar</MudText>
+		</MudButton>
+		<MudButton OnClick="CriptografarEnviar"
+				   Variant="Variant.Filled"
+				   StartIcon="@Icons.Material.Filled.Lock"
+				   Disabled="@(!_validado)"
+				   Class="mud-theme-primary mr-4"
+				   Style="min-width:100px"
+				   Color="Color.Primary">
+			<MudText>Iniciar</MudText>
+		</MudButton>
+	</DialogActions>
+</MudDialog>
+
+<style>
+	.blur {
+		backdrop-filter: blur(10px);
+	}
+
+	.dialog-background {
+		background-color: transparent;
+	}
+
+	.dialog-background-title {
+		background: var(--mud-palette-primary);
+		color: var(--mud-palette-white);
+	}
+
+	.dialog-background-surface {
+		background: var(--mud-palette-surface);
+	}
+</style>
+
+@code
+{
+	[Inject] private HttpClient _http { get; set; } = default!;
+	[Inject] private EncryptionService EncryptionService { get; set; } = default!;
+	[Inject] private IJSRuntime _js { get; set; } = default!;
+	[Inject] private ISnackbar _snackbar { get; set; } = default!;
+
+	[CascadingParameter] private IMudDialogInstance? MudDialog { get; set; } = default!;
+	[Parameter]
+	public string? Title { get; set; }
+	[Parameter]
+	public string? Icon { get; set; }
+
+
+	//Configura campo de senha
+	private bool _senhaVisivel;
+	private InputType _passwordInput = InputType.Password;
+	private string _passwordInputIcon = Icons.Material.Filled.VisibilityOff;
+
+	private void VisibilityButtonClicked()
+	{
+		if (_senhaVisivel)
+		{
+			_senhaVisivel = false;
+			_passwordInputIcon = Icons.Material.Filled.VisibilityOff;
+			_passwordInput = InputType.Password;
+		}
+		else
+		{
+			_senhaVisivel = true;
+			_passwordInputIcon = Icons.Material.Filled.Visibility;
+			_passwordInput = InputType.Text;
+		}
+	}
+
+	//Variaveis
+
+	private MudTextField<char[]> _mudTextField = new();
+	private bool _validado = false;
+	private char[] _senha = Array.Empty<char>(); //bind feito com char[] type para possibilitar reescritura na memória.
+	private string _senhaCriptografada = string.Empty;
+	private Timer? _clearTimer;
+	private bool _sessaoExpirada = true;
+
+
+	//Função para converter valor digitado em char[] (converte caracteres um a um).
+
+	private sealed class CharArrayConverter : MudBlazor.IReversibleConverter<char[]?, string?>
+	{
+		public string? Convert(char[]? input)
+			=> input is null ? string.Empty : new string(input);
+
+		public char[]? ConvertBack(string? input)
+			=> input?.ToCharArray() ?? Array.Empty<char>();
+	}
+
+
+	//Criptografa e encaminha senha para a aplicação
+	class PublicKeyDto { public string Key { get; set; } = ""; }
+	private async Task CriptografarEnviar()
+	{
+		_sessaoExpirada = false;
+
+		_clearTimer?.Dispose();
+		_clearTimer = null;
+
+		if (_senha is null || _senha.Length == 0)
+		{
+			_snackbar.Add("Senha inválida ou vazia.", Severity.Warning);
+			return;
+		}
+
+		_senhaCriptografada = await EncryptionService.EncriptarAsync(new string(_senha));
+
+		Array.Clear(_senha, 0, _senha.Length); //Senha zerada.
+		_senha = Array.Empty<char>(); //Senha limpa da memória.
+		await _mudTextField.ResetAsync();
+		MudDialog?.Close(DialogResult.Ok(_senhaCriptografada)); 
+		_sessaoExpirada = false;
+	}
+
+	public class ParametroBoxSenha
+	{
+		public string SenhaCriptografada { get; set; } = "";
+		public bool UtilizarMyExtra { get; set; }
+	}
+
+	//Botão cancelar
+	private void Cancel()
+	{
+		_sessaoExpirada = false;
+
+		_clearTimer?.Dispose();
+		_clearTimer = null;
+
+		if (_senha is not null)
+		{
+			Array.Clear(_senha, 0, _senha.Length);
+		}
+
+		_senha = Array.Empty<char>();
+
+		MudDialog?.Cancel();
+	}
+
+	//Timer de segurança para limpar senha.
+	private void LimparMemoria()
+	{
+		if (!_sessaoExpirada)
+			return;
+
+		_clearTimer?.Dispose();
+
+		_clearTimer = new Timer(async _ =>
+		{
+			await InvokeAsync(() =>
+			{
+				if (_senha is not null)
+				{
+					Array.Clear(_senha, 0, _senha.Length);
+				}
+
+				_senha = Array.Empty<char>();
+
+				if (_sessaoExpirada)
+				{
+					_snackbar.Add("Sessão expirada, informe novamente a senha.", Severity.Info);
+				}
+
+				Console.WriteLine("Senha eliminada");
+
+				StateHasChanged();
+			});
+
+		}, null, TimeSpan.FromSeconds(10), Timeout.InfiniteTimeSpan);
+	}
+
+
+	public void Dispose()
+	{
+		_clearTimer?.Dispose();
+		_clearTimer = null;
+
+		if (_senha is not null)
+		{
+			Array.Clear(_senha, 0, _senha.Length);
+		}
+
+		_senha = Array.Empty<char>();
+	}
+
+
+	private string? ValidarSenha(char[] senha)
+	{
+		return senha is null || senha.Length != 8
+			? "Senha deve possuir 8 caracteres."
+			: null;
+	}
+}

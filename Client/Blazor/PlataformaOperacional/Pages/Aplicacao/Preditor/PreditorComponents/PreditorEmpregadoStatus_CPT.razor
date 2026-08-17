@@ -1,0 +1,23 @@
+﻿<style>
+	.rounded-custom {
+		border-radius: 14px;
+		margin-top:12px;
+	}
+</style>
+<MudPaper Class="rounded-custom px-6 py-2" Elevation="0">
+	<MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+		<MudText Typo="Typo.body2" Style="color:#red"><b>C151896</b></MudText>
+		<MudChip Style="min-width:32px"
+				 Variant="Variant.Text"
+				 Size="Size.Small"
+				 T="string" Color="Color.Success">Eventual</MudChip>
+		<MudStack Row="true">
+			<MudIconButton Icon="@Icons.Material.Filled.PersonAdd"></MudIconButton>
+			<MudIconButton Icon="@Icons.Material.Filled.PersonRemove"></MudIconButton>
+		</MudStack>
+	</MudStack>
+</MudPaper>
+
+@code {
+
+}

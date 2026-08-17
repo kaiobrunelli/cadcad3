@@ -1,0 +1,384 @@
+@using System.Globalization
+@inject ISnackbar Snackbar
+@inject CobrancaService CobrancaService
+<style>
+	.mud-dialog .mud-dialog-title .mud-button-close {
+		color: white;
+	}
+
+	.mud-dialog .mud-dialog-title {
+		background-color: #005ca9;
+		color: white;
+	}
+
+	.mud-select .mud-select-input .mud-input-slot {
+		color: #4D4D4D	!important;
+	}
+
+	.config-section {
+		border: 1px solid #e0e6ed;
+		border-radius: 12px;
+		padding: 20px;
+		margin-top: 20px;
+		background-color: #FAFBFD;
+	}
+
+	.config-section-title {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		margin-bottom: 16px;
+	}
+
+	.config-section-icon {
+		background-color: #FAF8F5;
+	}
+
+	.config-footer {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: space-between;
+		align-items: center;
+		gap: 12px;
+		margin-top: 16px;
+	}
+
+	.config-btn-rounded {
+		border-radius: 24px !important;
+	}
+
+	.soma-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 6px 14px;
+		border-radius: 24px;
+		font-weight: 600;
+		font-size: 0.8rem;
+	}
+
+	.soma-badge-ok {
+		background-color: #E6F7EE;
+		color: #00A645;
+	}
+
+	.soma-badge-alerta {
+		background-color: #FFF4E5;
+		color: #D87B00;
+	}
+</style>
+<MudThemeProvider Theme="_myCustomTheme"></MudThemeProvider>
+<MudDialog>
+	<TitleContent>
+		<MudStack Row="true" Spacing="2">
+			<MudIcon Icon="@Icons.Material.Filled.Create" Class="mr-2" />
+			<MudText Typo="Typo.h6">Editar Configurações</MudText>
+		</MudStack>
+	</TitleContent>
+	<DialogContent>
+
+		<div class="config-section">
+			<div class="config-section-title">
+				<MudAvatar Variant="Variant.Filled" Size="Size.Small" Class="config-section-icon">
+					<MudIcon Icon="@Icons.Material.Filled.Apps" Color="Color.Primary" Size="Size.Small" />
+				</MudAvatar>
+				<MudText Typo="Typo.subtitle2" Style="color: #64748B;">Unidade de Movimento</MudText>
+			</div>
+			<MudGrid>
+				<MudItem xs="12" md="6">
+					<MudTextField @bind-Value="_unidadeDeMovimentoValorAtual"
+								  Label="Unidade de Movimento"
+								  Variant="Variant.Outlined"
+								  Margin="Margin.Dense"
+								  Immediate="true" />
+				</MudItem>
+				<MudItem xs="6" md="2">
+					<MudTextField @bind-Value="_dVUnidadeMovimentoValorAtual"
+								  Label="DV"
+								  Variant="Variant.Outlined"
+								  Margin="Margin.Dense"
+								  Mask="@(new PatternMask("00"))"
+								  Immediate="true"
+								  @onblur="@(() => _dVUnidadeMovimentoValorAtual = CompletarDvComZero(_dVUnidadeMovimentoValorAtual))" />
+				</MudItem>
+				<MudItem xs="6" md="4" Class="d-flex align-center">
+					<MudButton Variant="Variant.Filled"
+							   Color="Color.Primary"
+							   OnClick="@(() => SalvarAlteracaoUnidadeDeMovimento(_unidadeDeMovimentoValorAtual, _dVUnidadeMovimentoValorAtual))"
+							   Disabled="@(	(_unidadeDeMovimentoValorAtual == _unidadeDeMovimento &&
+											 _dVUnidadeMovimentoValorAtual == _dVUnidadeMovimento) ||
+											 string.IsNullOrWhiteSpace(_unidadeDeMovimentoValorAtual)||
+											 string.IsNullOrWhiteSpace(_dVUnidadeMovimentoValorAtual))"
+							   Class="config-btn-rounded w-100">
+						<MudIcon Icon="@Icons.Material.Filled.Check" Class="mr-2" />
+						<span>Salvar</span>
+					</MudButton>
+				</MudItem>
+			</MudGrid>
+		</div>
+
+		<div class="config-section">
+			<div class="config-section-title">
+				<MudAvatar Variant="Variant.Filled" Size="Size.Small" Class="config-section-icon">
+					<MudIcon Icon="@Icons.Material.Filled.Description" Color="Color.Primary" Size="Size.Small" />
+				</MudAvatar>
+				<MudText Typo="Typo.subtitle2" Style="color: #64748B;">Contrato CCI — SAC e Price</MudText>
+			</div>
+
+			<MudGrid>
+				<MudItem xs="12" md="6">
+					<MudTextField @bind-Value="_contratoSacValorAtual"
+								  Label="Contrato CCI SAC"
+								  Variant="Variant.Outlined"
+								  Margin="Margin.Dense"
+								  Immediate="true" />
+				</MudItem>
+				<MudItem xs="6" md="2">
+					<MudTextField @bind-Value="_dVSacValorAtual"
+								  Label="DV"
+								  Variant="Variant.Outlined"
+								  Margin="Margin.Dense"
+								  Mask="@(new PatternMask("00"))"
+								  Immediate="true"
+								  @onblur="@(() => _dVSacValorAtual = CompletarDvComZero(_dVSacValorAtual))" />
+				</MudItem>
+				<MudItem xs="6" md="4">
+					<CampoPercentual Value="_percentualSac"
+									  ValueChanged="OnPercentualSacChanged"
+									  CasasDecimais="_casasDecimaisSac"
+									  Label="% SAC" />
+				</MudItem>
+			</MudGrid>
+			<MudGrid Class="pt-2">
+				<MudItem xs="12" md="6">
+					<MudTextField @bind-Value="_contratoPriceValorAtual"
+								  Label="Contrato CCI Price"
+								  Variant="Variant.Outlined"
+								  Margin="Margin.Dense"
+								  Immediate="true" />
+				</MudItem>
+				<MudItem xs="6" md="2">
+					<MudTextField @bind-Value="_dVPriceValorAtual"
+								  Label="DV"
+								  Variant="Variant.Outlined"
+								  Margin="Margin.Dense"
+								  Mask="@(new PatternMask("00"))"
+								  Immediate="true"
+								  @onblur="@(() => _dVPriceValorAtual = CompletarDvComZero(_dVPriceValorAtual))" />
+				</MudItem>
+				<MudItem xs="6" md="4">
+					<CampoPercentual Value="_percentualPrice"
+									  ValueChanged="OnPercentualPriceChanged"
+									  CasasDecimais="_casasDecimaisPrice"
+									  Label="% Price" />
+				</MudItem>
+			</MudGrid>
+
+			<div class="config-footer">
+				<span class="soma-badge @(_percentuaisSomam100 ? "soma-badge-ok" : "soma-badge-alerta")">
+					<MudIcon Icon="@(_percentuaisSomam100 ? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.ErrorOutline)" Size="Size.Small" />
+					Soma SAC + Price: @((_percentualSac + _percentualPrice).ToString("N4", _culturaPtBr))%
+					@(_percentuaisSomam100 ? "" : " — precisa fechar em 100% para salvar")
+				</span>
+				<MudButton Variant="Variant.Filled"
+						   Color="Color.Primary"
+						   OnClick="SalvarAlteracaoContratosSacPrice"
+						   Class="config-btn-rounded"
+						   Disabled="@(!PodeSalvarContratosSacPrice)">
+					<MudIcon Icon="@Icons.Material.Filled.Check" Class="mr-2" />
+					<span>Salvar Contratos SAC/Price</span>
+				</MudButton>
+			</div>
+		</div>
+	</DialogContent>
+	<DialogActions>
+		<div class="mb-1 mr-1">
+			<MudButton OnClick="Cancel" Variant="Variant.Filled" Color="Color.Inherit" Class="config-btn-rounded">Fechar</MudButton>
+		</div>
+	</DialogActions>
+</MudDialog>
+
+@code {
+	private readonly CultureInfo _culturaPtBr = new("pt-BR");
+
+	[CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+
+	[Parameter] public ConfiguracoesGeraisSacPrice ConfiguracoesGeraisData { get; set; } = new();
+
+	private string _unidadeDeMovimento
+	{
+		get { return ConfiguracoesGeraisData.UnidadeMovimento; }
+		set { }
+	}
+	private string _dVUnidadeMovimento
+	{
+		get { return ConfiguracoesGeraisData.UnidadeMovimentoDv; }
+		set { }
+	}
+	private string _contratoSac
+	{
+		get { return ConfiguracoesGeraisData.ContratoCciSac; }
+		set { }
+	}
+	private string _dVSac
+	{
+		get { return ConfiguracoesGeraisData.ContratoCciSacDv; }
+		set { }
+	}
+	private string _contratoPrice
+	{
+		get { return ConfiguracoesGeraisData.ContratoCciPrice; }
+		set { }
+	}
+	private string _dVPrice
+	{
+		get { return ConfiguracoesGeraisData.ContratoCciPriceDv; }
+		set { }
+	}
+
+	private string _unidadeDeMovimentoValorAtual { get; set; } = string.Empty;
+	private string _dVUnidadeMovimentoValorAtual { get; set; } = string.Empty;
+	private string _contratoSacValorAtual { get; set; } = string.Empty;
+	private string _dVSacValorAtual { get; set; } = string.Empty;
+	private string _contratoPriceValorAtual { get; set; } = string.Empty;
+	private string _dVPriceValorAtual { get; set; } = string.Empty;
+	private decimal _percentualSac;
+	private decimal _percentualPrice;
+
+	// Casas decimais exibidas em cada campo — sempre espelhando quantas o
+	// usuário digitou no OUTRO campo, pra não aparecer zero que ninguém digitou.
+	private int _casasDecimaisSac = 4;
+	private int _casasDecimaisPrice = 4;
+
+	private bool _percentuaisSomam100 => (_percentualSac + _percentualPrice) == 100m;
+
+	private bool _sacPreenchido => !string.IsNullOrWhiteSpace(_contratoSacValorAtual) && !string.IsNullOrWhiteSpace(_dVSacValorAtual);
+	private bool _pricePreenchido => !string.IsNullOrWhiteSpace(_contratoPriceValorAtual) && !string.IsNullOrWhiteSpace(_dVPriceValorAtual);
+
+	// Quando um lado fecha em 100%, o contrato do outro lado é opcional — só existe
+	// contrato onde de fato há percentual alocado. Só exige os dois preenchidos
+	// quando o percentual está dividido entre SAC e Price.
+	private bool _camposObrigatoriosOk
+	{
+		get
+		{
+			if (_percentualSac == 100m) return _sacPreenchido;
+			if (_percentualPrice == 100m) return _pricePreenchido;
+			return _sacPreenchido && _pricePreenchido;
+		}
+	}
+
+	private bool PodeSalvarContratosSacPrice
+	{
+		get
+		{
+			if (!_percentuaisSomam100 || !_camposObrigatoriosOk) return false;
+
+			var inalterado = _contratoSacValorAtual == _contratoSac &&
+							  _dVSacValorAtual == _dVSac &&
+							  _contratoPriceValorAtual == _contratoPrice &&
+							  _dVPriceValorAtual == _dVPrice &&
+							  _percentualSac == ConfiguracoesGeraisData.PercentualSac;
+
+			return !inalterado;
+		}
+	}
+
+	private MudTheme _myCustomTheme = new MudTheme()
+		{
+			PaletteLight = new PaletteLight()
+			{
+				Background = "#FAF8F5",
+				Primary = "#005ca9",
+				Secondary = "#D87B00",
+				Success = "#00A645",
+				DrawerIcon = "#ffffff",
+			},
+		};
+
+	protected override void OnInitialized()
+	{
+		_unidadeDeMovimentoValorAtual = ConfiguracoesGeraisData.UnidadeMovimento;
+		_dVUnidadeMovimentoValorAtual = ConfiguracoesGeraisData.UnidadeMovimentoDv;
+
+		_contratoSacValorAtual = ConfiguracoesGeraisData.ContratoCciSac;
+		_dVSacValorAtual = ConfiguracoesGeraisData.ContratoCciSacDv;
+		_contratoPriceValorAtual = ConfiguracoesGeraisData.ContratoCciPrice;
+		_dVPriceValorAtual = ConfiguracoesGeraisData.ContratoCciPriceDv;
+
+		// A soma SAC + Price precisa fechar em exatamente 100% — recalcula o Price
+		// a partir do SAC recebido, em vez de confiar nos dois valores persistidos.
+		_percentualSac = ClampPercentual(ConfiguracoesGeraisData.PercentualSac);
+		_percentualPrice = Math.Round(100m - _percentualSac, 4);
+	}
+
+	private void Cancel() => MudDialog.Cancel();
+
+	private void OnPercentualSacChanged((decimal Valor, int CasasDecimais) info)
+	{
+		_percentualSac = ClampPercentual(info.Valor);
+		_percentualPrice = Math.Round(100m - _percentualSac, 4);
+		_casasDecimaisPrice = info.CasasDecimais;
+	}
+
+	private void OnPercentualPriceChanged((decimal Valor, int CasasDecimais) info)
+	{
+		_percentualPrice = ClampPercentual(info.Valor);
+		_percentualSac = Math.Round(100m - _percentualPrice, 4);
+		_casasDecimaisSac = info.CasasDecimais;
+	}
+
+	private static decimal ClampPercentual(decimal valor)
+	{
+		valor = Math.Round(valor, 4);
+		if (valor < 0) return 0;
+		if (valor > 100) return 100;
+		return valor;
+	}
+
+	// DV tem 2 dígitos fixos — se o usuário digitou só 1 (ex.: "2"), completa
+	// com zero à esquerda ao sair do campo, em vez de exigir que ele digite "02".
+	private static string CompletarDvComZero(string dv)
+	{
+		return dv.Length == 1 ? "0" + dv : dv;
+	}
+
+	#region Metodos para registrar alterações de configuração
+	private async Task SalvarAlteracaoUnidadeDeMovimento(string unidadeMovimento, string unidadeMovimentoDv)
+	{
+		var response = await CobrancaService.AlterarUnidadeDeMovimento(unidadeMovimento, unidadeMovimentoDv);
+		if (response.IsSuccessStatusCode)
+		{
+			Snackbar.Add("Alteração salva com sucesso!", Severity.Success);
+		}
+	}
+
+	private async Task SalvarAlteracaoContratosSacPrice()
+	{
+		// O botão já fica desabilitado fora dessa regra (PodeSalvarContratosSacPrice),
+		// mas trava aqui também — não depende só do estado do botão nem do round-trip
+		// pro servidor pra dar o feedback.
+		if (!_percentuaisSomam100)
+		{
+			Snackbar.Add("A soma de SAC + Price precisa ser exatamente 100% para salvar.", Severity.Warning);
+			return;
+		}
+
+		var parametros = new AlterarContratoCciSacPriceRequest
+		{
+			NuContratoSac = string.IsNullOrWhiteSpace(_contratoSacValorAtual) ? null : _contratoSacValorAtual,
+			NuContratoSacDv = string.IsNullOrWhiteSpace(_dVSacValorAtual) ? null : _dVSacValorAtual,
+			PercentualSac = _percentualSac,
+			NuContratoPrice = string.IsNullOrWhiteSpace(_contratoPriceValorAtual) ? null : _contratoPriceValorAtual,
+			NuContratoPriceDv = string.IsNullOrWhiteSpace(_dVPriceValorAtual) ? null : _dVPriceValorAtual,
+			PercentualPrice = _percentualPrice,
+		};
+
+		var response = await CobrancaService.AlterarContratoCciSacPrice(parametros);
+		if (response.IsSuccessStatusCode)
+		{
+			Snackbar.Add("Alteração salva com sucesso!", Severity.Success);
+		}
+	}
+	#endregion
+}

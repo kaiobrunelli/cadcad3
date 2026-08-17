@@ -1,0 +1,54 @@
+﻿@inject ISnackbar Snackbar
+<MudDialog Class="d-flex flex-grow-1 ma-4" >
+    <TitleContent>
+        <MudText Typo="Typo.h6">Ressalva:</MudText>
+    </TitleContent>
+    <DialogContent >
+       <MudTextField Disabled="true"
+                     T="string"
+                     Label="Checklist Item"
+                     Lines="4"
+                     Variant="Variant.Filled"                     
+                     Text="@ItemCheckList"/>
+        <MudTextField Placeholder="Escrever ressalva"
+                      T="string"
+                      Label="Checklist Item"
+                      Lines="3"
+                      Variant="Variant.Outlined"
+                      @bind-Text="RespostaRessalva"
+                      Disabled ="confirmarDesabilitado"
+                      Validation="@(new Func<string, string>(ValidaResposta))" />
+
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="Cancelar">Cancelar</MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="Concluir">Confirmar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private bool confirmarDesabilitado = true;
+    private string ValidaResposta(string value)
+    {
+        if (string.IsNullOrEmpty(value) || value.Length < 3)
+        {
+            confirmarDesabilitado = true;
+            return "A ressalva deve conter pelo menos 3 caracteres.";
+        }
+        confirmarDesabilitado = false;
+        return null!;
+    }
+    [CascadingParameter] private IMudDialogInstance MudDialogGerenciar { get; set; } = default!;
+    [Parameter] public string? ItemCheckList { get; set; }
+    [Parameter] public string? RespostaRessalva { get; set; }      
+
+    private void Cancelar()
+    {       
+        MudDialogGerenciar.Cancel();
+    }
+    private void Concluir()
+    {
+        RespostaRessalva = RespostaRessalva == "" ? null : RespostaRessalva;
+        MudDialogGerenciar.Close(DialogResult.Ok(RespostaRessalva));
+    }
+}

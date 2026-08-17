@@ -1,0 +1,453 @@
+﻿@using System.Net.Http.Json
+@using MudBlazor
+@using PlataformaOperacional.Model.DesembososModel
+
+@inject ISnackbar Snackbar
+@inject DesembolsosService Service
+
+<MudDialog Class="config-dialog-root">
+    <DialogContent>
+        <MudPaper Elevation="0" Class="config-dialog-container">
+
+            @if (_loading)
+            {
+                <div class="config-loading-area">
+                    <MudProgressCircular Indeterminate="true"
+                                         Size="Size.Large"
+                                         Color="Color.Primary" />
+
+                    <MudText Typo="Typo.body1" Class="mt-4">
+                        Carregando configurações...
+                    </MudText>
+                </div>
+            }
+            else if (!string.IsNullOrWhiteSpace(_errorMessage))
+            {
+                <MudAlert Severity="Severity.Error"
+                          Variant="Variant.Filled"
+                          Class="config-alert">
+                    @_errorMessage
+                </MudAlert>
+            }
+            else
+            {
+            <MudTabs Elevation="0"
+                     Rounded
+                     Centered>
+
+                <MudTabPanel Text="CAIXA" Icon="@Icons.Material.Filled.AccountBalance">
+                    @RenderConfigCard(
+                                        descricao: "Parâmetros utilizados para o tomador CAIXA:",
+                                        configuracao: _configCaixa)
+                </MudTabPanel>
+
+                <MudTabPanel Text="OUTROS" Icon="@Icons.Material.Filled.Groups">
+                    @RenderConfigCard(
+                                        descricao: "Parâmetros utilizados para outros tomadores:",
+                                        configuracao: _configOutros)
+                </MudTabPanel>
+
+            </MudTabs>
+                        }
+
+        </MudPaper>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Variant="Variant.Text"
+                   Color="Color.Default"
+                   OnClick="Fechar">
+            Fechar
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    private bool _loading = true;
+    private string? _errorMessage;
+
+    private ConfiguracoesDesembolsos? _configCaixa;
+    private ConfiguracoesDesembolsos? _configOutros;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CarregarConfiguracoesAsync();
+    }
+
+    private async Task CarregarConfiguracoesAsync()
+    {
+        try
+        {
+            _loading = true;
+            _errorMessage = null;
+
+            var caixaTask = Service.ConsultarConfiguracoesCaixa();
+            var outrosTask = Service.ConsultarConfiguracoesOutrosAfs();
+
+            await Task.WhenAll(caixaTask, outrosTask);
+
+            var caixaResponse = await caixaTask;
+            var outrosResponse = await outrosTask;
+
+            if (!caixaResponse.IsSuccessStatusCode)
+            {
+                _errorMessage = $"Erro ao consultar configurações CAIXA. Status: {(int)caixaResponse.StatusCode}.";
+                return;
+            }
+
+            if (!outrosResponse.IsSuccessStatusCode)
+            {
+                _errorMessage = $"Erro ao consultar configurações OUTROS. Status: {(int)outrosResponse.StatusCode}.";
+                return;
+            }
+
+            _configCaixa = await caixaResponse.Content.ReadFromJsonAsync<ConfiguracoesDesembolsos>();
+            _configOutros = await outrosResponse.Content.ReadFromJsonAsync<ConfiguracoesDesembolsos>();
+
+            if (_configCaixa is null && _configOutros is null)
+            {
+                _errorMessage = "Nenhuma configuração foi encontrada.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = "Ocorreu um erro inesperado ao carregar as configurações.";
+            Snackbar.Add($"{_errorMessage} Detalhes: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void Fechar()
+    {
+        MudDialog.Close();
+    }
+
+    private RenderFragment RenderConfigCard(
+        string descricao,
+        ConfiguracoesDesembolsos? configuracao) => @<MudPaper Elevation="0" Class="config-card">
+
+    <div class="config-card-top">
+        <div>
+            <MudText Typo="Typo.body2" Class="config-card-description">
+                @descricao
+            </MudText>
+        </div>
+    </div>
+
+@if (configuracao is null)
+    {
+    <MudAlert Severity="Severity.Warning"
+              Variant="Variant.Outlined"
+              Class="mt-4">
+        Nenhuma configuração encontrada para este tomador.
+    </MudAlert>
+    }
+    else
+    {
+    <MudGrid>
+
+
+        <MudItem xs=6>
+            @RenderField(
+                        icon: Icons.Material.Filled.Print,
+                        label: "Impressora Virtual Rede CAIXA",
+                        value: configuracao.ImpressoraVirtualRedeCaixa,
+                        large: true)
+        
+        </MudItem>
+
+        <MudItem xs=6>
+            @RenderField(
+                        icon: Icons.Material.Filled.Dns,
+                        label: "Impressora Virtual Server",
+                        value: configuracao.ImpressoraVirtualServer,
+                        large: true)
+
+        </MudItem>
+
+        <MudItem xs=6>
+            @RenderField(
+                        icon: Icons.Material.Filled.Folder,
+                        label: "Destino dos Arquivos",
+                        value: configuracao.DestinoArquivo,
+                        large: true)
+        </MudItem>
+
+        <MudItem xs=6>
+            @RenderField(
+                        icon: Icons.Material.Filled.Domain,
+                        label: "Unidade Movimento",
+                        value: configuracao.UnidadeMovimento + '-' + configuracao.UnidadeMovimentoDv,
+                        compact: true)
+
+        </MudItem>
+
+        <MudItem xs=12>
+            @RenderField(
+                        icon: Icons.Material.Filled.History,
+                        label: "Histórico",
+                        value: configuracao.Historico,
+                        large: true)
+
+        </MudItem>
+    </MudGrid>
+
+    }
+
+</MudPaper>;
+
+private RenderFragment RenderField(
+    string icon,
+    string label,
+    string? value,
+    bool large = false,
+    bool compact = false) => @<div class="@GetFieldClass(large, compact)">
+
+    <div class="config-field-icon-wrapper">
+        <MudIcon Icon="@icon" Class="config-field-icon" />
+    </div>
+
+    <div class="config-field-content">
+        <MudText Typo="Typo.caption" Class="config-field-label">
+            @label
+        </MudText>
+
+        @if (string.IsNullOrWhiteSpace(value))
+        {
+            <MudText Typo="Typo.body2" Class="config-field-empty">
+                Não informado
+            </MudText>
+        }
+        else
+        {
+            <MudTooltip Text="@value" Disabled="@(!ShouldShowTooltip(value))">
+                <MudText Typo="Typo.body2" Class="config-field-value">
+                    @value
+                </MudText>
+            </MudTooltip>
+        }
+    </div>
+
+</div>;
+
+private static bool ShouldShowTooltip(string? value)
+{
+    return !string.IsNullOrWhiteSpace(value) && value.Length > 60;
+}
+
+private static string GetFieldClass(bool large, bool compact)
+{
+    var classes = "config-field";
+
+    if (large)
+        classes += " config-field-large";
+
+    if (compact)
+        classes += " config-field-compact";
+
+    return classes;
+}
+}
+
+<style>
+    .config-dialog-root {
+        backdrop-filter: blur(10px);
+    }
+
+    .config-dialog-container {
+        min-width: 720px;
+        max-width: 960px;
+        padding: 0;
+        border-radius: 24px;
+        overflow: hidden;
+    }
+
+    .config-dialog-header {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        padding: 30px 34px;
+        border-bottom: 1px solid rgba(128, 128, 128, 0.16);
+        background: linear-gradient( 135deg, rgba(25, 118, 210, 0.14), rgba(156, 39, 176, 0.08) );
+    }
+
+    .config-dialog-title {
+        font-weight: 800;
+        letter-spacing: -0.035em;
+    }
+
+    .config-dialog-subtitle {
+        margin-top: 6px;
+        opacity: 0.72;
+    }
+
+    .config-dialog-header-icon {
+        font-size: 48px;
+        opacity: 0.22;
+        transform: rotate(-12deg);
+    }
+
+    .config-loading-area {
+        min-height: 380px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .config-alert {
+        margin: 30px 34px;
+        border-radius: 18px;
+    }
+
+    .config-tab-panel {
+        padding-top: 22px;
+    }
+
+    .config-card {
+        position: relative;
+        padding: 28px;
+        border-radius: 24px;
+        border: 1px solid rgba(130, 130, 130, 0.18);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent), rgba(128, 128, 128, 0.035);
+        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    .config-card-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .config-card-title {
+        font-weight: 750;
+        letter-spacing: -0.025em;
+    }
+
+    .config-card-description {
+        margin-top: 4px;
+        opacity: 0.68;
+    }
+
+    .config-badge {
+        font-weight: 800;
+        letter-spacing: 0.045em;
+    }
+
+    .config-field {
+        display: flex;
+        gap: 14px;
+        min-width: 0;
+        padding: 16px;
+        border-radius: 18px;
+        border: 1px solid rgba(130, 130, 130, 0.14);
+        background: linear-gradient(135deg, rgba(255,255,255,0.055), rgba(255,255,255,0.015)), rgba(128, 128, 128, 0.035);
+        transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, background 180ms ease;
+    }
+
+        .config-field:hover {
+            transform: translateY(-2px);
+            border-color: rgba(25, 118, 210, 0.34);
+            box-shadow: 0 14px 34px rgba(0, 0, 0, 0.09);
+            background: linear-gradient(135deg, rgba(25,118,210,0.085), rgba(156,39,176,0.045)), rgba(128, 128, 128, 0.04);
+        }
+
+    .config-field-large {
+        grid-column: span 2;
+    }
+
+    .config-field-compact {
+        min-height: 92px;
+    }
+
+    .config-field-icon-wrapper {
+        width: 42px;
+        height: 42px;
+        flex: 0 0 42px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(25, 118, 210, 0.12);
+    }
+
+    .config-field-icon {
+        font-size: 22px;
+        color: var(--mud-palette-primary);
+    }
+
+    .config-field-content {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .config-field-label {
+        display: block;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.085em;
+        font-weight: 800;
+        opacity: 0.58;
+    }
+
+    .config-field-value {
+        font-weight: 550;
+        line-height: 1.55;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+        white-space: pre-wrap;
+    }
+
+    .config-field-empty {
+        font-style: italic;
+        opacity: 0.52;
+    }
+
+    @@media (max-width: 900px) {
+        .config-dialog-container {
+            min-width: unset;
+            width: calc(100vw - 32px);
+            max-width: calc(100vw - 32px);
+        }
+
+        .config-dialog-header {
+            padding: 24px;
+        }
+
+        .config-field-large {
+            grid-column: span 1;
+        }
+    }
+
+    @@media (max-width: 560px) {
+        .config-dialog-header {
+            align-items: flex-start;
+        }
+
+        .config-dialog-header-icon {
+            display: none;
+        }
+
+        .config-card {
+            padding: 18px;
+        }
+
+        .config-card-top {
+            flex-direction: column;
+        }
+
+        .config-field {
+            padding: 14px;
+        }
+    }
+</style>

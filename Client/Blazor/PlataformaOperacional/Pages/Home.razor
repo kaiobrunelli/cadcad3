@@ -1,0 +1,138 @@
+﻿@page "/"
+@using PlataformaOperacional.Pages.Contabilidade
+
+
+
+<style>
+	.rounded-button-home {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background-color: #E7F0F9;
+		border-radius: 50%;
+		width: 40px;
+		height: 40px;
+		box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
+		transition: background-color 0.3s ease;
+	}
+</style>
+
+
+<PageTitle>Plataforma Operacional</PageTitle>
+<MudContainer>
+	<MudGrid>
+		<MudItem xs="12" Class="titulo-page">
+			<MudCard Elevation="0" Class="d-flex flex-row gap-2">
+				<MudText Typo="Typo.h3" Style="color:#005ca9;">Plataforma Operacional</MudText>
+				<MudText Typo="Typo.h3">CEFGA</MudText>
+			</MudCard>
+			<MudDivider Class="mt-2 flex-grow-1" DividerType="DividerType.FullWidth"></MudDivider>
+		</MudItem>
+		@*  <MudItem lg="12" md="12" Class="pt-2">
+		<MudPaper Elevation="0" Class="pa-0">
+		<MudText Style="font-weight:400" Typo="Typo.h6">Análise Consolida</MudText>
+		</MudPaper>
+		</MudItem> *@
+		<MudItem lg="12" md="12" Class="d-flex flex-row gap-4  pt-4 justify-center">
+			<MudItem Class="card-home-page px-4 py-2" md="3" lg="3">
+				<MudPaper Elevation="0">
+					<MudItem Class="card-border-left"></MudItem>
+					<MudItem Class="d-flex flex-row justify-space-between  mt-2 ">
+						<MudText Class="ml-4 mb-3 align-self-center" Typo="Typo.h6">Orçamento 2025 </MudText>
+					</MudItem>
+					<MudItem Class=" d-flex  justify-end align-end flex-column flex-wrap mb-2">
+						<MudText Style="color:#005CA9" Typo="Typo.h5">R$ 136,34 Bi</MudText>
+						<MudText Style="color:dimgrey" Typo="Typo.caption">Contratado</MudText>
+					</MudItem>
+					<MudItem Class="d-flex  flex-row align-end justify-end gap-2">
+						<MudText Style="color:green" Typo="Typo.caption">89%</MudText>
+						<MudText Style="color:dimgrey" Typo="Typo.caption">Percentual Contratado</MudText>
+					</MudItem>
+					<MudItem Class="d-flex  flex-row justify-end gap-2">
+						<MudText Style="color:dimgrey" Typo="Typo.body2"><b>R$ 152,30 Bi </b></MudText>
+						<MudText Style="color:dimgrey" Typo="Typo.caption">Orçamento</MudText>
+					</MudItem>
+				</MudPaper>
+			</MudItem>
+
+			<MudItem Class="card-home-page px-4 py-2" md="3" lg="3">
+				<MudItem Class="card-border-left"></MudItem>
+				<MudItem Class="d-flex flex-row justify-space-between mb-1 ">
+					<MudText Class="ml-4 align-self-center" Typo="Typo.h6">Habitação </MudText>
+					<div class="rounded-button-home">
+						<MudIcon Icon="@Icons.Material.Filled.Home" Style="color:#005ca9" Size="Size.Small" />
+					</div>
+				</MudItem>
+				<MudItem Class=" d-flex  justify-end align-end  flex-column flex-wrap mb-2">
+					<MudText Style="color:#005CA9" Typo="Typo.h5">R$ 122,39 Bi</MudText>
+					<MudText Style="color:dimgrey" Typo="Typo.caption">Contratado</MudText>
+				</MudItem>
+				<MudItem Class="d-flex  flex-row align-end justify-end gap-2">
+					<MudText Style="color:green" Typo="Typo.caption">95%</MudText>
+					<MudText Style="color:dimgrey" Typo="Typo.caption">Percentual Contratado</MudText>
+				</MudItem>
+				<MudItem Class="d-flex  flex-row justify-end gap-2">
+					<MudText Style="color:dimgrey" Typo="Typo.body2"><b>R$ 142,40 Bi </b></MudText>
+					<MudText Style="color:dimgrey" Typo="Typo.caption">Orçamento</MudText>
+				</MudItem>
+			</MudItem>
+
+			<MudItem Class="card-home-page px-4 py-2 " md="3" lg="3">
+				<MudItem Class="card-border-left"></MudItem>
+				<MudItem Class="d-flex flex-row justify-space-between mb-1 ">
+					<MudText Class="ml-2 align-self-center" Typo="Typo.h6">Infraestrutura</MudText>
+					<div class="rounded-button-home">
+						<MudIcon Icon="@Icons.Material.Filled.NaturePeople" Style="color:#005ca9" Size="Size.Small" />
+					</div>
+				</MudItem>
+				<MudItem Class=" d-flex  justify-end align-end flex-column flex-wrap mb-2">
+					<MudText Style="color:#005CA9" Typo="Typo.h5">R$ 2,95 Bi</MudText>
+					<MudText Style="color:dimgrey" Typo="Typo.caption">Contratado</MudText>
+				</MudItem>
+				<MudItem Class="d-flex  flex-row align-end justify-end gap-2">
+					<MudText Style="color:green" Typo="Typo.caption">66%</MudText>
+					<MudText Style="color:dimgrey" Typo="Typo.caption">Percentual Contratado</MudText>
+				</MudItem>
+				<MudItem Class="d-flex  flex-row justify-end gap-2">
+					<MudText Style="color:dimgrey" Typo="Typo.body2"><b>R$ 8,00 Bi </b></MudText>
+					<MudText Style="color:dimgrey" Typo="Typo.caption">Orçamento</MudText>
+				</MudItem>
+			</MudItem>
+
+
+			<MudItem Class="card-home-page px-4 py-2 " md="3" lg="3">
+				<MudItem Class="card-border-left"></MudItem>
+				<MudItem Class="d-flex flex-row justify-space-between mb-1 ">
+					<MudText Class="ml-4 align-self-center" Typo="Typo.h6">Saneamento</MudText>
+					<div class="rounded-button-home">
+						<MudIcon Icon="@Icons.Material.Filled.WaterDrop" Style="color:#005ca9" Size="Size.Small" />
+					</div>
+				</MudItem>
+				<MudItem Class=" d-flex flex-column align-end  justify-end flex-column align-end flex-wrap mb-2">
+					<MudText Style="color:#005CA9" Typo="Typo.h5">R$ 3,64 Bi</MudText>
+					<MudText Style="color:dimgrey" Typo="Typo.caption">Contratado</MudText>
+				</MudItem>
+				<MudItem Class="d-flex  flex-row align-end justify-end gap-2">
+					<MudText Style="color:green" Typo="Typo.caption">66%</MudText>
+					<MudText Style="color:dimgrey" Typo="Typo.caption">Percentual Contratado</MudText>
+				</MudItem>
+				<MudItem Class="d-flex  flex-row justify-end gap-2">
+					<MudText Style="color:dimgrey" Typo="Typo.body2"><b>R$ 8,00 Bi </b></MudText>
+					<MudText Style="color:dimgrey" Typo="Typo.caption">Orçamento</MudText>
+				</MudItem>
+			</MudItem>
+		</MudItem>
+		<MudItem lg="12" md="12" Class="d-flex justify-start">
+			<MudText Style="color:grey" Typo="Typo.body2"> Dados processados em 17/12/2025. Posição dos dados em 16/12/2025.</MudText>
+		</MudItem>
+	</MudGrid>
+</MudContainer>
+
+@code {
+
+
+
+    }
+
+
+

@@ -1,0 +1,172 @@
+@inject IJSRuntime JS
+@using System.Globalization
+
+@* Campo percentual pt-BR: digita da esquerda pra direita e a vírgula entra
+   sozinha a partir do 3º dígito (2 casas inteiras fixas + até 4 decimais).
+   Ex.: digitar 9,9,9,9,1,5 mostra 9 → 99 → 99,9 → 99,99 → 99,991 → 99,9915.
+   CSS 100% próprio (sem depender de classes internas do MudBlazor, que exigem
+   JS interno pra medir o "recorte" do label e não funcionam só copiando a marcação).
+   O label usa position:absolute, então não empurra a caixa — ela fica com a
+   mesma altura/posição top dos MudTextField vizinhos na mesma linha.
+
+   ValueChanged manda valor + quantas casas decimais foram digitadas num único
+   evento (tupla) — mandar em dois EventCallback separados (um pro valor, outro
+   pras casas decimais) causa dois re-renders intercalados, e o segundo lê o
+   estado do primeiro ainda não propagado, resultando em formatação errada.
+
+   Uso:  <CampoPercentual Value="_percentualSac" ValueChanged="OnSacChanged" CasasDecimais="_casasDecimaisSac" Label="% SAC" /> *@
+
+<style>
+	.cp-container {
+		position: relative;
+		width: 100%;
+		margin-top: 8px;
+	}
+
+	.cp-label {
+		position: absolute;
+		top: -8px;
+		left: 10px;
+		background: #FAFBFD;
+		padding: 0 4px;
+		font-size: 0.75rem;
+		line-height: 1;
+		color: rgba(0, 0, 0, 0.6);
+		white-space: nowrap;
+		z-index: 1;
+	}
+
+	.cp-box {
+		display: flex;
+		align-items: center;
+		box-sizing: border-box;
+		height: 44px;
+		border: 1px solid rgba(0, 0, 0, 0.38);
+		border-radius: 4px;
+		padding: 0 14px;
+		background: white;
+	}
+
+	.cp-box:focus-within {
+		border-color: #005ca9;
+		border-width: 2px;
+		padding: 0 13px;
+	}
+
+	.cp-input {
+		flex: 1;
+		min-width: 0;
+		border: none;
+		outline: none;
+		background: transparent;
+		font-size: 1rem;
+		font-family: inherit;
+		color: rgba(0, 0, 0, 0.87);
+	}
+
+	.cp-adornment {
+		margin-left: 6px;
+		color: rgba(0, 0, 0, 0.54);
+		font-size: 0.875rem;
+		pointer-events: none;
+	}
+</style>
+
+<div class="cp-container @Class">
+	<span class="cp-label">@Label</span>
+	<div class="cp-box">
+		<input class="cp-input"
+			   id="@_inputId"
+			   type="text"
+			   inputmode="numeric"
+			   autocomplete="off"
+			   placeholder="0,0000"
+			   @ref="_ref"
+			   value="@_texto"
+			   @onfocus="AoFocar"
+			   @oninput="AoDigitar" />
+		<span class="cp-adornment">%</span>
+	</div>
+</div>
+
+@code {
+	[Parameter] public decimal Value { get; set; }
+	[Parameter] public EventCallback<(decimal Valor, int CasasDecimais)> ValueChanged { get; set; }
+	[Parameter] public string Label { get; set; } = "";
+	[Parameter] public decimal Max { get; set; } = 100m;
+	[Parameter] public string? Class { get; set; }
+
+	// Quantas casas decimais mostrar quando Value muda de fora (ex.: recálculo
+	// automático do lado complementar) — pra ele espelhar a mesma quantidade de
+	// casas que o usuário digitou no outro campo, em vez de sempre 4 fixas.
+	[Parameter] public int CasasDecimais { get; set; } = 4;
+
+	private static readonly CultureInfo _br = new("pt-BR");
+	private readonly string _inputId = $"campo-percentual-{Guid.NewGuid():N}";
+
+	private ElementReference _ref;
+	private string _texto = "";
+	private decimal _ultimoValor = -1m;
+
+	protected override void OnParametersSet()
+	{
+		// Reflete mudanças externas (ex.: recálculo automático do lado complementar).
+		// Enquanto o próprio usuário está digitando, Value já foi atualizado por
+		// AoDigitar antes do re-render (fica igual a _ultimoValor), então essa
+		// reformatação não sobrescreve o que ele acabou de digitar.
+		if (Value != _ultimoValor)
+		{
+			_ultimoValor = Value;
+			_texto = Value == 0 ? "" : Value.ToString("N" + CasasDecimais, _br);
+		}
+	}
+
+	private async Task AoFocar()
+	{
+		await JS.InvokeVoidAsync("inputHelper.selecionarTextoAtivo");
+	}
+
+	private async Task AoDigitar(ChangeEventArgs e)
+	{
+		var digitos = new string((e.Value?.ToString() ?? "").Where(char.IsDigit).ToArray());
+		if (digitos.Length > 6) digitos = digitos[..6]; // 2 casas inteiras + 4 decimais
+
+		string texto;
+		decimal valor;
+		int casasDecimais;
+
+		if (digitos == "100")
+		{
+			// Único valor de 3 dígitos inteiros válido (100%) — caso especial,
+			// já que a regra normal reserva só 2 dígitos pra parte inteira.
+			texto = "100";
+			valor = 100m;
+			casasDecimais = 0;
+		}
+		else if (digitos.Length <= 2)
+		{
+			texto = digitos;
+			valor = digitos.Length == 0 ? 0m : decimal.Parse(digitos);
+			casasDecimais = 0;
+		}
+		else
+		{
+			var parteInteira = digitos[..2].TrimStart('0');
+			if (parteInteira.Length == 0) parteInteira = "0";
+			var parteDecimal = digitos[2..];
+			texto = $"{parteInteira},{parteDecimal}";
+			valor = decimal.Parse(digitos[..2]) + (decimal.Parse(parteDecimal) / (decimal)Math.Pow(10, parteDecimal.Length));
+			casasDecimais = parteDecimal.Length;
+		}
+
+		if (valor > Max) { valor = Max; texto = Max.ToString("N" + casasDecimais, _br); }
+
+		_ultimoValor = valor;
+		_texto = texto;
+		Value = valor;
+
+		// grava direto no DOM (o Blazor pula a atualização quando o texto formatado não muda)
+		await JS.InvokeVoidAsync("inputHelper.definirValorInput", _ref, _texto);
+		await ValueChanged.InvokeAsync((valor, casasDecimais));
+	}
+}

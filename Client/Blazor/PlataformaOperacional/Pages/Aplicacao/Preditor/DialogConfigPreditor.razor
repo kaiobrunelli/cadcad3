@@ -1,0 +1,825 @@
+﻿@using MudBlazor
+@using System.Text.RegularExpressions
+@inject ISnackbar SnackBar
+@inject PreditorService PreditorService
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
+@inherits PreditorHome
+<style>
+	.mud-alert .alerta-aturizados {
+		border-radius: 12px;
+	}
+	mud-expand-panel-text
+	.btn-match-input {
+		height: 46px;
+		align-self: flex-start;
+	}
+
+	.custom-input-field .mud-input-outlined {
+		border-radius: 12px !important;
+		background-color: white !important;
+		height: 54px;
+		transition: all 0.2s ease-in-out;
+	}
+
+	.custom-input-field .mud-input-outlined-border {
+		border-radius: 12px !important;
+		border: 1px solid #e2e8f0 !important;
+	}
+
+	.custom-input-field.mud-input-focused .mud-input-outlined-border,
+	.custom-input-field:focus-within .mud-input-outlined-border {
+		border-radius: 12px !important;
+		border-color: #005ca9 !important;
+		border-width: 1px !important;
+	}
+
+	.custom-input-field input:focus {
+		outline: none !important;
+		box-shadow: none !important;
+	}
+
+	.custom-input-field .mud-input-slot {
+		padding-left: 12px !important;
+	}
+
+	.custom-input-field.mud-input-error .mud-input-outlined-border {
+		border-color: var(--mud-palette-error) !important;
+	}
+
+
+	.custom-input-field .mud-input-helper-text.mud-helper-text-error {
+		font-weight: 500;
+		margin-left: 12px;
+	}
+
+	.input-container-fix {
+		padding-bottom: 24px;
+	}
+
+	.custom-input-field .mud-input-helper-text {
+		position: absolute !important;
+		*/ bottom: -22px !important;
+		left: 0;
+		margin: 0 !important;
+		display: block;
+		width: 100%;
+		white-space: nowrap;
+	}
+
+	.custom-input-field .mud-input-outlined .select-email {
+		border-radius: 12px !important;
+		background-color: white !important;
+		height: 56px;
+		*/ color: #0f172a !important;
+	}
+
+	.mud-select .mud-select-input .mud-input-slot {
+		color: #0f172a !important;
+	}
+
+
+	.custom-input-field .mud-input-outlined-border .select-email {
+		border-radius: 12px !important;
+		color: #0f172a !important;
+	}
+
+
+	.custom-input-field.mud-input-focused .mud-input-outlined-border .select-email {
+		border-radius: 12px !important;
+		color: #0f172a !important;
+	}
+
+	.email-input {
+		width: 100%;
+		border-radius: 0.75rem;
+		background-color: #f8fafc;
+		border: 1px solid #e2e8f0;
+		height: 3rem;
+		padding-left: 1rem;
+		padding-right: 1rem;
+		color: #0f172a;
+		transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+		outline: none;
+	}
+
+	.input-field {
+		flex: 1;
+		width: 100%;
+		/* height: 56px; */
+		border-radius: 0.75rem;
+		border: 1px solid var(--slate-200);
+		padding: 0 16px;
+		font-family: inherit;
+		transition: all 0.2s;
+	}
+
+		.input-field:focus {
+			outline: none;
+			border-color: var(--primary);
+			box-shadow: 0 0 0 4px var(--primary-glow);
+		}
+
+	.mud-border-radius-xl {
+		border-radius: 24px !important;
+	}
+
+	.card-adicionar-colaborador {
+		background-color: rgba(239, 246, 255, 0.5);
+		border: 1px solid rgba(224, 231, 255, 0.5);
+		border-radius: 12px;
+		padding: 16px;
+		padding-top: 12px;
+	}
+
+	.mud-border-radius-md {
+		border-radius: 12px !important;
+	}
+
+	.bg-slate-50 {
+		background-color: #f8fafc;
+	}
+
+
+	.user-card-hover {
+		transition: all 0.3s ease;
+	}
+
+		.user-card-hover:hover {
+			border-color: var(--mud-palette-primary) !important;
+			box-shadow: 0 12px 24px -10px rgba(0,0,0,0.08);
+		}
+
+	.email-tag-custom {
+		background-color: #f8fafc !important;
+		border: 1px solid #e2e8f0 !important;
+		font-weight: 500;
+		color: #64748b !important;
+	}
+
+		.email-tag-custom:hover {
+			border-color: #c7d2fe !important;
+			color: var(--mud-palette-primary) !important;
+			background-color: #eef2ff !important;
+		}
+
+	/* 	:root {
+																					--meu-gradiente-radial: radial-gradient(circle at top left, #e2e8f0, #cbd5e1);
+																				} */
+
+
+	.mud-layout {
+		background: #E2E8F0;
+	}
+
+	.container-preditor {
+		background-color: #E2E8F0;
+		margin: 0px;
+		padding: 0px;
+	}
+
+
+	.mud-container {
+		background-color: #E2E8F0 !important;
+	}
+
+	.email-input-novo .mud-input,
+	.email-input-novo .mud-input-root,
+	.email-input-novo .mud-input-control {
+		background-color: #f8fafc !important;
+		border-radius: 0.75rem !important;
+	}
+
+	.email-input-novo input,
+	.email-input-novo textarea,
+	.email-input-novo .mud-input-slot {
+		background-color: transparent !important;
+	}
+
+	.email-input-novo .mud-input > input.mud-input-root {
+		background: #f8fafc !important;
+		padding-left: 8px;
+	}
+
+	.custom-select-field .mud-input-outlined {
+		border-radius: 12px !important;
+		background-color: white !important;
+		height: 56px;
+		transition: all 0.2s ease-in-out;
+	}
+
+
+	.custom-select-field .mud-input-outlined-border {
+		border-radius: 12px !important;
+		border: 1px solid #e2e8f0 !important;
+	}
+
+
+	.custom-select-field.mud-input-focused .mud-input-outlined-border,
+	.custom-select-field:focus-within .mud-input-outlined-border {
+		border-radius: 12px !important;
+		border-color: #4f46e5 !important;
+		border-width: 1px !important;
+	}
+
+
+	.custom-select-field .mud-select-arrow {
+		color: #4f46e5 !important;
+	}
+
+
+	.custom-select-field .mud-input-slot {
+		padding-left: 12px !important;
+	}
+
+
+	.custom-select-field.mud-input-error .mud-input-outlined-border {
+		border-color: var(--mud-palette-error) !important;
+	}
+
+
+	.custom-select-field .mud-input-helper-text {
+		position: absolute !important;
+		bottom: -22px !important;
+		left: 0;
+		margin: 0 !important;
+		white-space: nowrap;
+	}
+
+		.custom-select-field .mud-input-helper-text.mud-helper-text-error {
+			font-weight: 500;
+			margin-left: 12px;
+		}
+		.mud-expand-panel-text{
+			font-size:16px;
+		}
+</style>
+<MudDialog Style="border-radius:12px; min-height:585px; min-width:610px;" Class="mb-4  pb-2">
+
+	<TitleContent>
+		<div class=" d-flex justify-space-between align-center">
+			<div>
+				<MudText Typo="Typo.h5" Style="font-weight: 500; color: #0f172a; ">Gerenciar Acesso</MudText>
+				<MudText Typo="Typo.body2" Class="mud-text-secondary">Controle permissões e comunicações.</MudText>
+			</div>
+			<MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="Cancel" Variant="Variant.Text" Color="Color.Default" />
+		</div>
+	</TitleContent>
+	<DialogContent  >
+	<MudExpansionPanels Elevation="25" Outlined="false" Dense=true Square="true"  Style="border-radius:6px">
+		<MudExpansionPanel Text="Cadastrar Empregado" Class="pb-4"    Expanded="true" Style="color: #424242;  font-weight:500; ">
+       <div>
+			@* Seção: Adicionar Empregado *@
+					<section class="pb-3">
+				<div class="card-adicionar-colaborador">
+					<MudGrid Spacing="3" Style="align-items:center">
+						<MudItem xs="12" sm="12" md="12" lg="12">
+							<MudText Typo="Typo.body1" Style=" color: #0f172a;">Adicionar</MudText>					
+						</MudItem>
+						<MudItem xs="7" sm="7" md="7" lg="7">
+							<MudForm @bind-IsValid="_isSuccess" ValidationDelay="0">
+								<MudTextField @bind-Value="_matriculaCadastroEmpregadoAutorizado"
+											  T="string"
+											  Placeholder="Matrícula C999999"
+											  Variant="Variant.Outlined"
+											  Class="custom-input-field"
+											  Validation="@(new Func<string, string?>(ValidateMatricula))"
+											  Margin="Margin.Dense" />
+							</MudForm>
+						</MudItem>
+
+						<MudItem xs="4" sm="4" lg="4" md="4">
+							<MudTooltip Duration="300" Delay="500" Text="Define o tempo de acesso ao APP. Interminado: sem limitação de período. Temporário: limitado à data selecionada.">
+										<MudCheckBox CheckedIcon="@Icons.Material.Filled.AccessTimeFilled" UncheckedIcon="@Icons.Material.Filled.TimerOff" @bind-Value="_cadastrarAutorizadoTemporario" Color="@Color.Primary">
+									@(_cadastrarAutorizadoTemporario ? "Temporário" : "Indeterminado")
+								</MudCheckBox>
+							</MudTooltip>
+						</MudItem>
+						<MudItem xs="7" sm="7" lg="7" md="7">
+							<MudForm @bind-IsValid="_isSuccess" ValidationDelay="0">
+							
+									<MudTextField @bind-Value="_dataAutorizadoTemporario"
+												  T="DateTime?"
+												  Mask="@(new DateMask("dd/MM/yyyy"))"
+												  Placeholder="Inserir data fim"
+												  ErrorText="Data inválida"
+												  Variant="Variant.Outlined"
+												  Disabled="@(!_cadastrarAutorizadoTemporario)"												
+												  Class="custom-input-field "
+												  Style="width:100% !important"
+												  Margin="Margin.Dense" />
+							
+							</MudForm>
+						</MudItem>
+						<MudItem xs="12" sm="5" md="5" lg="5" Class="d-flex justify-center align-item-center">
+							<MudButton FullWidth="true"
+									   Variant="Variant.Outlined"
+									   Color="Color.Primary"
+									   Size="Size.Small"
+									   OnClick="CadastrarAutorizado"
+									   StartIcon="@Icons.Material.Filled.PersonAdd"
+									   Class="mud-border-radius-md btn-match-input pa-3">
+								Adicionar
+							</MudButton>
+						</MudItem>
+					</MudGrid>
+
+
+
+				</div>
+
+				@* Listagem de Usuários *@
+				<MudStack Spacing="3" Class="mt-4">
+					@if (_preditorAutorizados.Any())
+					{
+						@foreach (var autorizado in _preditorAutorizados)
+						{
+							<MudPaper Elevation="0" Class="px-4 py-2 d-flex align-center justify-space-between user-card-hover"
+									  Style="border: 1px solid #E2E8F0; border-radius: 14px;">
+								<div class="d-flex align-center gap-4">
+									<MudAvatar Color="Color.Success"  Variant="Variant.Filled" Style=" font-size:1.1rem;">
+										@GetInitials(autorizado.NomeOperador ?? "C X")
+									</MudAvatar>
+									<div>
+										<div class="d-flex align-center gap-2">
+											<MudText Typo="Typo.body1" Style="font-weight: 600; color: #0f172a;">@autorizado.NomeOperador</MudText>
+											@if (autorizado.Eventual)
+											{
+												<MudChip T="string"
+														 Size="Size.Small"
+														 Color="Color.Warning"
+														 Variant="Variant.Outlined"
+																 Style="font-size: 10px; letter-spacing:1px;"
+														 Class="px-2 py-0">Eventual</MudChip>
+											}
+										</div>
+										<MudText Typo="Typo.caption" Style="color: #94a3b8; text-transform: uppercase;">Matrícula: @autorizado.CoMatricula</MudText>
+									</div>
+								</div>
+								<div class="d-flex gap-2">
+									<MudTooltip Text="@(autorizado.Eventual ? "Remover Eventualidade" : "Tornar Eventual")">
+										<MudIconButton Icon="@(autorizado.Eventual? Icons.Material.Filled.Star : Icons.Material.Outlined.StarBorder)"													   
+													OnClick="@(autorizado.Eventual
+													    ? (() => RemoverEventual(autorizado.CoMatricula))
+													    : (() => CadastrarEventual(autorizado.CoMatricula)))"													
+													   Color="Color.Warning"
+													   Size="Size.Medium" />
+									</MudTooltip>
+									<MudTooltip Text="Remover">
+										<MudIconButton Icon="@Icons.Material.Outlined.Delete"
+													   OnClick="(()=> DesabilitarAutorizado(autorizado.CoMatricula))"
+													   Color="Color.Error" Size="Size.Medium" />
+									</MudTooltip>
+								</div>
+							</MudPaper>
+						}
+					}
+					else
+					{
+						<MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+							@* <MudIcon Size="Size.Small" Color="Color.Secondary" Icon="@Icons.Material.Outlined.ErrorOutline"></MudIcon> *@
+							<MudAlert Severity="Severity.Warning" Class="flex-1 alerta-autorizados">
+								Nenhum empregado cadastrado.
+							</MudAlert>
+						</MudStack>
+					}
+				</MudStack>
+			</section>
+		</div>
+    </MudExpansionPanel>
+    <MudExpansionPanel Text="Cadastrar E-Mail" Class="mb-4 "   Style="color: #424242;  font-weight:500; ">
+				@* Seção: Cadastrar e remover E-mails *@
+				<section class="mb-4 pb-3">
+					<div class="d-flex align-center gap-3 mb-3 mt-6">
+						<div style="width: 4px; height: 24px; background-color: var(--mud-palette-primary); border-radius: 2px;"></div>
+						<MudText Typo="Typo.subtitle1" Style="font-weight: 600; color: #0f172a;">Adicionar</MudText>
+					</div>
+					<MudGrid Spacing="3" Class="align-center " Justify="Justify.FlexStart">
+						<MudItem xs="6" sm="6" lg="6" md="6" Class="mb-2">
+							@* <MudText Typo="Typo.caption">Tipo cadastro:</MudText> *@
+							@* <MudRadioGroup @bind-Value="_tipoCadastroMatriculaOuUGC" > *@
+							<MudRadioGroup T="string" Value="_tipoCadastroMatriculaOuUGC" ValueChanged="OnTipoCadastroChanged">
+								<MudStack Row="true" AlignItems="AlignItems.Start" Justify="Justify.Center">
+									<MudRadio Color="Color.Primary" Value="@("matricula")">Matrícula</MudRadio>
+									<MudRadio Color="Color.Primary" Value="@("ugc")">UGC</MudRadio>
+								</MudStack>
+							</MudRadioGroup>
+						</MudItem>
+						@if (_tipoCadastroMatriculaOuUGC == "matricula")
+						{
+							<MudItem xs="6" sm="6" lg="6" md="6" Class="mb-2">
+								<MudForm @bind-IsValid="_isSuccessMatriculaouUGC" ValidationDelay="0">
+									<MudTextField @bind-Value="_matriculaCadastroEmail"
+												  T="string"
+												  Style="text-transform: lowercase;"
+												  FullWidth="true"
+												  Placeholder="Matrícula  C999999"
+												  Variant="Variant.Outlined"
+												  Class="custom-input-field email-input-novo"
+												  Validation="@(new Func<string, string?>(ValidateMatricula))"
+												  Margin="Margin.Dense" />
+								</MudForm>
+							</MudItem>
+						}
+						else
+						{
+							<MudItem xs="6" sm="6" Class="mb-2">
+								<MudForm @bind-IsValid="_isSuccessMatriculaouUGC" ValidationDelay="0">
+									<MudTextField @bind-Value="_numeroUGCCadastroEmail"
+												  T="string"
+												  FullWidth="true"
+												  Placeholder="UGC ex: CEFGA ou CEFGA99"
+												  Variant="Variant.Outlined"
+												  MaxLength="7"
+												  Class="custom-input-field email-input-novo"
+												  Validation="@(new Func<string, string?>(ValidateUGC))"
+												  Margin="Margin.Dense" />
+								</MudForm>
+							</MudItem>
+						}
+						<MudItem xs="12" sm="12">
+							<MudForm @bind-IsValid="_isSuccessNomeEmpregadoOuUGC" ValidationDelay="0">
+								<MudTextField @bind-Value="_nomeEmpregadoOuNomeUGC"
+											  T="string"
+											  FullWidth="true"
+											  Placeholder="Descritivo"
+											  Variant="Variant.Outlined"
+											  Class="custom-input-field email-input-novo"
+											  Validation="@(new Func<string, string?>(ValidateNome))"
+											  Margin="Margin.Dense" />
+
+							</MudForm>
+						</MudItem>
+						<MudItem xs="7" sm="7">
+							@* <MudText Typo="Typo.caption">Tipo envio:</MudText> *@
+							<MudRadioGroup @bind-Value="_tipoDestinatario">
+								<MudStack Row="true" AlignItems="AlignItems.Start" Justify="Justify.Center">
+									<MudTooltip Duration="300" Delay="300" Text="Destinatário">
+										<MudRadio Color="Color.Primary" Value="@("PARA")">Para</MudRadio>
+									</MudTooltip>
+									<MudTooltip Duration="300" Delay="300" Text="Com cópia">
+										<MudRadio Color="Color.Primary" Value="@("CC")">Cc</MudRadio>
+									</MudTooltip>
+									<MudTooltip Duration="300" Delay="300" Text="Com cópia oculta">
+										<MudRadio Color="Color.Primary" Value="@("CCO")">Cco</MudRadio>
+									</MudTooltip>
+								</MudStack>
+							</MudRadioGroup>
+						</MudItem>
+						<MudItem xs="5" sm="5">
+							<MudButton FullWidth="true"
+									   Variant="Variant.Outlined"
+									   Color="Color.Primary"
+									   Size="Size.Small"
+									   StartIcon="@Icons.Material.Filled.Mail"
+									   OnClick="CadastrarDestinatarioEmail"
+									   Class=" btn-match-input mud-border-radius-md pa-2">
+								Cadastrar E-mail
+							</MudButton>
+						</MudItem>
+					</MudGrid>
+
+
+					<div class="d-flex align-center gap-3 mb-3 mt-6">
+						<div style="width: 4px; height: 24px; background-color: var(--mud-palette-secondary); border-radius: 2px;"></div>
+						<MudText Typo="Typo.subtitle1" Style="font-weight: 600; color: #0f172a;">Gerenciar E-mail</MudText>
+					</div>
+@* 					<MudGrid Spacing="3" Justify="Justify.Center" Class="align-center"> *@
+					@* 	<MudItem xs="12" sm="8"> *@
+				<MudStack Spacing="3" Class="mt-4">
+						@if (DestinatarioEmail.Any())
+					{
+							@foreach (var destinatario in DestinatarioEmail)
+						{
+							<MudPaper Elevation="0" Class="px-4 py-2 d-flex align-center justify-space-between user-card-hover"
+									  Style="border: 1px solid #E2E8F0; border-radius: 14px; width:100% !important">
+								<div class="d-flex align-center gap-4">
+							@* 		<MudAvatar Color="Color.Primary" Variant="Variant.Filled" Style="font-weight: 400;">
+										@GetInitials("EC")
+									</MudAvatar> *@
+										 <MudIcon Icon="@Icons.Material.Filled.Email" Color="Color.Success" Size="Size.Large"></MudIcon>
+									<div>
+										<div class="d-flex align-center gap-2" style="height:26px">
+												<MudText GutterBottom="false" Typo="Typo.body1" Style="font-weight: 500; color: #0f172a;">@destinatario.EmailDestinatario</MudText>
+												<MudChip T="string" Color="Color.Secondary" Style="font-weight:400;" Variant="Variant.Text">@destinatario.TipoDestinatario</MudChip>
+										</div>
+										<MudText Typo="Typo.caption"  Style="color: #94a3b8; text-transform: uppercase;">@destinatario.DeDestinatario</MudText>
+									</div>
+								</div>
+								<div class="d-flex gap-2">
+						
+									<MudTooltip Text="Remover">
+										<MudIconButton Icon="@Icons.Material.Outlined.Delete"
+													   OnClick="(()=> RemoverEmail(destinatario.CoDestinatario))"
+													   Color="Color.Error" Size="Size.Medium" />
+									</MudTooltip>
+								</div>
+							</MudPaper>
+						}
+					}
+					else
+					{
+						<MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+							@* <MudIcon Size="Size.Small" Color="Color.Secondary" Icon="@Icons.Material.Outlined.ErrorOutline"></MudIcon> *@
+							<MudAlert Severity="Severity.Warning" Class="flex-1 alerta-autorizados">
+								Nenhum empregado cadastrado.
+							</MudAlert>
+						</MudStack>
+					}
+				</MudStack>
+						@* </MudItem> *@
+				@* 		<MudItem xs="12" sm="4">
+							<MudButton FullWidth="true"
+									   Variant="Variant.Text"
+									   Color="Color.Default"
+									   Size="Size.Small"
+									   StartIcon="@Icons.Material.Filled.Delete"
+									   OnClick="RemoverEmail"
+									   Class=" btn-match-input mud-border-radius-md mt-4">
+								Remover E-Mail
+							</MudButton>
+						</MudItem> *@
+					@* </MudGrid> *@
+
+
+				</section>
+    </MudExpansionPanel>
+   
+</MudExpansionPanels>
+		
+
+
+	
+	</DialogContent>
+</MudDialog>
+
+@code {
+
+	[CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+	[Parameter] public List<ReadDestinatarioEmail> DestinatarioEmail { get; set; }  //Lista para selecionar e remover e-mails
+	private bool teste_Avaliar = true;
+
+	#region Propriedades Gerais
+	private bool _isSuccess = false;
+	private bool _isSuccessNomeEmpregadoOuUGC = false;
+	private bool _isSuccessEmail = false;
+	private bool _isSuccessMatriculaouUGC = false;
+	private DateTime? _dataAutorizadoTemporario = DateTime.UtcNow.Date;
+	private bool _cadastrarAutorizadoTemporario = false;
+	private string _destinatarioEmailSelecionado = "";
+	private List<ReadPreditorAutorizados> _preditorAutorizados = new(); //Lista de empregados autorizados
+	private string _matriculaCadastroEmpregadoAutorizado = "";
+	private string _tipoCadastroMatriculaOuUGC = "matricula"; //Define se o tipo será a partir da matrícual ou UGC
+	private string _matriculaCadastroEmail = "";
+	private string _numeroUGCCadastroEmail = "";
+	private string _nomeEmpregadoOuNomeUGC = "";
+	private string _tipoDestinatario = "PARA";
+
+
+	#endregion
+
+	private async Task AtualizarTeste()
+	{
+		var responseDestinatarioEmail = await PreditorService.ConsultarEmailPreditor();
+
+
+		DestinatarioEmail = await HttpResponseHandler.ResponseHandler<List<ReadDestinatarioEmail>>(responseDestinatarioEmail, Snackbar);
+
+
+	}
+	private bool _carregouTodaPagina = false;
+
+	protected override async Task OnInitializedAsync()
+	{
+		var responseAutorizados = await PreditorService.ConsultarPreditorAutorizados();
+		_preditorAutorizados = await HttpResponseHandler.ResponseHandler<List<ReadPreditorAutorizados>>(responseAutorizados, Snackbar);
+	}
+
+	#region Endpoints API
+
+	private async Task DesabilitarAutorizado(string matricula)
+	{
+
+		var response = await PreditorService.DesabilitarPreditorAutorizado(matricula.ToLower());
+		await HttpResponseHandler.ResponseHandler(response, Snackbar);
+		await RecarregarDadosDaPagina();
+	}
+
+	private async Task CadastrarAutorizado()
+	{
+		if (!ValidarCadastroDeAutorizado()) return;
+
+		var novoAutorizado = new CreatePreditorAutorizados()
+			{
+				CoMatricula = _matriculaCadastroEmpregadoAutorizado,
+				ValidadeAutorizacao = _cadastrarAutorizadoTemporario
+																		? _dataAutorizadoTemporario
+																		: null
+			};
+		var response = await PreditorService.CadastrarPreditorAutorizado(novoAutorizado);
+		await HttpResponseHandler.ResponseHandler(response, Snackbar);
+		await RecarregarDadosDaPagina();
+	}
+
+	private async Task CadastrarEventual(string matricula)
+	{		
+		var response = await PreditorService.CadastrarEventual(matricula);
+		await HttpResponseHandler.ResponseHandler(response, Snackbar);
+		await RecarregarDadosDaPagina();
+	}
+
+	private async Task RemoverEventual(string matricula)
+	{
+		var response = await PreditorService.RemoverEventual( matricula);
+		await HttpResponseHandler.ResponseHandler(response, Snackbar);
+		await RecarregarDadosDaPagina();
+	}
+
+	private async Task CadastrarDestinatarioEmail()
+	{
+		if (!HabilitarBotaoEnviarEmail()) return;
+
+		var emailCadastrado = new CreateDestinatarioEmailPreditor()
+			{
+				DeDestinatario = _nomeEmpregadoOuNomeUGC,
+				CoMatriculaDestinatario = _tipoCadastroMatriculaOuUGC == "ugc"
+																								? _numeroUGCCadastroEmail
+																								: _matriculaCadastroEmail,
+				TipoDestinatario = _tipoDestinatario
+			};
+
+		var response = await PreditorService.CadastrarEmailPreditor(emailCadastrado);
+		await HttpResponseHandler.ResponseHandler(response, Snackbar);
+		await RecarregarDadosDaPagina();
+
+	}
+	private async Task RemoverEmail(int idEmail)
+	{
+		// if (!ValidarEmailDestinatarioSelecionado()) return;
+
+		// var idEmail = DestinatarioEmail.Where(e => e.EmailDestinatario == "_destinatarioEmailSelecionado").Select(e => e.CoDestinatario).FirstOrDefault();
+		var response = await PreditorService.RemoverEmailPreditor(idEmail);
+		await HttpResponseHandler.ResponseHandler(response, Snackbar);
+
+		var responseDestinatarioEmail = await PreditorService.ConsultarEmailPreditor();
+		DestinatarioEmail = await HttpResponseHandler.ResponseHandler<List<ReadDestinatarioEmail>>(responseDestinatarioEmail, Snackbar);
+
+	}
+	#endregion
+
+	#region Métodos Auxiliares
+	private async Task RecarregarDadosDaPagina()
+	{
+		var responseAutorizados = await PreditorService.ConsultarPreditorAutorizados();
+		var responseDestinatarioEmail = await PreditorService.ConsultarEmailPreditor();
+		_preditorAutorizados = await HttpResponseHandler.ResponseHandler<List<ReadPreditorAutorizados>>(responseAutorizados, Snackbar);
+		DestinatarioEmail = await HttpResponseHandler.ResponseHandler<List<ReadDestinatarioEmail>>(responseDestinatarioEmail, Snackbar);
+	}
+	private void OnTipoCadastroChanged(string novoValor)
+	{
+		_tipoCadastroMatriculaOuUGC = novoValor;
+		_matriculaCadastroEmail = "";
+		_numeroUGCCadastroEmail = "";
+	}
+
+	private void Cancel() => MudDialog.Cancel();
+
+
+	
+
+	private static string GetInitials(string name)
+	{
+		if (string.IsNullOrWhiteSpace(name))
+			return string.Empty;
+
+
+		string[] ignored = { "de", "da", "do", "das", "dos" /*, "e"*/ };
+
+		var initials = name
+			.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+			.Select(p => p.Trim())
+			.Where(p => !ignored.Contains(p, StringComparer.OrdinalIgnoreCase))
+			.Where(p => p.Length > 0)
+			.Take(2)
+			.Select(p => char.ToUpperInvariant(p[0]).ToString());
+
+		return string.Join("", initials);
+	}
+
+	#endregion
+
+	#region Validações
+	private bool ValidarEmailDestinatarioSelecionado()
+	{
+		if (string.IsNullOrWhiteSpace(_destinatarioEmailSelecionado))
+		{
+			SnackBar.Add("Email não selecionado ou inválido", Severity.Warning);
+			return false;
+		}
+		return true;
+	}
+	private bool HabilitarBotaoEnviarEmail()
+	{
+		if (_tipoCadastroMatriculaOuUGC == "matricula" && string.IsNullOrWhiteSpace(_matriculaCadastroEmail))
+		{
+			SnackBar.Add("Matrícula inválida", Severity.Warning);
+			return false;
+		}
+		if (_tipoCadastroMatriculaOuUGC == "ugc" && string.IsNullOrWhiteSpace(_numeroUGCCadastroEmail))
+		{
+			SnackBar.Add("Nome da UGC inválida", Severity.Warning);
+			return false;
+		}
+		if (string.IsNullOrWhiteSpace(_nomeEmpregadoOuNomeUGC))
+		{
+			SnackBar.Add("Nome empregado ou UGC inválido", Severity.Warning);
+			return false;
+		}
+		if (!_isSuccessMatriculaouUGC)
+		{
+			SnackBar.Add($"Matrícula ou Nº inválido", Severity.Warning);
+			return false;
+		}
+
+		if (!_isSuccessNomeEmpregadoOuUGC)
+		{
+			SnackBar.Add($"Descritivo inválido", Severity.Warning);
+			return false;
+		}
+		// SnackBar.Add($"Preenchimento Correto - chamando API ", Severity.Success);
+		return true;
+
+	}
+
+	private string? ValidateUGC(string? value)
+	{
+		if (_tipoCadastroMatriculaOuUGC == "matricula")
+			return null;
+
+		if (string.IsNullOrWhiteSpace(value))
+			return "UGC é obrigatória.";
+
+		var input = value.Trim();
+
+		// Regex: 5 letras OU 5 letras + 2 números (números apenas no final)
+		var pattern = @"^[A-Za-z]{5}(\d{2})?$";
+
+		if (!Regex.IsMatch(input, pattern, RegexOptions.CultureInvariant))
+			return "Inválido. Use CEFGA ou CEFGA99";
+
+		return null;
+	}
+
+	private string? ValidateMatricula(string value)
+	{
+		if (string.IsNullOrWhiteSpace(value))
+			return "Matrícula é obrigatória.";
+
+		if (!System.Text.RegularExpressions.Regex.IsMatch(value, @"^[cC]\d{6}$"))
+			return "Formato inválido.  C999999.";
+
+		return null;
+	}
+	private bool ValidarCadastroDeAutorizado()
+	{
+		if (ValidateMatricula(_matriculaCadastroEmpregadoAutorizado) != null)
+		{
+			Snackbar.Add("Matricula inválida", Severity.Error);
+			return false;
+		}
+		if (_cadastrarAutorizadoTemporario && _dataAutorizadoTemporario < DateTime.UtcNow.Date)
+		{
+			Snackbar.Add("Data deve ser maior que o dia atual", Severity.Error);
+			return false;
+		}
+		return true;
+	}
+
+	private string? ValidateNome(string value)
+	{
+		if (string.IsNullOrWhiteSpace(value))
+			return "Descritivo é obrigatório.";
+		if (value.Trim().Length < 3)
+			return "Nome deve ter ao menos 3 caracteres.";
+
+
+		return null;
+	}
+	private string? ValidateEmail(string value)
+	{
+		if (string.IsNullOrWhiteSpace(value))
+			return "E-mail é obrigatório.";
+
+		var pattern = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
+
+		if (!System.Text.RegularExpressions.Regex.IsMatch(value, pattern))
+			return "E-mail inválido.";
+
+		return null;
+	}
+	#endregion
+}
+
+
+
+

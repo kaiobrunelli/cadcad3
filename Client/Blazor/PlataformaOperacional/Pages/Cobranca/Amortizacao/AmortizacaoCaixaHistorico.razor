@@ -1,0 +1,464 @@
+﻿@page "/amortizacaocaixarelatorio"
+@inherits AmortizacaoCaixaHome
+@inject CobrancaService CobrancaService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject IJSRuntime JsRuntime
+@inject NavigationManager Navigation
+<style>
+
+	.card-container {
+		width: 100%;
+		max-width: 1000px;
+		border-radius: 12px;
+		background-color: white;
+		padding: 20px;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+	}
+
+	.header-content {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		text-align: center;
+	}
+
+	.form-section {
+		border: 1px solid #e0e6ed;
+		border-radius: 14px;
+		padding: 24px;
+		margin-top: 24px;
+	}
+
+	.form-title {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin-bottom: 16px;
+	}
+
+	.form-group {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 16px;
+	}
+
+	.footer-buttons {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-top: 24px;
+	}
+
+	.reduzir-fonte {
+		font-size: clamp(0.5rem, 16px, 16px);
+		display: flex;
+		align-items: center;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.mud-input-outlined-border{
+		border-bottom-left-radius: 10px;
+	}
+
+	.borda-inferior-radius {
+		border-bottom-left-radius: 8px;
+		border-bottom-right-radius: 8px;
+	}
+
+</style>
+
+<MudThemeProvider Theme="_customTheme"></MudThemeProvider>
+
+<MudContainer Class="mb-6 mt-0">
+	<div class="card-container">
+		<MudGrid>
+			<MudItem xs="12" lg="12" md="12" Class="d-flex justify-space-between">
+				<MudText Typo="Typo.h5" Style="color: #64748B;">Relatório Amortização Caixa</MudText>
+				<MudButton Variant="Variant.Outlined"
+						   Color="Color.Primary"
+						   Size="Size.Small"
+						   Style="border-radius:24px;"
+						   OnClick="VoltarPagina"
+						   Class="mr-1"
+						   StartIcon="@Icons.Material.Filled.ArrowBack">
+					Voltar
+				</MudButton>
+			</MudItem>
+			@if ((_movimentacaoControleGeral.QtdTotalApontamentos == 0 || _movimentacaoControleGeral.QtdTotalApontamentos == null) && _paginaCarregada)
+			{
+				<MudItem xs="12" lg="12" md="12">
+					<MudAlert Severity="Severity.Info">
+						Não existem registros para a data informada.  
+					</MudAlert>
+				</MudItem>
+			}
+			
+			@* <MudItem lg="12" md="12">
+			<MudStack Row="true" Justify="Justify.Center" AlignItems="AlignItems.Center">
+			<MudText Typo="Typo.h4" Style="color: #64748B;">Histórico Amortização Caixa</MudText>
+			</MudStack>
+			</MudItem> *@
+			@* 	<MudItem xs="12" lg="12" md="12">
+			<div class="header-content">
+			<MudText Typo="Typo.h4" Style="color: #64748B;">Amortização Caixa</MudText>
+			<MudText Typo="Typo.body1" Style="color: #64748B;">Relatórios</MudText>
+			</div>
+			</MudItem> *@
+			@*### 	Cards ###*@
+			<MudItem xs="12" sm="9" lg="9" md="9" Class="mt-n3">
+				<MudGrid>
+					<MudItem xs="12" lg="4" md="4">
+						<AmortizacaoCaixaCardComponent OnClick="async () => await MostrarTabelaMovimentacao(TipoDeMovimentacaoAmortizacaoCaixa.TODAS)"
+													   Titulo="Total Contratos"
+													   IconCard="total"
+													   QuantidadeContrato="@_movimentacaoControleGeral.QtdTotalApontamentos"
+													   ValorTotal="@_movimentacaoControleGeral.VlTotalApontamentos">
+						</AmortizacaoCaixaCardComponent>
+					</MudItem>
+					<MudItem xs="12" lg="4" md="4">
+						<AmortizacaoCaixaCardComponent OnClick="async () => await MostrarTabelaMovimentacao(TipoDeMovimentacaoAmortizacaoCaixa.AE_CAIXA)"
+													   Titulo="AE-CAIXA"
+													   IconCard=""
+													   QuantidadeContrato="@_movimentacaoControleGeral.QtdAmortizacoes"
+													   ValorTotal="@_movimentacaoControleGeral.VlAmortizacoes">
+						</AmortizacaoCaixaCardComponent>
+					</MudItem>
+					<MudItem xs="12" lg="4" md="4">
+						<AmortizacaoCaixaCardComponent OnClick="async () => await  MostrarTabelaMovimentacao(TipoDeMovimentacaoAmortizacaoCaixa.DEV_CAIXA)"
+													   Titulo="DEV-CAIXA"
+													   IconCard=""
+													   QuantidadeContrato="@_movimentacaoControleGeral.QtdDevolucoes"
+													   ValorTotal="@_movimentacaoControleGeral.VlDevolucoes">
+						</AmortizacaoCaixaCardComponent>
+					</MudItem>
+					<MudItem xs="12" lg="4" md="4">
+						<AmortizacaoCaixaCardComponent OnClick="async () => await MostrarTabelaMovimentacao(TipoDeMovimentacaoAmortizacaoCaixa.CCI)"
+													   Titulo="CCI"
+													   IconCard="cci"
+													   QuantidadeContrato="@_movimentacaoControleGeral.QtdCci"
+													   ValorTotal="@_movimentacaoControleGeral.VlCci">
+						</AmortizacaoCaixaCardComponent>
+					</MudItem>
+					<MudItem xs="12" lg="4" md="4">
+						<AmortizacaoCaixaCardComponent OnClick="async () =>await MostrarTabelaMovimentacao(TipoDeMovimentacaoAmortizacaoCaixa.DRP)"
+													   Titulo="DRP"
+													   IconCard="drp"
+													   QuantidadeContrato="@_movimentacaoControleGeral.QtdDrp"
+													   ValorTotal="@_movimentacaoControleGeral.VlDrp">
+						</AmortizacaoCaixaCardComponent>
+					</MudItem>				
+				</MudGrid>
+			</MudItem>
+			<MudItem lg="3" md="3" Class="mt-n3">
+				<MudPaper Class="pa-4" Elevation="0" Style="border: 1px solid #e0e6ed; border-radius:10px;">
+					<MudStack Row="false" Justify="Justify.FlexEnd">
+						<MudButton Variant="Variant.Filled"
+								   Color="Color.Secondary"
+								   Style="border-radius:24px;"
+								   OnClick="@(async () => await ControleGeralCaixaHandle())"
+								   StartIcon="@Icons.Material.Filled.Search">						
+								Consultar												
+						</MudButton>				
+						<MudButton Variant="Variant.Filled"
+								   OnClick="BaixarArquivos"
+								   Color="Color.Secondary"								 
+								   Style="border-radius:24px;"
+								   StartIcon="@Icons.Material.Filled.Download">
+							@if (_baixando)
+							{
+								<MudText Class="mr-2">Aguarde</MudText>
+								<MudProgressCircular Indeterminate Size="Size.Small" Color="Color.Secondary" />
+							}
+							else
+							{
+								<MudText>Baixar Arquivos</MudText>
+							}
+						</MudButton>							
+						<MudTextField Class="mt-2"
+									  T="DateTime?" @bind-Value="@_dataConsultada"
+									  Format="yyyy-MM-dd" Label="Selecionar Data"
+									  InputType="InputType.Date"
+									  Variant="Variant.Outlined"
+									  Margin="Margin.Dense"
+									  AdornmentColor="Color.Primary" />				
+					</MudStack>
+
+
+				</MudPaper>
+			</MudItem>
+		</MudGrid>
+					@*### 	Tabelas ###*@
+		<MudItem xs="12" lg="12" md="12" Class="@(_mostrarTabelaMovimentacoes ? "d-block" : "d-none")">
+			<TabelaMovimentacaoGeral Items="_movimentacaoesGeraisData"
+									 Loading="_processandoMovimentacao" />
+		</MudItem>
+		<MudItem xs="12" lg="12" md="12" Class="@(_mostrarTabelaCCI ? "d-block" : "d-none")">
+			<TabelaMovimentacaoCCI Items="_movimentacaoesCCI"
+									 Loading="_processandoMovimentacao" />
+		</MudItem>
+		<MudItem xs="12" lg="12" md="12" Class="@(_mostrarTabelaDrp ? "d-block" : "d-none")">
+			<TabelaMovimentacaoDRP Items="@_movimentacoesDrpData"
+								   Loading="_tabelaIsLoading"
+								   RowsPerPageString="Itens por página"
+								   InfoFormat="{first}–{last} de {total}" />
+		</MudItem>
+	</div>
+</MudContainer>
+
+
+@code {
+	#region Configurações e Status
+	private MudTheme _customTheme = new()
+		{
+		PaletteLight = new PaletteLight()
+			{
+				Primary = "#005ca9",
+				// Secondary = "#D87B00",
+				Secondary = "#f39200",
+				Tertiary = "#FF0000",
+				Background = "#EDF2FF"
+			}
+		};
+	private bool _paginaCarregada = false;
+	private bool _tabelaIsLoading;
+	private DateTime? _dataConsultada = DateTime.UtcNow;
+	private string rowsPerPageString = "Linhas por página:";
+	private string infoFormat = "{first_item}-{last_item} de {all_items}";
+	#endregion
+
+	#region ENUM e Dados de Tabelas
+	public enum TipoDeMovimentacao
+	{
+		DRP, AE_CAIXA, DEV_CAIXA, TODAS, CCI, ANALISAR, OUTRO
+	}
+
+	// Propriedades para Cards e Tabelas
+	private List<MovimentacaoGeral> _movimentacaoesGeraisData = [];
+	private List<MovimentacaoDrp> _movimentacoesDrpData = [];
+	private List<MovimentacaoCCI> _movimentacaoesCCI = [];
+	private List<MovimentacaoCCI> _movimentacaoesCCIDataCache = [];
+	private List<ControleGeralAmortizacaoCaixa> _movimentacaoesAnalisarData = [];
+	private List<MovimentacaoDrp> _movimentacaoesDrpDataCache = [];
+	private List<ControleGeralAmortizacaoCaixa> _movimentacaoesAnalisarDataCache = [];
+	private ControleGeral _movimentacaoControleGeral = new();
+	private ControleGeralAmortizacaoCaixa _movimentacaoControleGeralAmortizacaoCaixa = new();
+	private Dictionary<TipoDeMovimentacaoAmortizacaoCaixa, List<MovimentacaoGeral>> _movimentacoesGeraisDataCache = [];
+
+	// CONTROLE DE ESTADO DE EXIBIÇÃO
+	private TipoDeMovimentacaoAmortizacaoCaixa _controleTabela = TipoDeMovimentacaoAmortizacaoCaixa.OUTRO;
+	private bool _mostrarTabelaMovimentacoes = false;
+	private bool _mostrarTabelaDrp = false;
+	private bool _mostrarTabelaTratativas = false;
+
+
+	#endregion
+
+	private const string _powerBiUrl = "https://novobi.caixa/ReportsPBI/powerbi/Relat%C3%B3rios%20P%C3%BAblicos/5818%20%E2%80%93%20VIMAR/Fundo%20de%20Garantia/Todos/CEFGA/INFORMATIVO/Ativo%20do%20FGTS%20-%20Grandes%20N%C3%BAmeros?rs:embed=true";
+
+	protected override async Task OnInitializedAsync()
+	{
+		await ControleGeralAmortizacaoCaixaHandle();
+		_dataConsultada = _movimentacaoControleGeralAmortizacaoCaixa.DtReferencia;	
+		await ControleGeralCaixaHandle();
+		_paginaCarregada = true;
+		StateHasChanged();
+	}
+	
+	protected override void OnAfterRender(bool firstRender)
+	{
+		_paginaCarregada = true;	
+		base.OnAfterRender(firstRender);
+	}
+	private async Task ConsultarRelatorio()
+	{
+		await ControleGeralAmortizacaoCaixaHandle();
+	}
+	private async Task ControleGeralAmortizacaoCaixaHandle()
+	{
+		var response = await CobrancaService.ControleGeralAmortizacaoCaixa();
+		var controleGeralAmortizacaoCaixa = await HttpResponseHandler.ResponseHandler<ControleGeralAmortizacaoCaixa>(response, Snackbar);
+		if (controleGeralAmortizacaoCaixa != null)
+		{
+			_movimentacaoControleGeralAmortizacaoCaixa = controleGeralAmortizacaoCaixa;
+		}
+		else
+		{
+			_movimentacaoControleGeralAmortizacaoCaixa = new();
+		}
+	}
+
+	private bool _baixando = false;
+
+	private async Task BaixarArquivos()
+	{
+		var response =await CobrancaService.DownloadArquivosAmortizacaoCaixa(_dataConsultada.Value.ToString("yyyy-MM-ddTHH:mm:ss"));
+		if (response)
+		{
+			Snackbar.Add("Download iniciado.", Severity.Info);
+		}
+		else
+		{
+			Snackbar.Add("Não existem arquivos para a data informada.", Severity.Error);
+		}
+	}
+	private bool _mostrarTabelaCCI = false;
+	private bool _processandoMovimentacao = false;
+	#region Métodos Gerenciar Movimentações (Service e Tabelas)
+
+	/// <summary>
+	/// Fluxo de controle UI/Service: Gerencia a exibição/alternância das tabelas a serem exibidas ao clicar no cards.
+	///
+	/// <param name="tipoMovimentacao">O tipo de movimentação/tabela a ser exibida.</param>
+	public async Task MostrarTabelaMovimentacao(TipoDeMovimentacaoAmortizacaoCaixa tipoMovimentacao)
+	{
+		if (_controleTabela == tipoMovimentacao)
+		{
+			_mostrarTabelaMovimentacoes = false;
+			_mostrarTabelaDrp = false;
+			_mostrarTabelaTratativas = false;
+			_mostrarTabelaCCI = false;
+			_controleTabela = TipoDeMovimentacaoAmortizacaoCaixa.OUTRO;
+			StateHasChanged();
+			return;
+		}
+
+		//Armazena qual tabela está aberta.
+		_controleTabela = tipoMovimentacao;
+		_processandoMovimentacao = true;
+
+		_mostrarTabelaMovimentacoes = false;
+		_mostrarTabelaDrp = false;
+		_mostrarTabelaTratativas = false;
+		_mostrarTabelaCCI = false;
+
+		StateHasChanged();
+
+		switch (tipoMovimentacao)
+		{
+			case TipoDeMovimentacaoAmortizacaoCaixa.DRP:
+				await CarregarMovimentacaoDRP();
+				_mostrarTabelaDrp = true;
+				break;		
+			case TipoDeMovimentacaoAmortizacaoCaixa.CCI:
+				await CarregarMovimentacaoCCI();
+				_mostrarTabelaCCI = true;
+				break;
+			default:
+				await CarregarMovimentacaoGeral(tipoMovimentacao);
+				_mostrarTabelaMovimentacoes = true;
+				break;
+		}
+		_processandoMovimentacao = false;
+		StateHasChanged();
+	}
+	/// <summary>
+	/// Controle dos dados e mapeamento para cache. Caso a tabela já tenha sido carregada inicialmente,
+	///  evita nova chamada ao endpoint ao  buscar os registros no cache.//.
+	/// </summary>
+	/// <param name="tipoMovimentacao">O tipo de movimentação a ser carregado.</param>
+	private async Task CarregarMovimentacaoGeral(TipoDeMovimentacaoAmortizacaoCaixa tipoMovimentacao)
+	{
+		_tabelaIsLoading = true;
+		if (_movimentacoesGeraisDataCache.TryGetValue(tipoMovimentacao, out var cachedList))
+		{
+			_movimentacaoesGeraisData = cachedList;
+			_tabelaIsLoading = false;
+			return;
+		}
+
+		var response = tipoMovimentacao switch
+		{
+			TipoDeMovimentacaoAmortizacaoCaixa.TODAS => await CobrancaService.ConsultarTodasMovimentacoesDoControle(_movimentacaoControleGeral.CoControle),
+			TipoDeMovimentacaoAmortizacaoCaixa.AE_CAIXA => await CobrancaService.ConsultarMovimentacoesDeAmortizacao(_movimentacaoControleGeral.CoControle),
+			TipoDeMovimentacaoAmortizacaoCaixa.DEV_CAIXA => await CobrancaService.ConsultarMovimentacoesDeDevolucao(_movimentacaoControleGeral.CoControle),
+			TipoDeMovimentacaoAmortizacaoCaixa.CCI => await CobrancaService.ConsultarMovimentacoesDeCci(_movimentacaoControleGeral.CoControle),
+			_ => null
+		};
+
+		var data = await HttpResponseHandler.ResponseHandler<List<MovimentacaoGeral>>(response!, Snackbar);
+
+		if (data != null)
+		{
+			_movimentacoesGeraisDataCache[tipoMovimentacao] = data;
+			_movimentacaoesGeraisData = data;
+		}
+		else
+		{
+			_movimentacaoesGeraisData = new List<MovimentacaoGeral>();
+		}
+		_tabelaIsLoading = false;
+	}
+	private async Task CarregarMovimentacaoCCI()
+	{
+		_tabelaIsLoading = true;
+		if (_movimentacaoesCCIDataCache.Count > 0)
+		{
+			_movimentacaoesCCI = _movimentacaoesCCIDataCache;
+			_tabelaIsLoading = false;
+			return;
+		}
+
+		var response = await CobrancaService.ConsultarMovimentacoesDeCci(_movimentacaoControleGeral.CoControle);
+		var data = await HttpResponseHandler.ResponseHandler<List<MovimentacaoCCI>>(response, Snackbar);
+
+		if (data != null)
+		{
+
+			_movimentacaoesCCIDataCache = new List<MovimentacaoCCI>(data);
+			_movimentacaoesCCI = data;
+		}
+		else
+		{
+
+			_movimentacaoesCCI = new List<MovimentacaoCCI>();
+		}
+		_tabelaIsLoading = false;
+	}
+	//Metodos que invocam o Service da Amortização para carregar dados nas tabelas ao clicar nos cards	
+	private async Task CarregarMovimentacaoDRP()
+	{
+		_tabelaIsLoading = true;
+		if (_movimentacoesDrpData.Count > 0)
+		{
+			_movimentacoesDrpData = _movimentacaoesDrpDataCache;
+			_tabelaIsLoading = false;
+			return;
+		}
+
+		var response = await CobrancaService.ConsultaDrpsDoControle(_movimentacaoControleGeral.CoControle);
+		var data = await HttpResponseHandler.ResponseHandler<List<MovimentacaoDrp>>(response, Snackbar);
+
+		if (data != null)
+		{
+			_movimentacaoesDrpDataCache = data;
+			_movimentacoesDrpData = data;
+		}
+		else
+		{
+			_movimentacoesDrpData = new List<MovimentacaoDrp>();
+		}
+		_tabelaIsLoading = false;
+	}
+
+	private async Task ControleGeralCaixaHandle()
+	{		
+		var response = await CobrancaService.ConsultarControleGeral(_dataConsultada.Value.ToString("yyyy-MM-ddTHH:mm:ss"));
+		var controleGeral = await HttpResponseHandler.ResponseHandler<ControleGeral>(response, Snackbar);
+		if (controleGeral != null)
+		{
+			_movimentacaoControleGeral = controleGeral;
+		}
+		else
+		{
+			_movimentacaoControleGeral = new();
+		}
+	}
+	#endregion
+	private async Task VoltarPagina()
+	{
+		await JsRuntime.InvokeVoidAsync("window.history.back");
+	}
+
+}

@@ -1,0 +1,263 @@
+﻿@using MudBlazor
+@using System.Collections.Generic
+@using System.Linq
+@using System.Threading.Tasks
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject CobrancaService CobrancaService
+<style>
+	.borda-inferior-radius {
+		border-bottom-left-radius: 8px;
+		border-bottom-right-radius: 8px;
+	}
+
+	.mud-table .mud-table-toolbar {
+		border-top-left-radius: 8px;
+		border-top-right-radius: 8px;
+	}
+	.text-center {
+		text-align: center !important;
+	}
+</style>
+
+<MudTable T="MovimentacaoCCI" Virtualize="false" Class="mb-2 pa-4"
+		  Filter="new Func<MovimentacaoCCI,bool>(FilterFunc1)" @bind-SelectedItem="selectedItem1"
+		  Items="@Items" Context="item"
+		  Elevation="25"
+		  Style="border-radius: 24px;"
+		  AllowUnsorted="false"
+		  Square="true"
+		  Dense="true"
+		  Hover="true"
+		  Loading="@Loading"
+		  Striped="true">
+	@* <-- Liga a tabela à função de leitura de estado *@
+	<ToolBarContent >
+		<MudItem Class="d-flex  justify-end flex-grow-1 ">
+			<MudSpacer />
+			<MudStack Row="true" Justify="Justify.FlexEnd" Class="d-flex  justify-end pa-1" Style="background-color:#005ca9; ">
+				<MudTextField @bind-Value="FiltroBuscarPalavra" Placeholder="Buscar" Style="width:200px" Class="mt-0 flex-none"></MudTextField>
+				<MudButton Class="btn-caixa-small" Style="color:white" OnClick="ClearFilter">Limpar filtro</MudButton>
+			</MudStack>
+		</MudItem>
+	</ToolBarContent>
+	<LoadingContent>
+		<MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+	</LoadingContent>
+
+	<ColGroup>
+		<col style="width: 10%;" />
+		<col style="width: 20%;" />
+		<col />
+		<col />
+		<col />
+	</ColGroup>
+
+	<HeaderContent>
+		<MudTh Class="text-center"><b>Código Apontamento</b></MudTh>
+		<MudTh Class="text-center"><b>Contrato Origem</b></MudTh>
+		<MudTh Class="text-center"><b>Tipo Movimento</b></MudTh>
+		<MudTh Class="text-center"><b>Valor</b></MudTh>
+		<MudTh Class="text-center"><b></b></MudTh>
+	</HeaderContent>
+
+	<RowTemplate>
+		<MudTd Class="text-center">@item.CoApontamento</MudTd>
+		<MudTd Class="text-center">@item.NuContratoOrigem - @item.NuContratoOrigemDv</MudTd>
+		<MudTd Class="text-center">@item.TipoMovimentacao</MudTd>
+		<MudTd Class="text-center">R$ @item.VrTotal?.ToString("N2")</MudTd>
+		<MudTd Class="text-center">
+			<MudTooltip Delay="400" Text="Exibir Detalhes">
+				<MudIconButton Icon="@Icons.Material.Filled.Search" Color="Color.Primary"
+							   OnClick="@(() => ToggleExpand(item))" />
+			</MudTooltip>
+			<MudTooltip Delay="400" Text="Consultar Contrato">
+				<MudIconButton Icon="@Icons.Material.Filled.FileOpen" Color="Color.Primary"
+							   OnClick="@(() => ExibirDetalhesContrato(item))" />
+			</MudTooltip>
+
+		</MudTd>
+	</RowTemplate>
+
+	<ChildRowContent>
+		@if (item.ExpandirObservacao)
+		{
+			<MudTd ColSpan="5" Class="pa-0">
+				<MudSimpleTable Dense Elevation="0" Style="background-color:#f5f5f5;" Bordered=true>
+					<colgroup>
+						<col style="width: 15%;" />
+						<col />
+						<col style="width: 30%;" />
+					</colgroup>
+					<thead>
+						<tr>
+							<th class="text-center">Nº Contrato</th>
+							<th class="text-center">Log Carga</th>
+							<th class="text-center">Log Usuário</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td class="text-center">
+								<MudField Typo="Typo.body2" Variant="Variant.Text" Underline="false">
+									@(string.IsNullOrEmpty(item.NuContratoOrigem)
+																? string.Empty
+																: $"{item.NuContrato} - {item.NuContratoDv}")
+
+								</MudField>
+							</td>
+							<td class="text-center">
+								<MudField Typo="Typo.body2" Variant="Variant.Text" Underline="false">
+									@item.LogApontamentos
+								</MudField>
+							</td>
+							<td class="text-center">
+								<MudField Typo="Typo.body2" Variant="Variant.Text" Underline="false">
+									@item.LogAcaoUsuario
+								</MudField>
+							</td>
+						</tr>
+					</tbody>
+				</MudSimpleTable>
+			</MudTd>
+		}
+	</ChildRowContent>
+
+	<PagerContent>
+		@if (Items?.Count() > 10)
+		{
+			<MudTablePager Class="pager-buttons borda-inferior-radius"
+						   RowsPerPageString="@RowsPerPageString"
+						   InfoFormat="@InfoFormat" />
+		}
+	</PagerContent>
+
+	<NoRecordsContent>
+		<MudText Color="Color.Primary" Typo="Typo.h6">
+			Nenhum registro encontrado
+		</MudText>
+	</NoRecordsContent>
+</MudTable>
+
+@code {
+	[Parameter] public IEnumerable<MovimentacaoCCI> Items { get; set; }
+	[Parameter] public IEnumerable<MovimentacaoGeral> MovimentaoGeral { get; set; }
+	private IEnumerable<MovimentacaoGeral> _movimentaoGeralData { get; set; }
+	private IEnumerable<MovimentacaoCCI> ItemsNaoFiltrados { get; set; }
+	[Parameter] public bool Loading { get; set; }
+	[Parameter] public int CoControle { get; set; }
+	private int _ultimoCoControle { get; set; }
+	[Parameter] public string RowsPerPageString { get; set; } = "Itens por página";
+	[Parameter] public string InfoFormat { get; set; } = "{first}–{last} de {total}";
+	private bool IsRowExpanded(MovimentacaoGeral item) => item.ExpandirObservacao;
+
+
+	protected override Task OnParametersSetAsync()
+	{
+		if (_ultimoCoControle != CoControle)
+		{
+			_ultimoCoControle = CoControle;
+		}
+
+		ItemsNaoFiltrados = Items;
+		return base.OnParametersSetAsync();
+	}
+	void ToggleExpand(MovimentacaoCCI item)
+	{
+
+		item.ExpandirObservacao = !item.ExpandirObservacao;
+		StateHasChanged();
+	}
+
+	private async Task ExibirDetalhesContrato(MovimentacaoCCI contexto)
+	{
+		// Primeiro tenta encontrar na lista atual
+		var resultado = MovimentaoGeral.FirstOrDefault(apontamento => apontamento.CoApontamento == contexto.CoApontamento);
+
+		if (resultado == null)
+		{
+			// Consulta no endpoint
+			var response = await CobrancaService.ConsultarTodasMovimentacoesDoControle(_ultimoCoControle);
+			var data = await HttpResponseHandler.ResponseHandler<List<MovimentacaoGeral>>(response!, Snackbar);
+
+			if (data != null && data.Any())
+			{
+				_movimentaoGeralData = data;
+
+				// Tenta novamente encontrar o objeto na nova lista
+				resultado = _movimentaoGeralData.FirstOrDefault(apontamento => apontamento.CoApontamento == contexto.CoApontamento);
+			}
+
+			if (resultado == null)
+			{
+				Snackbar.Add("Contrato não encontrado.", Severity.Warning);
+				return;
+			}
+		}
+
+		// Se chegou aqui, temos um resultado válido
+		var parameters = new DialogParameters<DialogConfiguracao>
+	{
+		{ nameof(DetalhesContratoComponente.ContratoMovimentacaoGeral), resultado }
+	};
+
+		var options = new DialogOptions
+			{
+				CloseOnEscapeKey = true,
+				CloseButton = true
+			};
+
+		await DialogService.ShowAsync<DetalhesContratoComponente>("Inserir Observação", parameters, options);
+	}
+
+
+
+	private string ConverterData(DateTime? data)
+	{
+		if (data.HasValue)
+		{
+			return data.Value.ToString("dd/MM/yy");
+		}
+		return string.Empty;
+	}
+	private string ConverterValor(decimal? valor)
+	{
+
+		return "R$ " + (valor.HasValue
+				? valor.Value.ToString("N2", new System.Globalization.CultureInfo("pt-BR"))
+				: "0,00");
+
+	}
+
+	private string FiltroBuscarPalavra = "";
+	private MovimentacaoCCI selectedItem1;
+	private bool FilterFunc1(MovimentacaoCCI element) => FilterFunc(element, FiltroBuscarPalavra);
+
+	private bool FilterFunc(MovimentacaoCCI element, string searchString)
+	{
+		if (string.IsNullOrWhiteSpace(searchString))
+			return true;
+		if (element.NuContrato!.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+			return true;
+		if (element.LogApontamentos!.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+			return true;
+		if (element.NuContratoOrigem!.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+			return true;
+		if (element.TipoMovimentacao!.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+			return true;
+		if (element.VrTotal.ToString()!.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+			return true;
+
+		if ($"{element.CoApontamento}".Contains(searchString))
+			return true;
+		return false;
+	}
+
+	private void ClearFilter()
+	{
+		FiltroBuscarPalavra = "";
+		Items = ItemsNaoFiltrados;
+	}
+}
+
+

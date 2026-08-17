@@ -1,0 +1,473 @@
+﻿@using MudBlazor
+@using System.Collections.Generic
+@using System.Linq
+@using System.Threading.Tasks
+
+<style>
+    /* ===== Container do card (visual da imagem) ===== */
+    .drp-card {
+        background-color: #ffffff;
+        border: 1px solid #e6eaf0;
+        border-radius: 12px;
+        box-shadow: 0 1px 2px rgba(15, 23, 41, 0.04);
+        overflow: hidden;
+    }
+
+    /* ===== Header do card: título + filtro alinhados ===== */
+    .drp-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 20px 24px 16px 24px;
+        border-bottom: 1px solid #eef1f6;
+        background-color: #fafbfc;
+    }
+
+    .drp-card-title-wrap {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .drp-card-title-icon {
+        width: 28px;
+        height: 28px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #005ca9;
+    }
+
+    .drp-card-title {
+        font-size: 1.05rem;
+        font-weight: 600;
+        color: #0f1729;
+        line-height: 1.2;
+        margin: 0;
+    }
+
+    .drp-card-subtitle {
+        font-size: 0.8125rem;
+        color: #6b7280;
+        margin-top: 2px;
+        line-height: 1.4;
+    }
+
+    /* ===== Badge "X na lista" estilo da imagem ===== */
+    .drp-count-badge {
+        background-color: #e6f0fa;
+        color: #005ca9;
+        font-family: 'Courier New', Consolas, monospace;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        padding: 4px 12px;
+        border-radius: 999px;
+        white-space: nowrap;
+    }
+
+    /* ===== Barra de filtro (campo + botão) ===== */
+    .drp-filter-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 4px 4px 12px;
+        background-color: #ffffff;
+        border: 1px solid #d8dee8;
+        border-radius: 10px;
+        transition: border-color 150ms ease, box-shadow 150ms ease;
+    }
+
+        .drp-filter-bar:focus-within {
+            border-color: #005ca9;
+            box-shadow: 0 0 0 3px rgba(0, 92, 169, 0.12);
+        }
+
+    .drp-filter-bar .mud-input-control {
+        margin-top: 0 !important;
+    }
+
+    .drp-filter-bar .mud-input.mud-input-underline:before,
+    .drp-filter-bar .mud-input.mud-input-underline:after {
+        display: none !important;
+    }
+
+    .drp-clear-btn {
+        background-color: #005ca9 !important;
+        color: #ffffff !important;
+        text-transform: none !important;
+        font-weight: 500 !important;
+        font-size: 0.8125rem !important;
+        padding: 6px 14px !important;
+        border-radius: 8px !important;
+        min-width: auto !important;
+        height: 32px !important;
+    }
+
+        .drp-clear-btn:hover {
+            background-color: #004a8a !important;
+        }
+
+    /* ===== Tabela ===== */
+    .drp-table .mud-table-container {
+        border-radius: 0;
+    }
+
+    .drp-table .mud-table-head th {
+        background-color: #f5f7fa !important;
+        color: #475467 !important;
+        font-size: 0.75rem !important;
+        font-weight: 600 !important;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        border-bottom: 1px solid #e6eaf0 !important;
+        padding: 12px 16px !important;
+    }
+
+    .drp-table .mud-table-body td {
+        font-size: 0.875rem !important;
+        color: #1f2937 !important;
+        padding: 12px 16px !important;
+        border-bottom: 1px solid #f1f3f7 !important;
+    }
+
+    .drp-table .mud-table-body tr:hover td {
+        background-color: #f8fafd !important;
+    }
+
+    /* zebra mais sutil que o default */
+    .drp-table .mud-table-body tr:nth-of-type(odd) td {
+        background-color: #fcfcfd;
+    }
+
+    .drp-table .mud-table-body tr:nth-of-type(odd):hover td {
+        background-color: #f8fafd !important;
+    }
+
+    .text-center {
+        text-align: center !important;
+    }
+
+    .drp-mono {
+        font-family: 'Courier New', Consolas, monospace;
+        color: #0f1729;
+        font-weight: 500;
+    }
+
+    .drp-valor {
+        font-family: 'Courier New', Consolas, monospace;
+        font-weight: 600;
+        color: #0f1729;
+    }
+
+    /* ===== Botão de expandir (lupa) ===== */
+    .drp-expand-btn {
+        background-color: #f0f4fa !important;
+        color: #005ca9 !important;
+        width: 32px !important;
+        height: 32px !important;
+        border-radius: 8px !important;
+        transition: all 150ms ease !important;
+    }
+
+        .drp-expand-btn:hover {
+            background-color: #005ca9 !important;
+            color: #ffffff !important;
+        }
+
+        .drp-expand-btn.is-active {
+            background-color: #005ca9 !important;
+            color: #ffffff !important;
+        }
+
+    /* ===== Linha expandida (detalhe) ===== */
+    .drp-detail-row td {
+        padding: 0 !important;
+        background-color: #f8fafd !important;
+    }
+
+    .drp-detail-wrap {
+        padding: 16px 24px;
+        background: linear-gradient(180deg, #f8fafd 0%, #f5f7fa 100%);
+        border-top: 1px solid #e6eaf0;
+        border-bottom: 1px solid #e6eaf0;
+    }
+
+    .drp-detail-grid {
+        display: grid;
+        grid-template-columns: 240px 1fr;
+        gap: 24px;
+        align-items: start;
+    }
+
+    .drp-detail-label {
+        font-size: 0.6875rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #6b7280;
+        margin-bottom: 6px;
+    }
+
+    .drp-detail-value {
+        font-size: 0.9375rem;
+        color: #0f1729;
+        background-color: #ffffff;
+        border: 1px solid #e6eaf0;
+        border-radius: 8px;
+        padding: 10px 14px;
+        min-height: 40px;
+        display: flex;
+        align-items: center;
+    }
+
+    .drp-detail-value.is-mono {
+        font-family: 'Courier New', Consolas, monospace;
+        font-weight: 600;
+    }
+
+    .drp-detail-value.is-log {
+        font-family: 'Courier New', Consolas, monospace;
+        font-size: 0.8125rem;
+        white-space: pre-wrap;
+        word-break: break-word;
+        color: #475467;
+        align-items: flex-start;
+    }
+
+    /* ===== Paginação ===== */
+    .drp-table .mud-table-pagination {
+        border-top: 1px solid #eef1f6;
+        background-color: #fafbfc;
+        padding: 8px 16px;
+    }
+
+    /* ===== Estado vazio ===== */
+    .drp-no-records {
+        padding: 48px 24px;
+        text-align: center;
+    }
+
+    .drp-no-records-icon {
+        color: #cbd5e1;
+        margin-bottom: 12px;
+    }
+
+    .drp-no-records-text {
+        color: #6b7280;
+        font-size: 0.9375rem;
+    }
+</style>
+
+<div class="drp-card">
+
+    @* ============ HEADER DO CARD ============ *@
+    <div class="drp-card-header">
+        <div>
+            <div class="drp-card-title-wrap">
+                <span class="drp-card-title-icon">
+                    <MudIcon Icon="@Icons.Material.Filled.ListAlt" Size="Size.Medium" />
+                </span>
+                <h3 class="drp-card-title">Movimentações DRP</h3>
+            @*     @if (Items != null)
+                {
+                    <span class="drp-count-badge">@Items.Count() na lista</span>
+                } *@
+            </div>
+         
+        </div>
+
+        <div class="drp-filter-bar">
+            <MudIcon Icon="@Icons.Material.Filled.Search" Size="Size.Small" Style="color:#6b7280;" />
+            <MudTextField @bind-Value="FiltroBuscarPalavra"
+                          Placeholder="Buscar"
+                          Variant="Variant.Text"
+                          DisableUnderLine="true"
+                          Style="width:220px"
+                          Class="mt-0 flex-none"
+                          Immediate="true" />
+            <MudButton Class="drp-clear-btn"
+                       DisableElevation="true"
+                       OnClick="ClearFilter">
+                Limpar
+            </MudButton>
+        </div>
+    </div>
+
+    @* ============ TABELA ============ *@
+    <MudTable T="MovimentacaoDrp"
+              Class="drp-table"
+              Virtualize="false"
+              Items="@Items" Context="item"
+              Filter="new Func<MovimentacaoDrp,bool>(FilterFunc1)"
+              @bind-SelectedItem="selectedItem1"
+              Elevation="0"
+              AllowUnsorted="false"
+              Square="true"
+              Hover="true"
+              Dense="true"
+              Loading="@Loading"
+              Striped="false">
+
+        <LoadingContent>
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+        </LoadingContent>
+
+        <ColGroup>
+            <col style="width: 18%;" />
+            <col style="width: 22%;" />
+            <col style="width: 22%;" />
+            <col style="width: 22%;" />
+            <col style="width: 16%;" />
+        </ColGroup>
+
+        <HeaderContent>
+            <MudTh Class="text-center">GIFUG</MudTh>
+            <MudTh Class="text-center">Nº DRP</MudTh>
+            <MudTh Class="text-center">Senha</MudTh>
+            <MudTh Class="text-center">Qtd Movimentações</MudTh>
+            <MudTh Class="text-center">Detalhes</MudTh>
+        </HeaderContent>
+
+        <RowTemplate>
+            <MudTd Class="text-center">
+                <span class="drp-mono">@item.Gifug - @item.GifugDv</span>
+            </MudTd>
+            <MudTd Class="text-center">
+                <span class="drp-mono">@item.NuDrp</span>
+            </MudTd>
+            <MudTd Class="text-center">
+                <span class="drp-mono">@item.Senha</span>
+            </MudTd>
+            <MudTd Class="text-center">
+                <span class="drp-valor">@item.QtdMovimentacoes</span>
+            </MudTd>
+            <MudTd Class="text-center">
+                <MudIconButton Icon="@Icons.Material.Filled.Search"
+                               Size="Size.Small"
+                               Class="@($"drp-expand-btn {(item.ExpandirObservacao ? "is-active" : "")}")"
+                               OnClick="@(() => ToggleExpand(item))" />
+            </MudTd>
+        </RowTemplate>
+
+        <ChildRowContent>
+            @if (item.ExpandirObservacao)
+            {
+                <MudTr Class="drp-detail-row">
+                    <MudTd ColSpan="5">
+                        <div class="drp-detail-wrap">
+                            <div class="drp-detail-grid">
+                                <div>
+                                    <div class="drp-detail-label">Valor</div>
+                                    <div class="drp-detail-value is-mono">
+                                        @ConverterValor(item.Valor)
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="drp-detail-label">Log de Carga</div>
+                                    <div class="drp-detail-value is-log">
+                                        @(string.IsNullOrWhiteSpace(item.DeObservacoes) ? "—" : item.DeObservacoes)
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </MudTd>
+                </MudTr>
+            }
+        </ChildRowContent>
+
+        <PagerContent>
+            @if (Items?.Count() > 10)
+            {
+                <MudTablePager Class="pager-buttons"
+                               RowsPerPageString="@RowsPerPageString"
+                               InfoFormat="@InfoFormat" />
+            }
+        </PagerContent>
+
+        <NoRecordsContent>
+            <div class="drp-no-records">
+                <MudIcon Icon="@Icons.Material.Filled.SearchOff"
+                         Size="Size.Large"
+                         Class="drp-no-records-icon" />
+                <div class="drp-no-records-text">
+                    Nenhum registro encontrado
+                </div>
+            </div>
+        </NoRecordsContent>
+    </MudTable>
+</div>
+
+@code {
+    [Parameter] public IEnumerable<MovimentacaoDrp> Items { get; set; }
+    [Parameter] public bool Loading { get; set; }
+    [Parameter] public string RowsPerPageString { get; set; } = "Itens por página";
+    [Parameter] public string InfoFormat { get; set; } = "{first}–{last} de {total}";
+
+    // Função LÊ o estado atual. Se ExibirLinha é TRUE, a MudTable renderiza o ChildRowContent.
+    private bool IsRowExpanded(MovimentacaoDrp item) => item.ExpandirObservacao;
+
+    void ToggleExpand(MovimentacaoDrp item)
+    {
+        // Funçao ESCREVE o novo estado (Alternância)
+        item.ExpandirObservacao = !item.ExpandirObservacao;
+        StateHasChanged();
+    }
+
+    protected override Task OnParametersSetAsync()
+    {
+        ItemsNaoFiltrados = Items;
+        return base.OnParametersSetAsync();
+    }
+
+    private string ConverterData(DateTime? data)
+    {
+        if (data.HasValue)
+        {
+            return data.Value.ToString("dd/MM/yy");
+        }
+        return string.Empty;
+    }
+
+    private string ConverterValor(decimal? valor)
+    {
+        return "R$ " + (valor.HasValue
+                ? valor.Value.ToString("N2", new System.Globalization.CultureInfo("pt-BR"))
+                : "0,00");
+    }
+
+    private IEnumerable<MovimentacaoDrp> ItemsNaoFiltrados { get; set; }
+    private string FiltroBuscarPalavra = "";
+    private MovimentacaoDrp selectedItem1;
+    private bool FilterFunc1(MovimentacaoDrp element) => FilterFunc(element, FiltroBuscarPalavra);
+
+    private bool FilterFunc(MovimentacaoDrp element, string searchString)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+        if (element.Gifug != null)
+        {
+            if (element.Gifug.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+        if (element.NuDrp != null)
+        {
+            if (element.NuDrp.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+        if (element.Senha != null)
+        {
+            if (element.Senha.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        if (element.QtdMovimentacoes!.ToString()!.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        return false;
+    }
+
+    private void ClearFilter()
+    {
+        FiltroBuscarPalavra = "";
+        Items = ItemsNaoFiltrados;
+    }
+}

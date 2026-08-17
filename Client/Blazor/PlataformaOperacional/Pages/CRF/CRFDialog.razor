@@ -1,0 +1,129 @@
+﻿<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="2">
+            <MudText Typo="Typo.h6" Style="font-weight:700; color:#22292e;">
+                @ConsultaCRF.NoTomador
+
+                @if (ConsultaCRF != null)
+                {
+                    var regularidade = ConsultaCRF.IcRegularidade ?? string.Empty;
+                    var vigencia = ConsultaCRF.DtVigencia;
+
+                    if (regularidade.Equals("REGULAR", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <MudChip Color="Color.Success" T="string" Variant="Variant.Filled" Style="font-weight:600;">
+                            Regular
+                        </MudChip>
+                    }
+                    else if (regularidade.Equals("IRREGULAR", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <MudChip Color="Color.Error" T="string" Variant="Variant.Filled" Style="font-weight:600;">
+                            Irregular
+                        </MudChip>
+                    }
+                    else
+                    {
+                        <MudChip T="string" Color="Color.Default" Variant="Variant.Filled" Style="font-weight:600;">
+
+                            @if (@String.IsNullOrWhiteSpace(regularidade))
+                            {
+                                @("A Verificar")
+                            }
+                            else
+                            {
+                                @(char.ToUpper(regularidade[0]) + regularidade.Substring(1).ToLower())
+                            }
+                        </MudChip>
+                    }
+                }
+            </MudText>
+            <MudPaper Elevation="0" Style="padding:16px; border-radius:12px; background-color:#f8fafc;">
+                <MudStack Spacing="1">
+                    <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                        <MudText Typo="Typo.subtitle2" Style="color:#64747a;">Código Tomador</MudText>
+                        <MudText Typo="Typo.body2" Style="font-weight:400; color:#22292e;">@ConsultaCRF.CoTomador</MudText>
+                    </MudStack>
+
+                    <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Style="gap:12px;">
+                        <MudText Typo="Typo.subtitle2" Style="color:#64747a;">
+                            CNPJ
+                        </MudText>
+                        <MudStack Row AlignItems="AlignItems.Center" Style="gap:8px;">
+                            <MudText Typo="Typo.body2">
+                                @FormatarCNPJ(ConsultaCRF.CoCgc)
+                            </MudText>
+                        </MudStack>
+                    </MudStack>
+                    <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                        <MudText Typo="Typo.subtitle2" Style="color:#64747a;">Validade CRF</MudText>
+                        <MudText Typo="Typo.body2">
+                            @if (ConsultaCRF.DtVigencia.HasValue)
+                                @ConsultaCRF.DtVigencia.Value.ToString("dd/MM/yyyy")
+                        </MudText>
+                    </MudStack>
+                    <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Style="gap:12px;">
+                        <MudText Typo="Typo.subtitle2" Style="color:#64747a;">
+                            Número CRF
+                            <MudTooltip Text="Copiar">
+                                <MudIconButton Icon="@Icons.Material.Filled.ContentCopy" Color="Color.Primary" Size="Size.Small" OnClick="CopiarNrCRF" />
+                            </MudTooltip>
+                        </MudText>
+                        <MudStack Row AlignItems="AlignItems.Center" Style="gap:8px;">
+                            <MudText Typo="Typo.body2">
+                                @ConsultaCRF.NuCrf
+                            </MudText>
+                        </MudStack>
+                    </MudStack>
+                </MudStack>
+            </MudPaper>
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mr-4" OnClick="CloseDialog"><MudText>Fechar</MudText></MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code
+{
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Inject]
+    private IJSRuntime JsRuntime { get; set; } = default!;
+
+    [Inject]
+    private ISnackbar Snackbar { get; set; } = default!;
+
+    [Parameter]
+    public ConsultaCrfLista ConsultaCRF { get; set; } = default!;
+
+    private void CloseDialog()
+    {
+        MudDialog?.Close();
+    }
+
+    private async Task CopiarNrCRF()
+    {
+        if (string.IsNullOrWhiteSpace(ConsultaCRF?.NuCrf)) return;
+
+        try
+        {
+            await JsRuntime.InvokeVoidAsync("navigator.clipboard.writeText", ConsultaCRF.NuCrf);
+            Snackbar.Configuration.PositionClass = Defaults.Classes.Position.TopCenter;
+            Snackbar.Add("CRF copiado para a área de transferência.", Severity.Info);
+        }
+        catch { }
+    }
+
+    protected string FormatarCNPJ(string cnpj)
+    {
+        if (string.IsNullOrWhiteSpace(cnpj)) return cnpj;
+
+        if (cnpj.Length == 14 && ulong.TryParse(cnpj, out var cnpjNumerico))
+        {
+            return cnpjNumerico.ToString(@"00\.000\.000\/0000\-00");
+        }
+
+        return cnpj;
+    }
+}

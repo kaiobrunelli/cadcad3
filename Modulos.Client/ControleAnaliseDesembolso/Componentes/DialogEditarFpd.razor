@@ -1,0 +1,62 @@
+@using ControleAnaliseDesembolso.Modelos
+@using ControleAnaliseDesembolso.Service
+@inject ControleAnaliseDesembolsoService Service
+
+@if (_carregando)
+{
+    <div class="edt-overlay"></div>
+    <div class="edt-caixa">
+        <i class="bi bi-arrow-repeat edt-spin" style="font-size:32px"></i>
+        <p>Carregando dados da ficha…</p>
+    </div>
+}
+else if (_detalhe is null)
+{
+    <div class="edt-overlay" @onclick="AoFechar"></div>
+    <div class="edt-caixa" @onclick:stopPropagation>
+        <i class="bi bi-exclamation-triangle" style="font-size:32px"></i>
+        <p>Não foi possível carregar a ficha.</p>
+        <button class="edt-btn-fechar" @onclick="AoFechar">Fechar</button>
+    </div>
+}
+else
+{
+    <PainelPreencherFpdEtapas ModoEdicao="true" CoFpd="_detalhe.CoFpd" DadosParaEdicao="_detalhe"
+                               AoVoltar="AoFechar" AoSolicitar="@(async (PreenchimentoFpd _) => await AoSalvar.InvokeAsync())" />
+}
+
+@code {
+    [Parameter, EditorRequired] public DesembolsoCAD Desembolso { get; set; } = null!;
+    [Parameter] public EventCallback AoFechar { get; set; }
+    [Parameter] public EventCallback AoSalvar { get; set; }
+
+    private DesembolsoDetalheDto? _detalhe;
+    private bool _carregando = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _detalhe = await Service.ObterDetalheDesembolsoAsync(Desembolso.Id);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[EditarFPD] Falha ao carregar: {ex.Message}");
+        }
+        _carregando = false;
+    }
+}
+
+<style>
+.edt-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 2000; }
+.edt-caixa {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    z-index: 2001; background: #fff; border-radius: var(--radius-xl);
+    padding: 40px; display: flex; flex-direction: column; align-items: center; gap: 10px;
+    color: var(--ink-300); font-size: 13px; box-shadow: 0 24px 60px rgba(0,0,0,.25);
+}
+.edt-spin { animation: edtGirar .8s linear infinite; display: inline-block; }
+@@keyframes edtGirar { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.edt-btn-fechar { border: 1px solid var(--ink-200); border-radius: var(--radius-md); padding: 8px 16px; font-size: 13px; color: var(--ink-500); background: none; }
+.edt-btn-fechar:hover { background: var(--ink-100); }
+</style>

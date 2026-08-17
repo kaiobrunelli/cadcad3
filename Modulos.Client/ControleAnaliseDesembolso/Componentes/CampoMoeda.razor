@@ -1,0 +1,94 @@
+@using System.Globalization
+
+@* Campo monetário pt-BR (padrão "centavos primeiro"): digita só dígitos e o
+   valor cresce da direita para a esquerda. Encapsula a máscara + sync no DOM.
+   Uso:  <CampoMoeda @bind-Value="_fpd.Ve" ReadOnly="true" /> *@
+
+<div class="campo-moeda-wrap @Class">
+    <span class="campo-moeda-prefixo">R$</span>
+    <input class="campo-moeda-input"
+           inputmode="numeric" autocomplete="off"
+           placeholder="0,00"
+           value="@_texto"
+           readonly="@ReadOnly"
+           @oninput="AoDigitar" />
+</div>
+
+@code {
+    private static readonly CultureInfo _br = new("pt-BR");
+
+    [Parameter] public decimal? Value { get; set; }
+    [Parameter] public EventCallback<decimal?> ValueChanged { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public string? Class { get; set; }
+    [Parameter] public EventCallback AoAlterar { get; set; }
+
+    private string _texto = "";
+    private decimal? _ultimoValor;
+
+    protected override void OnParametersSet()
+    {
+        // Reflete mudanças externas (ex.: preenchido pela busca do contrato)
+        if (Value != _ultimoValor)
+        {
+            _ultimoValor = Value;
+            _texto = Value is > 0 ? Value.Value.ToString("N2", _br) : "";
+        }
+    }
+
+    private async Task AoDigitar(ChangeEventArgs e)
+    {
+        var digitos = new string((e.Value?.ToString() ?? "").Where(char.IsDigit).ToArray());
+        if (digitos.Length > 15) digitos = digitos[..15];
+        digitos = digitos.TrimStart('0');
+
+        decimal? valor;
+        if (digitos.Length == 0)
+        {
+            _texto = "";
+            valor  = null;
+        }
+        else
+        {
+            valor  = decimal.Parse(digitos) / 100m;
+            _texto = valor.Value.ToString("N2", _br);
+        }
+
+        _ultimoValor = valor;
+        Value = valor;
+
+        // BUG REAL CORRIGIDO: esta linha chamava uma função JS
+        // ("sipubSetInputValor") que nunca existiu em lugar nenhum do
+        // projeto — toda vez que alguém digitava aqui, o JSException não
+        // tratado abortava o método ANTES do ValueChanged.InvokeAsync
+        // abaixo, então _fpd.SolicitadoVi/Ve/ParticipacaoFgts/Contrapartida
+        // nunca eram atualizados no componente pai: a tela mostrava o valor
+        // digitado (só porque _texto já tinha mudado localmente antes do
+        // erro), mas ao enviar a FPD ia tudo como 0. O re-render normal do
+        // Blazor já mantém o input sincronizado com _texto sem precisar de
+        // JS interop nenhum.
+        await ValueChanged.InvokeAsync(valor);
+        await AoAlterar.InvokeAsync();
+    }
+}
+
+<style>
+.campo-moeda-wrap {
+    display: flex; align-items: center; height: 32px; min-width: 0;
+    border: 1px solid var(--ink-200); border-radius: var(--radius-md);
+    background: #fff; overflow: hidden; transition: border-color .15s, box-shadow .15s;
+}
+.campo-moeda-wrap:has(input:focus) { border-color: var(--brand-500); box-shadow: 0 0 0 3px rgba(45,138,216,.15); }
+.campo-moeda-wrap:has(input[readonly]) { background: var(--ink-50); }
+.campo-moeda-prefixo {
+    flex-shrink: 0; padding: 0 4px 0 10px; font-size: 12.5px; font-weight: 700;
+    color: var(--ink-400, var(--ink-300)); user-select: none;
+}
+.campo-moeda-input {
+    flex: 1; min-width: 0; height: 30px; border: none; background: transparent;
+    padding: 0 10px 0 0; font-size: 12.5px; font-family: inherit; color: var(--ink-900);
+    text-align: right; font-variant-numeric: tabular-nums;
+}
+.campo-moeda-input:focus { outline: none; }
+.campo-moeda-input[readonly] { color: var(--ink-700); }
+</style>

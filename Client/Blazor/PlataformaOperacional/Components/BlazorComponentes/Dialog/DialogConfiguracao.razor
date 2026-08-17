@@ -1,0 +1,299 @@
+﻿@inject ISnackbar Snackbar
+@inject CobrancaService CobrancaService
+<style>
+	.mud-dialog .mud-dialog-title .mud-button-close {
+		color: white;
+	}
+
+	.mud-dialog .mud-dialog-title {
+		background-color: #005ca9;
+		color: white;
+	}
+
+	.mud-select .mud-select-input .mud-input-slot {
+		color: #4D4D4D	!important;
+	}
+</style>
+<MudThemeProvider Theme="_myCustomTheme"></MudThemeProvider>
+<MudDialog>
+	<TitleContent>
+		<MudStack Row="true" Spacing="2">
+			<MudIcon Icon="@Icons.Material.Filled.Create" Class="mr-2" />
+			<MudText Typo="Typo.h6">Editar Configurações</MudText>
+		</MudStack>
+	</TitleContent>
+	<DialogContent>
+
+		@* @foreach (var propriedade in _listaPropriedadesEditaveis)
+		{
+			@* if (propriedade.NomePropriedade == "ImpressoraVirtualServer")
+			{
+				<MudGrid Class="pt-4">
+					<MudItem xs="12" md="8">
+						<MudSelect @bind-Value="_value"
+								   Variant="Variant.Outlined"
+								   Margin="Margin.Dense"
+								   Dense="true"
+								   T="string"
+								   >
+							@foreach (var state in _states)
+							{
+								<MudSelectItem T="string" Value="state">@state</MudSelectItem>
+							}
+						</MudSelect>
+					</MudItem>
+					<MudItem xs="12" md="4" Class="d-flex align-center">
+						<MudButton Variant="Variant.Outlined"
+								   Color="Color.Success"
+								   OnClick="@(() => SalvarAlteracao(propriedade))"
+								   Disabled="@( propriedade.ValorAtual == propriedade.ValorOriginal ||
+                                        string.IsNullOrWhiteSpace(propriedade.ValorAtual))"
+								   Class="w-100">
+
+							<MudIcon Icon="@Icons.Material.Filled.Check" Class="mr-2" />
+							<span>Salvar</span>
+						</MudButton>
+					</MudItem>
+				</MudGrid>
+			} 
+			if (propriedade.NomePropriedade != "ImpressoraVirtualServer")
+			{
+				<MudGrid Class="pt-4">
+					<MudItem xs="12" md="8">
+						<MudTextField @bind-Value="propriedade.ValorAtual"
+									  Label="@propriedade.Label"
+									  Variant="Variant.Outlined"
+									  Margin="Margin.Dense"
+									  Disabled="@propriedade.IsSaving"
+									  Immediate="true" />
+					</MudItem>
+					<MudItem xs="12" md="4" Class="d-flex align-center">
+						<MudButton Variant="Variant.Outlined"
+								   Color="Color.Success"
+								   OnClick="@(() => SalvarAlteracao(propriedade))"
+								   Disabled="@( propriedade.ValorAtual == propriedade.ValorOriginal ||
+                                            string.IsNullOrWhiteSpace(propriedade.ValorAtual))"
+								   Class="w-100">
+
+							<MudIcon Icon="@Icons.Material.Filled.Check" Class="mr-2" />
+							<span>Salvar</span>
+						</MudButton>
+					</MudItem>
+				</MudGrid>
+			}
+		} *@
+
+		<MudGrid Class="pt-4">
+			<MudItem xs="12" md="6">
+				<MudTextField @bind-Value="_unidadeDeMovimentoValorAtual"
+							  Label="Unidade de Movimento"
+							  Variant="Variant.Outlined"
+							  Margin="Margin.Dense"
+							  Immediate="true" />
+			</MudItem>
+			<MudItem xs="12" md="2">
+				<MudTextField @bind-Value="_dVUnidadeMovimentoValorAtual"
+							  Label="DV"
+							  Variant="Variant.Outlined"
+							  Margin="Margin.Dense"
+							  Immediate="true" />
+			</MudItem>
+			<MudItem xs="12" md="4" Class="d-flex align-center">
+				<MudButton Variant="Variant.Outlined"
+						   Color="Color.Success"
+						   OnClick="@(() => SalvarAlteracaoUnidadeDeMovimento(_unidadeDeMovimentoValorAtual, _dVUnidadeMovimentoValorAtual))"
+						   Disabled="@(	(_unidadeDeMovimentoValorAtual == _unidadeDeMovimento &&
+										 _dVUnidadeMovimentoValorAtual == _dVUnidadeMovimento) ||
+										 string.IsNullOrWhiteSpace(_unidadeDeMovimentoValorAtual)||
+										 string.IsNullOrWhiteSpace(_dVUnidadeMovimentoValorAtual))"
+						   Class="w-100">
+					<MudIcon Icon="@Icons.Material.Filled.Check" Class="mr-2" />
+					<span>Salvar</span>
+				</MudButton>
+			</MudItem>
+		</MudGrid>
+		<MudGrid Class="pt-4">
+			<MudItem xs="12" md="6">
+				<MudTextField @bind-Value="_contratoCCIValorAtual"
+							  Label="Contrato CCI"
+							  Variant="Variant.Outlined"
+							  Margin="Margin.Dense"
+							  Immediate="true" />
+			</MudItem>
+			<MudItem xs="12" md="2">
+				<MudTextField @bind-Value="_dVCCIValorAtual"
+							  Label="DV"
+							  Variant="Variant.Outlined"
+							  Margin="Margin.Dense"
+							  Immediate="true" />
+			</MudItem>
+			<MudItem xs="12" md="4" Class="d-flex align-center">
+				<MudButton Variant="Variant.Outlined"
+						   Color="Color.Success"
+						   OnClick="@(() => SalvarAlteracaoCCI(_contratoCCIValorAtual,_dVCCIValorAtual))"
+						   Disabled="@(	(_contratoCCIValorAtual == _contratoCCI &&
+										 _dVCCIValorAtual == _dVCCI) ||
+										 string.IsNullOrWhiteSpace(_contratoCCIValorAtual) ||
+										 string.IsNullOrWhiteSpace(_dVCCIValorAtual))"
+						   Class="w-100">
+
+					<MudIcon Icon="@Icons.Material.Filled.Check" Class="mr-2" />
+					<span>Salvar</span>
+				</MudButton>
+			</MudItem>
+		</MudGrid>
+	</DialogContent>
+	<DialogActions>
+		<div class="mb-1 mr-1">
+			<MudButton OnClick="Cancel" Variant="Variant.Filled" Color="Color.Inherit">Fechar</MudButton>
+		</div>
+	</DialogActions>
+</MudDialog>
+
+@code {
+	private string _value = "\\\\df7436sr200\\virtual-df7175pr021";
+
+	private readonly string[] _states =
+	{
+	"\\\\df7436sr200\\virtual-df7175pr021",
+	"\\\\df7436sr600\\virtual-df123",
+	"\\\\df7436sr300\\virtual-df456",
+	};
+
+
+	[CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+
+
+	[Parameter] public ConfiguracoesGerais ConfiguracoesGeraisData { get; set; } = new();
+
+	private List<PropriedadeEditavel> _listaPropriedadesEditaveis = new();
+	private string _contratoCCI
+	{
+		get
+		{
+			return ConfiguracoesGeraisData.ContratoCci;
+		}
+		set { }
+	}
+	private string _unidadeDeMovimento
+	{
+		get
+		{
+			return ConfiguracoesGeraisData.UnidadeMovimento;
+		}
+		set { }
+	}
+	private string _dVCCI
+	{
+		get
+		{
+			return ConfiguracoesGeraisData.ContratoCciDv;
+		}
+		set { }
+	}
+	private string _dVUnidadeMovimento
+	{
+		get
+		{
+			return ConfiguracoesGeraisData.UnidadeMovimentoDv;
+		}
+		set { }
+	}
+
+	private string _contratoCCIValorAtual { get; set; } = string.Empty;
+	private string _unidadeDeMovimentoValorAtual { get; set; } = string.Empty;
+	private string _dVCCIValorAtual { get; set; } = string.Empty;
+	private string _dVUnidadeMovimentoValorAtual { get; set; } = string.Empty;
+
+
+	private class PropriedadeEditavel
+	{
+		public string NomePropriedade { get; set; } = string.Empty;
+		public string Label { get; set; } = string.Empty;
+		public string ValorOriginal { get; set; } = string.Empty;
+		public string ValorAtual { get; set; } = string.Empty;
+		public bool IsSaving { get; set; } = false;
+	}
+
+
+	private MudTheme _myCustomTheme = new MudTheme()
+		{
+			PaletteLight = new PaletteLight()
+			{
+				Background = "#FAF8F5",
+				Primary = "#005ca9",
+				Secondary = "#D87B00",
+				Success = "#00A645",
+				// Success = "#1ABD55",
+				DrawerIcon = "#ffffff",
+			},
+		};
+
+
+	protected override void OnInitialized()
+	{
+		_listaPropriedadesEditaveis = new List<PropriedadeEditavel>
+		{
+
+			MapProperty(nameof(ConfiguracoesGeraisData.DestinoArquivo), "Destino Arquivo", ConfiguracoesGeraisData.DestinoArquivo),
+			MapProperty(nameof(ConfiguracoesGeraisData.ImpressoraVirtualServer), "Impressora Server", ConfiguracoesGeraisData.ImpressoraVirtualServer),
+			MapProperty(nameof(ConfiguracoesGeraisData.ImpressoraVirutalRedeCaixa), "Impressora Rede Caixa", ConfiguracoesGeraisData.ImpressoraVirutalRedeCaixa),
+			MapProperty(nameof(ConfiguracoesGeraisData.QtdMaximaPorDrp), "Quantidade Máxima por DRP",ConfiguracoesGeraisData.QtdMaximaPorDrp.ToString()),
+
+		};
+		_contratoCCIValorAtual = ConfiguracoesGeraisData.ContratoCci;
+		_dVCCIValorAtual = ConfiguracoesGeraisData.ContratoCciDv;
+		_unidadeDeMovimentoValorAtual = ConfiguracoesGeraisData.UnidadeMovimento;
+		_dVUnidadeMovimentoValorAtual = ConfiguracoesGeraisData.UnidadeMovimentoDv;
+
+
+	}
+	private PropriedadeEditavel MapProperty(string propName, string label, string value)
+	{
+		return new PropriedadeEditavel
+			{
+				NomePropriedade = propName,
+				Label = label,
+				ValorOriginal = value,
+				ValorAtual = value
+			};
+	}
+
+
+	private void Cancel() => MudDialog.Cancel();
+
+	private void SalvarAlteracao(PropriedadeEditavel propriedade)
+	{
+		if (propriedade.ValorAtual == propriedade.ValorOriginal || string.IsNullOrWhiteSpace(propriedade.ValorAtual)) return;
+		propriedade.IsSaving = true;
+		StateHasChanged();
+		propriedade.IsSaving = false;
+		StateHasChanged();
+	}
+
+
+
+	#region Metodos para registrar alterações de configuração
+	private async Task SalvarAlteracaoUnidadeDeMovimento(string unidadeMovimento, string unidadeMovimentoDv)
+	{
+		var response = await CobrancaService.AlterarUnidadeDeMovimento(unidadeMovimento, unidadeMovimentoDv);
+		if (response.IsSuccessStatusCode)
+		{		
+			Snackbar.Add("Alteração salva com sucesso!", Severity.Success);
+		}	
+		// await HttpResponseHandler.ResponseHandler(response, Snackbar);
+	}
+	private async Task SalvarAlteracaoCCI(string nuContrato, string nuContratoDV)
+	{
+		var response = await CobrancaService.AlterarContratoCci(nuContrato, nuContratoDV);
+		if (response.IsSuccessStatusCode)
+		{
+			Snackbar.Add("Alteração salva com sucesso!", Severity.Success);
+		}
+	}
+	private void AlterarUnidadeDeMovimentoHandle(PropriedadeEditavel contextoConfiguracoes)
+	{
+
+	}
+	#endregion
+}

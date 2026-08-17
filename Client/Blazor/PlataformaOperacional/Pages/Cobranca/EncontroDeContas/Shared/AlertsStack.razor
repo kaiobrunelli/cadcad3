@@ -1,0 +1,35 @@
+
+
+@if (Alertas.Any())
+{
+    <div class="alerts">
+        @foreach (var a in Alertas)
+        {
+            var tipoAlerta = a.TipoAlerta.ToString().ToLowerInvariant();
+            <div class="alert @tipoAlerta" role="status">
+                <span class="alert-icon">
+                    @(a.TipoAlerta switch
+                    {
+                        TipoDeAlerta.Warn => "⚠",
+                        TipoDeAlerta.Ok   => "✓",
+                        TipoDeAlerta.Err  => "✕",
+                        _              => "ⓘ"
+                    })
+                </span>
+                <div class="alert-body">
+                    <div class="alert-title">@a.Titulo</div>
+                    @if (!string.IsNullOrEmpty(a.Desc))
+                    {
+                        <div class="alert-desc">@a.Desc</div>
+                    }
+                </div>
+                <button class="alert-close" @onclick="() => OnFechar.InvokeAsync(a.Id)" aria-label="Fechar">✕</button>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public List<AlertaItem> Alertas { get; set; } = new();
+    [Parameter] public EventCallback<string> OnFechar { get; set; }
+}

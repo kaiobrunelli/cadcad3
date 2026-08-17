@@ -1,0 +1,32 @@
+﻿@if (Log is not null)
+{
+    <div class="alerts">
+     
+  
+        <div class="alert warn" role="status">
+            <span class="alert-icon">
+                ⚠
+            </span>
+            <div class="alert-body">
+                <div class="alert-title">Log Error</div>
+                @if (!string.IsNullOrEmpty(Log))
+                {
+                    <div class="alert-desc">@Log</div>
+                }
+            </div>
+            <button class="alert-close" @onclick="Fechar" aria-label="Fechar">✕</button>
+        </div>
+
+    </div>
+}
+
+@code {
+    [Parameter] public string Log { get; set; }
+
+    private void Fechar()
+    {
+        Log = null;
+        StateHasChanged();
+    }
+    // [Parameter] public EventCallback<string> OnDismiss { get; set; }
+}

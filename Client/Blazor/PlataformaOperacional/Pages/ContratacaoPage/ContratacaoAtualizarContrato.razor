@@ -1,0 +1,225 @@
+﻿@page "/contratacaoatualizarcontrato/{NumeroDoContrato}"
+
+@inject IDialogService DialogServiceInject
+@using PlataformaOperacional.Model.ContratacaoModel
+@inject ContratacaoService ContratacaoServiceInject
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+@inject IJSRuntime JsRuntime
+
+<MudContainer>
+	@if (!CarregandoListaTabela)
+	{
+		<MudItem Class="d-flex justify-center my-8" lg="12">
+			<MudProgressCircular Color="Color.Secondary" Size="Size.Large" Indeterminate="true" />
+		</MudItem>
+	}
+	else
+	{
+
+		<MudGrid Spacing="10">
+			<MudItem xs="12">
+				<MudIconButton Icon="@Icons.Material.Filled.ArrowBack" Variant="Variant.Text" Color="Color.Secondary" Class="mt-n6 mb-5" Size="Size.Small" OnClick="VoltarPagina" />
+				@if ((ContratoPreencher.CoSituacao == 3))
+				{
+				<MudAlert Severity="Severity.Error" Variant="Variant.Text" Elevation="1">
+					@if(ContratoPreencher.podeReverterFinalizacao)
+						{
+							@("Contrato já finalizado! Caso seja necessário alterar, a finalização deve ser revertida.")
+						}
+						else
+						{
+							@("Contrato já finalizado! Caso seja necessário alterar, solicite ao gestor a reversão da finalização.")
+						}
+				</MudAlert>
+
+			     <br/>
+
+				}
+				<MudCard Elevation="1" Class="rounded-lg card-body">
+					<MudItem xs="12" Class="mb-4 d-flex justify-space-between flex-grow-1 gap-4">
+						<MudText Typo="Typo.body1"><b>Número do contrato:</b> @ContratoPreencher.Contrato</MudText>
+						@*      <MudButton @onclick="@(()=>DialogAdicionarRessalva())"
+					EndIcon="@Icons.Material.Filled.Add"
+					Class="btn-caixa-small align-self-center"
+					Variant="Variant.Filled"
+					Color="Color.Primary">Adicionar ressalva</MudButton> *@
+						@if (ContratoPreencher.CoSituacao == 3)
+                        {
+							<MudTooltip Text="@(ContratoPreencher.podeReverterFinalizacao ? "" : "Necessário perfil gerencial.")" Delay="400">
+								<MudButton Class="btn-caixa-small ml-4" OnClick="@(()=>DialogoCancelarFinalizacaoContrato(NumeroDoContrato))"
+										   Size="Size.Small"
+										   Variant="Variant.Outlined"
+										   Disabled="@(!ContratoPreencher.podeReverterFinalizacao)"
+										   Color="Color.Secondary">Reverter Finalização</MudButton>
+							</MudTooltip>
+                        }
+						else
+						{
+							<MudTooltip Text="Necessário concluir todas verificações e ressalvas." Delay="400">
+								<MudButton Class="btn-caixa-small ml-4" OnClick="@(()=>DialogoFinalizarContrato(NumeroDoContrato))"
+										   Size="Size.Small"
+										   Variant="Variant.Outlined"
+										   Disabled="@(!ContratoPreencher.PodeFinalizar)"
+										   Color="Color.Secondary">Finalizar</MudButton>
+							</MudTooltip>
+						}
+					</MudItem>
+					<MudTabs Elevation="1" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6 bg-branco-mudtab" AlwaysShowScrollButtons="false">
+						@foreach (var (tipoVerificacao, index) in ContratoPreencher.ListaDeTipoDeVerificacoes.Select((e, i) => (e, i)))
+						{
+							<MudTabPanel Text="@("Etapa " + (index+1).ToString())" Style="font-weight:500" BadgeColor="Color.Tertiary">
+								<div class="d-flex justify-space-between mb-4">
+									<MudText Style="font-weight:500">@tipoVerificacao.DeTipoVerificacao</MudText>
+									<MudText Class="mr-8"> Etapas: @tipoVerificacao.Concluidos / @tipoVerificacao.Total</MudText>
+								</div>
+								<MudTable T="ContratacaoVerificacao" Items="tipoVerificacao.ListaVerificacoes" Dense="true" Hover="true" Elevation="0">
+									<RowTemplate>
+										<MudTr Class="d-flex justify-center py-4 ">
+											<MudTd Style="width:60%; text-align:justify;" Class="d-flex align-center" DataLabel="Conformidade">
+												<MudText Style="margin-right:4px; ">
+													<b>@context.IdVerificacao -</b> @context.DeVerificacao
+													@if (context.Usuario != null || context.Resposta != null)
+													{
+														<MudTooltip Text="@("Usuário: " + context.Usuario)" Delay="400">
+															<MudIconButton Icon="@Icons.Material.Filled.Person"
+																		   Size="Size.Small"
+																		   Color="Color.Secondary" />
+														</MudTooltip>
+													}
+												</MudText>
+												@*      @if (context.Resposta == 2 && context.TemObs)
+										{
+										<MudTooltip>
+										<ChildContent>
+										<MudIconButton OnClick="@(value=> DialogRessalva(2, context))" Icon="@Icons.Material.Filled.SdCardAlert" Size="Size.Small" Color="Color.Error" aria-label="Ressalvas" />
+										</ChildContent>
+										<TooltipContent>
+										<MudText>@context.Observacao</MudText>
+										<MudText Style="font-size:95%">(clique para editar)</MudText>
+										</TooltipContent>
+										</MudTooltip>
+										}   *@
+											</MudTd>
+											<MudTd Class="d-flex align-center">
+												<MudRadioGroup Class="d-flex align-center justify-center"
+															   Style="height:100%;"
+															   T="int?"
+															   Disabled="@((ContratoPreencher.CoSituacao == 3))"
+															   ValueChanged="@(value => DialogRessalva(value,context))"
+															   Value="@(context.Resposta)">
+													<MudRadio Size="Size.Small" Dense="true" Value="1" T="int?" Color="Color.Primary">Sim</MudRadio>
+													<MudRadio Size="Size.Small" Dense="true" Value="2" T="int?" Color="Color.Primary">Não</MudRadio>
+													<MudRadio Size="Size.Small" Dense="true" Value="3" T="int?" Color="Color.Primary">Não se aplica</MudRadio>
+												</MudRadioGroup>
+												<MudTooltip Text="Limpar seleção." Delay="400">
+													<MudTooltip Text="Excluir resposta.">
+														<MudIconButton OnClick="() => ResetProposta(context)"
+																	   Disabled="@((ContratoPreencher.CoSituacao == 3))"
+																	   Icon="@Icons.Material.Filled.Delete"
+																	   Size="Size.Small" />
+													</MudTooltip>
+												</MudTooltip>
+											</MudTd>
+										</MudTr>
+									</RowTemplate>
+								</MudTable>
+							</MudTabPanel>
+						}
+					</MudTabs>
+				</MudCard>
+			</MudItem>
+
+			<MudItem lg="12" md="12" sm="12">
+				<MudExpansionPanels Dense="true" Style="min-width:600px">
+					<MudExpansionPanel Dense="true" Expanded="false">
+						<TitleContent>
+							<MudText Typo="Typo.h6">Ressalvas</MudText>
+						</TitleContent>
+						<ChildContent>
+							<MudText>Adicionar <MudIconButton @onclick="@(()=>DialogAdicionarRessalva())" Disabled="@(ContratoPreencher.CoSituacao == 3)" Icon="@Icons.Material.Filled.AddCircle" Color="Color.Success" /></MudText>
+							<MudTable Items="@ListaDeRessalvasPorContrato" Hover="true" Elevation="1" Class="px-4 pb-2 mb-6">
+								<HeaderContent>
+									<MudTh>Usuário</MudTh>
+									<MudTh>Ressalva</MudTh>
+									<MudTh>Tratar</MudTh>
+									<MudTh></MudTh>
+								</HeaderContent>
+								<RowTemplate>
+									<MudTd>
+										@if (context.Observacao != null)
+										{
+											@context.UsuarioInclusao
+
+										}
+										@*@if (context.Tratado)
+									{
+									@context.UsuarioConclusao;
+									}
+									else
+									{
+									@context.DataInclusao;
+									} *@
+									</MudTd>
+									@if (context.IdChecklistVerificacao is not null)
+									{
+										<MudTd>
+											Item @context.IdChecklistVerificacao - @context.Observacao
+										</MudTd>
+									}
+									else
+									{
+										<MudTd>
+											@context.Observacao
+										</MudTd>
+									}
+
+
+									<MudTd>
+										<MudStack Row="true" Spacing="3" AlignItems="AlignItems.Center" Justify="Justify.FlexStart">
+											<MudCheckBox Dense="true" T="bool" Value="@(context.Tratado)"
+														 Disabled="@((ContratoPreencher.CoSituacao == 3))"
+														 ValueChanged="@(value => DialogFinalizarRessalva(context,value))"
+														 Label="Tratado" Color="Color.Secondary"></MudCheckBox>
+											@if (context.Tratado)
+											{
+												<MudTooltip Text="@("Usuário: " + context.UsuarioConclusao + " - " + context.DataConclusao?.ToString("dd/MM/yy"))" Delay="400">
+													<MudIconButton Icon="@Icons.Material.Filled.Person"
+																   Size="Size.Small"
+																   Color="Color.Secondary" />
+												</MudTooltip>
+
+												@if (!string.IsNullOrWhiteSpace(context.ObservacaoTratamento))
+												{
+													
+														<MudIconButton Icon="@Icons.Material.Filled.Info"
+																	   Size="Size.Small"
+																	   Color="Color.Secondary"
+																	   OnClick="@(()=> consultarObservacaoRessalva(context.ObservacaoTratamento))" />
+													
+												}
+
+											}
+										</MudStack>
+									</MudTd>
+									<MudTd>
+										<MudTooltip Text="Excluir ressalva.">
+											<MudIconButton Disabled="@((ContratoPreencher.CoSituacao == 3))" Icon="@Icons.Material.Filled.Delete" OnClick="() => DialogDesativarRessalva(context)" Size="Size.Small" Style="height:100%" />
+										</MudTooltip>
+									</MudTd>
+								</RowTemplate>
+							</MudTable>
+						</ChildContent>
+					</MudExpansionPanel>
+				</MudExpansionPanels>
+			</MudItem>
+		</MudGrid>
+		<MudPaper Elevation="0" Class="pa-6">
+		</MudPaper>
+	}
+</MudContainer>
+
+
+
+
+

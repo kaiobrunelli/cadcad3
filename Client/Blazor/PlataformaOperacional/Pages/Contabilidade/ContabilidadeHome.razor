@@ -1,0 +1,43 @@
+﻿ @page "/contabilidadeHome"
+ @inject HttpClient httpClient
+
+ @inject DialogServicePlataformaOperacional DialogServicePlataformaOperacional
+ @inject ContabilidadeService ContabilidadeService
+@code {
+    private string rowsPerPageString = "Linhas por página:";
+
+
+    private List<BreadcrumbItem> _items =
+    [
+        new("Home", href: "/"),
+        new("Contabilidade", href: null, disabled: true),
+    ];
+}
+
+<PageTitle>Consultar Lote</PageTitle>
+<MudContainer>
+    <MudCard Class="ml-6" Elevation="0">
+        <MudCard Class="d-flex flex-column pb-4 mt-2" Elevation="0">
+            <MudCard Class="d-flex flex-row mt-2 gap-1" Elevation="0">
+                <MudIcon Icon="@Icons.Material.Filled.Search" Size="Size.Large" ></MudIcon>
+                @* <MudText Typo="Typo.h3" Color="Color.Secondary" Style="font-weight:400">Contabilidade HomePage</MudText> *@
+                <MudText  Style="color:#005ca9" Typo="Typo.h4">Operações - Saldo Residual</MudText>
+            </MudCard>
+            <MudDivider Class="mt-2 flex-grow-1" DividerType="DividerType.FullWidth"></MudDivider>            
+        </MudCard>
+        <MudBreadcrumbs Items="_items"></MudBreadcrumbs>
+        <MudGrid Class="ma-4 align-center">
+            <MudItem>
+                <MudButtonGroup Color="Color.Tertiary" Variant="Variant.Filled">
+                    <MudButton Href="/">Página Inicial</MudButton>
+                    <MudButton Href="/ConsultarLoteContabil">Consultar Lote</MudButton>
+                    <MudButton Href="/SolicitarLoteContabil">Solicitar Lote</MudButton>                  
+                </MudButtonGroup>
+            </MudItem>
+        </MudGrid>
+    </MudCard>
+</MudContainer>
+<MudTFootRow Class="container-footer-item align-center pl-4">
+    <MudText Typo="Typo.body2">2025 - CN Ativo do FTGS - CEFGA   <span class="footer-text ">#INTERNO.CONFIDENCIAL</span></MudText>
+</MudTFootRow>
+

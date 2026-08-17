@@ -1,0 +1,266 @@
+﻿@page "/PreditorTeste"
+@using PlataformaOperacional.Pages.Aplicacao.Preditor
+
+
+@inject IDialogService DialogService
+@inject PreditorService PreditorService
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
+@inject UsuarioService Usuario
+
+<style>
+	* {
+		font-family: 'CAIXA Std'
+	}
+
+	.gap-4 {
+		gap: 1rem;
+	}
+
+	.gap-2 {
+		gap: 0.5rem;
+	}
+
+	.rounded-custom {
+		border-radius: 12px;
+	}
+
+	.mud-appbar {
+		background-color: #ffffff !important;
+		border-bottom: 1px solid #cfd7e7;
+		box-shadow: none !important;
+	}
+
+</style>
+
+<MudThemeProvider Theme="_customTheme"></MudThemeProvider>
+
+
+<MudContainer Class="mb-6 mt-0 preditor-css">
+
+
+	@if (!_paginaCarregouPorCompleto)
+	{
+		<MudContainer Class="mt-2">
+			<MudPaper Class="rounded-custom border border-solid mud-border-lines-default pa-6" Elevation="0">
+				<MudSkeleton Height="24px" Width="60%" />
+				<MudSkeleton Height="18px" Width="40%" Class="mt-2" />
+			</MudPaper>
+		</MudContainer>
+	}
+	else
+	{
+		<MudContainer Class="mt-2">
+			<PredCabecalho_CPT OnClickConfiguracao="ConfiguracaoUsuario"
+							   OnClickFinalizar="FinalizarPreditor"
+							   StatusTexto="@(_controlePreditor.IcStatus =="Finalizado" ? "E-mail Enviado" : _controlePreditor.IcStatus)"
+							   BtnFinalizar="@(!_controlePreditor.BtnFinalizador)"
+							   BtnConfiguracao="@_controlePreditor.BtnConfigurar"
+							   DataCabecalho="@_controlePreditor.DtPredicao" />
+			@if (_ativarMock)
+			{
+				<PreditorAlertas_CPT ListaAlertas="@_controlePreditor.Alertas" />
+			}
+			@if (_controlePreditor.Alertas.Any())
+			{
+				<PreditorAlertas_CPT ListaAlertas="@_controlePreditor.Alertas" />
+			}
+
+			@if (_paginaCarregandoConsulta)
+			{
+				<MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-6" />
+			}
+			<MudGrid Class="mb-8 fill-height" Spacing="6">
+				<MudItem xs="12" lg="6" md="6" Class="h-100 d-flex">
+					<CardSetorPublico Title="Setor Público"
+									  Icon="@Icons.Material.Filled.AccountBalance"
+									  IconColor="Color.Info"
+									  PreditorNaoFinalizado="@(_controlePreditor.IcStatus == "Não Iniciado")"
+									  Subtitle="Saneamento e Infraestrutura Urbana"
+									  HabilitarBotaoSalvar="_habilitarBotaoPublicoSalvar"
+									  OnClickSalvar="AtualizarAnaliticoPublico"
+									  OnClickResetar="ResetarPublico"
+									  AnalisarSetorPublico="_atualizarPreditorPublico"
+									  ButtonText="Salvar Público" />
+				</MudItem>
+				<MudItem xs="12" lg="6" md="6" Class="h-100 d-flex">
+					<CardSetorPrivado Title="Setor Privado"
+									  PreditorNaoFinalizado="@(_controlePreditor.IcStatus == "Não Iniciado")"
+									  Subtitle="Habitação"
+									  Icon="@Icons.Material.Filled.Domain"
+									  IconColor="Color.Secondary"
+									  HabilitarBotaoSalvar="_habilitarBotaoPrivadoSalvar"
+									  OnClickSalvar="AtualizarAnaliticoPrivado"
+									  OnClickResetar="ResetarPrivado"
+									  AnalisarPrivado="_atualizarPreditorPrivado"
+									  ButtonText="Salvar Privado" />
+
+				</MudItem>
+			</MudGrid>
+
+		</MudContainer>
+	}
+	@* 	<div class="mt-6">
+	<MudButton OnClick=" AtivarMock">
+	Mockar
+	</MudButton>	<MudButton OnClick="  ConfiguracaoUsuario2">
+	Gerenciar
+	</MudButton>
+	</div> *@
+</MudContainer>
+
+@code {
+	#region Propriedades Gerais
+	private ControlePreditorDeDesembolso _controlePreditor = new();
+	private bool Setor_Privado = false;
+	private AnaliticoSetorPrivado? _atualizarPreditorPrivado;
+	private AnaliticoSetorPublico? _atualizarPreditorPublico;
+	private DateTime _dataAtual = DateTime.UtcNow.Date;
+	private bool _habilitarBotaoPrivadoSalvar => _controlePreditor.PriConfirmacao == null ? true : false;
+	private bool _habilitarBotaoPublicoSalvar => _controlePreditor.PubConfirmacao == null ? true : false;
+	private bool _paginaCarregouPorCompleto = false;
+	private bool _paginaCarregandoConsulta = false;
+	public List<ReadDestinatarioEmail> _destinatarioEmails = new();
+	#endregion
+	private bool _preditorFinalizado => _controlePreditor.IcStatus.ToUpper() == "FINALIZADO";
+	#region Propriedades e Metodos para mock
+	// private bool _mockEndPoint => Usuario.MockarDados();
+	private bool _ativarMock = false;
+	#endregion
+
+
+
+	protected override async Task OnInitializedAsync()
+	{
+		await CarregarDados();
+		_paginaCarregouPorCompleto = true;
+
+		var responseDestinatarioEmail = await PreditorService.ConsultarEmailPreditor();
+		_destinatarioEmails = await HttpResponseHandler.ResponseHandler<List<ReadDestinatarioEmail>>(responseDestinatarioEmail, Snackbar);
+	}
+
+	private MudTheme _customTheme = new()
+		{
+			PaletteLight = new PaletteLight
+			{
+				Primary = "005ca9",
+				Secondary = "F39200",
+				Tertiary = "9e9e9e",
+				Background = "#EDF2FF"
+
+			},
+			Typography = new Typography()
+			{
+			Default = new DefaultTypography()
+				{
+					FontFamily = new[] { "CAIXA Std", "Helvetica", "Arial", "sans-serif" }
+				}
+			}
+
+		};
+
+	#region Endpoints API
+	private async Task CarregarDados()
+	{
+		var response = await PreditorService.ConsultarDadosDoPreditorDeDesembolso();
+		_controlePreditor = await HttpResponseHandler.ResponseHandler<ControlePreditorDeDesembolso>(response, Snackbar)
+		?? new ControlePreditorDeDesembolso();
+
+		_atualizarPreditorPublico = new AnaliticoSetorPublico
+			{
+				VrAFCaixa = _controlePreditor.AnaliticoSetorPublico.VrAFCaixa ?? 0,
+				VrOutrosAF = _controlePreditor.AnaliticoSetorPublico.VrOutrosAF ?? 0,			
+				ValorCalculado = _controlePreditor.AnaliticoSetorPublico.ValorCalculado ?? 0,
+				ValorTotal = _controlePreditor.AnaliticoSetorPublico.ValorTotal ?? 0,
+			};
+		_atualizarPreditorPrivado = new AnaliticoSetorPrivado
+			{
+				ValorConsolidado = _controlePreditor.AnaliticoSetorPrivado.ValorConsolidado ?? 0,
+				ValorLegado = _controlePreditor.AnaliticoSetorPrivado.ValorLegado ?? 0,
+				ValorProCotista = _controlePreditor.AnaliticoSetorPrivado.ValorProCotista ?? 0,
+				ValorCalculado = _controlePreditor.AnaliticoSetorPrivado.ValorCalculado ?? 0,
+				ValorTotal = _controlePreditor.AnaliticoSetorPrivado.ValorTotal ?? 0,
+			};
+	}
+	private async Task FinalizarPreditor()
+	{
+		_paginaCarregandoConsulta = true;
+		var response = await PreditorService.FinalizarPreditorEnviarEmail();
+		await HttpResponseHandler.ResponseHandler(response, Snackbar);
+		await CarregarDados();
+		_paginaCarregandoConsulta = false;
+
+	}
+	private async Task AtualizarAnaliticoPublico()
+	{
+		_paginaCarregandoConsulta = true;
+		var response = await PreditorService.AtualizarPreditorAnaliticoPublico(_atualizarPreditorPublico);
+		await HttpResponseHandler.ResponseHandler(response, Snackbar);
+		await CarregarDados();
+		_paginaCarregandoConsulta = false;
+	}
+	private async Task AtualizarAnaliticoPrivado()
+	{
+		_paginaCarregandoConsulta = true;
+		var response = await PreditorService.AtualizarPreditorAnaliticoPrivado(_atualizarPreditorPrivado);
+		await HttpResponseHandler.ResponseHandler(response, Snackbar);
+		await CarregarDados();
+		_paginaCarregandoConsulta = false;
+
+	}
+	private async Task ResetarPrivado()
+	{
+		_paginaCarregandoConsulta = true;
+		var response = await PreditorService.ResetarPreditorAnaliticoPrivado();
+		await HttpResponseHandler.ResponseHandler(response, Snackbar);
+		await CarregarDados();
+		_paginaCarregandoConsulta = false;
+
+	}
+	private async Task ResetarPublico()
+	{
+		_paginaCarregandoConsulta = true;
+		var response = await PreditorService.ResetarPreditorAnaliticoPublico();
+		await HttpResponseHandler.ResponseHandler(response, Snackbar);
+		await CarregarDados();
+		_paginaCarregandoConsulta = false;
+
+	}
+	private async Task ConfiguracaoUsuario()
+	{
+		var options = new DialogOptions()
+			{
+				CloseOnEscapeKey = true,
+			};
+		var parameters = new DialogParameters<List<ReadDestinatarioEmail>>()
+		{
+			{
+				"DestinatarioEmail", _destinatarioEmails
+			}
+		};
+		await DialogService.ShowAsync<DialogConfigPreditor>(null, parameters, options);
+
+	}
+	private async Task ConfiguracaoUsuario2()
+	{
+		var options = new DialogOptions()
+			{
+				CloseOnEscapeKey = true,
+			};
+		// await DialogService.ShowAsync<DialogPreditorTeste_CPT>("Inserir Observação", options);
+		await DialogService.ShowAsync<PreditorGerenciadorAutorizados>("Inserir Observação", options);
+	}
+	#endregion
+
+
+
+	#region Metodos para mock
+
+
+	private void AtivarMock()
+	{
+		_ativarMock = !_ativarMock;
+	}
+	#endregion
+
+}

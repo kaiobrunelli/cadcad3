@@ -1,0 +1,49 @@
+﻿
+.btn-caixa {
+    margin: 30px;
+}
+.btn-caixa-primary {
+    background-color: var(--botao-primary-background-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+}
+    .btn-caixa-primary:hover {
+        background-color: var(--botao-primary-hover-color)
+    }
+
+.btn-caixa-secondary {
+    background-color: var(--botao-secondary-background-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    margin: 8px;
+}
+
+    .btn-caixa-secondary:hover {
+        background-color: var(--botao-secondary-hover-color)
+    }
+
+.btn-caixa-small {
+    font-size: 14px;
+    padding: 8px 12px;
+    gap: 8px;
+    max-height: 32px;
+}
+
+.btn-caixa-standard {
+    font-size: 16px;
+    padding: 8px 16px;
+    gap: 8px;
+    max-height: 40px;
+    width: auto;
+}
+
+.btn-caixa-large {
+    font-size: 18px;
+    padding: 8px 24px;
+    gap: 8px;
+    max-height: 48px;
+}

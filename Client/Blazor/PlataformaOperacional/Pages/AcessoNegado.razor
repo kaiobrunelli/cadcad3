@@ -1,0 +1,49 @@
+﻿@page "/acessonegado"
+@* @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager Navigation *@
+
+ @inject UsuarioService UsuarioService
+<PageTitle>Acesso Negado</PageTitle>
+<MudThemeProvider Theme="MyCustomTheme"></MudThemeProvider>
+<MudContainer Style="background-color:#0B65B0">
+	<MudItem Class="d-flex justify-center">
+		<MudPaper Elevation="2" Class="pa-6 mt-16 ml-6">
+			<MudStack Row="true">
+				<MudIcon Icon="@Icons.Material.Filled.Block" Color="Color.Error"></MudIcon>
+				<MudText Typo="Typo.h6"> Acesso negado.</MudText>
+			</MudStack>		
+			<MudItem Class="my-2">
+				<MudText> Usuário <b>@nomeCOmpleto</b> não possui permissão para acessar esta página.</MudText>
+				<MudText> Entrar em contato com a CEFGA 12 - cefga12@caixa.gov.br</MudText>
+			</MudItem>
+			
+		</MudPaper>
+	</MudItem>	
+</MudContainer>
+
+
+@code {
+	public bool listaVazia;
+	public string nomeCOmpleto = "";
+	public int quantidade;
+	MudTheme MyCustomTheme = new MudTheme()
+		{
+			PaletteLight = new PaletteLight()
+			{
+
+				Background = "#0B65B0"
+			},
+
+		};
+	protected override async Task OnInitializedAsync()
+	{
+		var usuario = await UsuarioService.ConsultaConfiguracaoUsuario();
+		var item = usuario.Areas;
+
+		// listaVazia = usuario.ListaDeFuncionalidade.Any();
+		// nomeCOmpleto = usuario.NomeCompleto;
+		// quantidade = usuario.ListaDeFuncionalidade.Count();
+		
+		StateHasChanged();
+	}
+}

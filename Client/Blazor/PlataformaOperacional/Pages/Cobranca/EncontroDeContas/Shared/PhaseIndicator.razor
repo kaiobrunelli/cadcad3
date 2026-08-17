@@ -1,0 +1,51 @@
+
+
+<div class="phases" aria-label="Fase do processo">
+    <span class="phase-label">Fase atual</span>
+    <div class="phase-list">
+        @{
+            var phases = new[] { FasesDeExecucao.Selecao, FasesDeExecucao.Validacao, FasesDeExecucao.Execucao, FasesDeExecucao.Conclusao };
+        }
+        @for (int i = 0; i < phases.Length; i++)
+        {
+            var p = phases[i];
+            var idx = i;
+            var done = idx < (int)Current || (idx == (int)Current && !Running);
+            var active = idx == (int)Current && Running;
+            var cls = $"phase-item {(done ? "done" : "")} {(active ? "active" : "")}";
+            <div class="@cls">
+                <span class="phase-dot">
+                    @if (done)
+                    {
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                    }
+                    else if (active)
+                    {
+                        <span class="pulse" style="background:var(--brand-600);"></span>
+                    }
+                    else
+                    {
+                        @((idx + 1).ToString("D2"))
+                    }
+                </span>
+                <div class="phase-body">
+                    <div class="phase-name">@p.Name()</div>
+                    <div class="phase-sub">@p.SubLabel()</div>
+                </div>
+            </div>
+            @if (idx < phases.Length - 1)
+            {
+                <div class="phase-connector @(idx < (int)Current ? "filled" : "")">
+                    <div class="fill"></div>
+                </div>
+            }
+        }
+    </div>
+
+</div>
+
+@code {
+    [Parameter] public FasesDeExecucao Current { get; set; } = FasesDeExecucao.Selecao;
+    [Parameter] public bool Running { get; set; }
+}
+    

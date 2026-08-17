@@ -1,0 +1,77 @@
+﻿@page "/CadastraAtendimento"
+
+
+<MudContainer >
+    @if (!string.IsNullOrEmpty(MensagemDeErro))
+    {
+        <MudAlert Class="mt-4" Severity="Severity.Error">
+            @MensagemDeErro
+        </MudAlert>
+    }
+    @* <MudCard Class="ml-6" Elevation="0"> *@      
+    <MudGrid >
+        <MudItem xs="8">
+            <MudPaper Class="card-body">
+                    <MudItem>
+                            <MudTextField ShrinkLabel Label="Título" @bind-Value="TituloAtendimento" Required="true" FullWidth RequiredError="Necessário inserir título" />
+                    </MudItem>                              
+                    <MudPaper Elevation="2" Class="pa-4 mt-4">
+                    <MudItem >
+                        <MudTextField @ref="multilineReference" T="string" Lines="3" Variant="Variant.Outlined" Text="@sampleText" />
+                    </MudItem>
+                    <MudItem Class="d-flex">
+                    <MudForm @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
+                        <MudRadioGroup T="string" Required="true" RequiredError="Account type is required!">
+                            <MudRadio Value="@("Personal")" Color="Color.Success">Dúvida</MudRadio>
+                            <MudRadio Value="@("Professional")" Color="Color.Secondary">Suporte</MudRadio>
+                            <MudRadio Value="@("Professional")" Color="Color.Error">Reclamação</MudRadio>
+                        </MudRadioGroup>                          
+                    </MudForm>
+                    </MudItem>
+                    <MudItem class="d-flex align-center justify-space-between">
+                        <MudFileUpload T="IBrowserFile" FilesChanged="OnFileSelect">
+@*                             <ActivatorContent>
+                                <MudButton Class="btn-caixa-small" Variant="Variant.Filled"
+                                           Color="Color.Primary">
+                                    Anexar Arquivo
+                                </MudButton>
+                            </ActivatorContent> *@
+                            <SelectedTemplate>
+                                @if (context != null)
+                                {
+                                    <MudText Typo="Typo.caption">@context.Name</MudText>
+                                }
+                            </SelectedTemplate>
+                        </MudFileUpload>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!success)" Class="ml-auto btn-caixa-small">Registrar Atendimento</MudButton>
+               
+                    </MudItem>                
+                </MudPaper>
+            </MudPaper>
+        </MudItem>
+     </MudGrid>
+</MudContainer>
+
+
+@code {
+    public string TituloAtendimento = "";
+    public string MensagemDeErro = "";
+    private MudTextField<string> multilineReference = new();
+    bool success;
+    string[] errors = { };
+    MudTextField<string> pwField1 = new();
+    MudForm form;
+    string sampleText = "Escreva aqui a sua solicitação...";
+    public IBrowserFile InputArquivoCarregado;
+    public void OnFileSelect(IBrowserFile file)
+    {
+        InputArquivoCarregado = file;
+
+    }
+    private string PasswordMatch(string arg)
+    {
+        if (pwField1.Value != arg)
+            return "Passwords don't match";
+        return null!;
+    }
+   }

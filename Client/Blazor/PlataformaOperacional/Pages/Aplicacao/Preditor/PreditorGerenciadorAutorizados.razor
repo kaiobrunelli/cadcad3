@@ -1,0 +1,266 @@
+﻿@page "/gerenciar2"
+@using System.ComponentModel.DataAnnotations
+<style>
+
+	.email-input {
+		width: 100%;
+		border-radius: 0.75rem; /* rounded-xl */
+		background-color: #f8fafc; /* bg-slate-50 */
+		border: 1px solid #e2e8f0; /* border-slate-200 */
+		height: 3rem; /* h-12 */
+		padding-left: 1rem;
+		padding-right: 1rem;
+		color: #0f172a; /* text-slate-900 */
+		transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+		outline: none;
+	}
+
+	.input-field {
+		flex: 1;
+		width: 100%;
+		height: 56px;
+		border-radius: 12px;
+		border: 1px solid var(--slate-200);
+		padding: 0 16px;
+		font-family: inherit;
+		transition: all 0.2s;
+	}
+
+		.input-field:focus {
+			outline: none;
+			border-color: var(--primary);
+			box-shadow: 0 0 0 4px var(--primary-glow);
+		}
+
+	.mud-border-radius-xl {
+		border-radius: 24px !important;
+	}
+
+	.card-adicionar-colaborador {
+		background-color: rgba(239, 246, 255, 0.5);
+		border: 1px solid rgba(224, 231, 255, 0.5);
+		border-radius: 12px;
+		padding: 16px;
+	}
+
+	.mud-border-radius-md {
+		border-radius: 12px !important;
+	}
+
+	.bg-slate-50 {
+		background-color: #f8fafc;
+	}
+
+	.glass-button-gradient {
+		background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+		box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3) !important;
+		transition: all 0.3s ease !important;
+		text-transform: none !important;
+	}
+
+		.glass-button-gradient:hover {
+			transform: translateY(-1px);
+			box-shadow: 0 20px 25px -5px rgba(79, 70, 229, 0.4) !important;
+			filter: brightness(1.1);
+		}
+
+	.user-card-hover {
+		transition: all 0.3s ease;
+	}
+
+		.user-card-hover:hover {
+			/* transform: translateY(-2px); */
+			border-color: var(--mud-palette-primary) !important;
+			box-shadow: 0 12px 24px -10px rgba(0,0,0,0.08);
+		}
+
+	.email-tag-custom {
+		background-color: #f8fafc !important;
+		border: 1px solid #e2e8f0 !important;
+		font-weight: 500;
+		color: #64748b !important;
+	}
+
+		.email-tag-custom:hover {
+			border-color: #c7d2fe !important;
+			color: var(--mud-palette-primary) !important;
+			background-color: #eef2ff !important;
+		}
+
+	:root {
+		--meu-gradiente-radial: radial-gradient(circle at top left, #e2e8f0, #cbd5e1);
+	}
+
+	/* Aplicando ao container principal do app */
+	.mud-layout {
+		/* background: var(--meu-gradiente-radial) fixed; */
+		background: #E2E8F0;
+	}
+	.container-preditor{
+		background-color: #E2E8F0;
+		margin:0px;
+		padding:0px;
+	}
+
+	.mud-container{
+		background-color: #E2E8F0 !important;
+	}
+</style>
+@* <MudLayout Style="@StyleGradient">
+    <MudContainer MaxWidth="MaxWidth.Medium" Class="my-8" Style="@StyleGradient"> *@
+
+
+	<MudPaper Elevation="0" Class="pa-0 mud-border-radius-xl overflow-hidden mb-16 ml-8" Style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px);">
+
+		@* Header *@
+		<div class="pa-8 d-flex justify-space-between align-center">
+			<div>
+				<MudText Typo="Typo.h4" Style="font-weight: 700; color: #0f172a; letter-spacing: -0.025em;">Gerenciar Acesso</MudText>
+				<MudText Typo="Typo.body2" Class="mud-text-secondary">Controle permissões e comunicações da sua equipe.</MudText>
+			</div>
+			<MudIconButton Icon="@Icons.Material.Filled.ArrowBack" OnClick="AlternarGradiente" Variant="Variant.Text" Color="Color.Default" />
+		</div>
+		<div class="px-8">
+			@* Seção: Adicionar Colaborador *@
+			<section>
+				<div Class="card-adicionar-colaborador">
+					<MudText Typo="Typo.subtitle1" Class="mb-4" Style="font-weight: 600; color: #0f172a;">Adicionar novo colaborador</MudText>
+					<MudGrid Spacing="12" Class="align-end">
+						<MudItem xs="12" sm="8" md="8" lg="8">
+							<input class="input-field" placeholder="Digite a matrícula (ex: M999999)" />
+						</MudItem>
+						<MudItem xs="12" sm="4">
+							<MudButton FullWidth="true" Variant="Variant.Filled" Color="Color.Primary"
+									   StartIcon="@Icons.Material.Filled.PersonAdd" Class="py-3 mud-border-radius-md glass-button-gradient">
+								Adicionar
+							</MudButton>
+						</MudItem>
+					</MudGrid>
+				</div>
+
+				@* Listagem de Usuários *@
+				<MudStack Spacing="3" Class="mt-4">
+					@foreach (var user in _users)
+					{
+						<MudPaper Elevation="0" Class="pa-5 d-flex align-center justify-space-between user-card-hover"
+								  Style="border: 1px solid #E2E8F0; border-radius: 14px;">
+							<div class="d-flex align-center gap-4">
+								<MudAvatar Color="user.IsGestor? Color.Success: Color.Primary" Variant="Variant.Filled" Style="font-weight: 700;">
+									@GetInitials(user.Nome)
+								</MudAvatar>
+								<div>
+									<div class="d-flex align-center gap-2">
+										<MudText Typo="Typo.body1" Style="font-weight: 600; color: #0f172a;">@user.Nome</MudText>
+										@if (user.IsGestor)
+										{
+											<MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Text" Style="font-weight: 700; font-size: 10px;" Class="px-2 py-0">GESTOR</MudChip>
+										}
+									</div>
+									<MudText Typo="Typo.caption" Style="color: #94a3b8; text-transform: uppercase;">Matrícula: @user.Matricula</MudText>
+								</div>
+							</div>
+							<div class="d-flex gap-2">
+								<MudTooltip Text="@(user.IsGestor ? "Remover Gestor" : "Tornar Gestor")">
+									<MudIconButton Icon="@(user.IsGestor? Icons.Material.Filled.Star : Icons.Material.Outlined.StarBorder)"
+												   Color="Color.Warning" Size="Size.Medium" />
+								</MudTooltip>
+								<MudTooltip Text="Remover">
+									<MudIconButton Icon="@Icons.Material.Outlined.Delete" Color="Color.Error" Size="Size.Medium" />
+								</MudTooltip>
+							</div>
+						</MudPaper>
+					}
+				</MudStack>
+			</section>
+
+			@* Seção: E-mails *@
+			<section>
+				<div class="d-flex align-center gap-3 mb-6 mt-4">
+					<div style="width: 4px; height: 24px; background-color: var(--mud-palette-primary); border-radius: 2px;"></div>
+					<MudText Typo="Typo.subtitle1" Style="font-weight: 600; color: #0f172a;">Relatórios por E-mail</MudText>
+				</div>
+
+				<MudGrid Spacing="3" Class="align-end mb-4">
+					<MudItem xs="12" sm="8">
+						<input class="email-input" placeholder="exemplo@empresa.com" />
+						@*     <MudTextField @bind-Value="_emailInput" T="string" Label="Endereço de e-mail" Placeholder="exemplo@empresa.com"
+						Variant="Variant.Outlined" Margin="Margin.Dense" Class="bg-slate-50" /> *@
+					</MudItem>
+					<MudItem xs="12" sm="4">
+						<MudButton FullWidth="true" Variant="Variant.Outlined" Color="Color.Primary" Class="py-3 mud-border-radius-md" Style="border-width: 2px; font-weight: 700;">
+							Adicionar E-mail
+						</MudButton>
+					</MudItem>
+				</MudGrid>
+
+				<div class="d-flex flex-wrap gap-2 mb-12">
+					@foreach (var email in _emails)
+					{
+						<MudChip T="string" OnClose="() => RemoveEmail(email)" Variant="Variant.Outlined" Color="Color.Default"
+								 Class="pa-4 email-tag-custom">
+							@email
+						</MudChip>
+					}
+				</div>
+			</section>
+		</div>
+
+		@* Footer *@
+		@*         <div class="pa-10 d-flex justify-end gap-4" style="background-color: rgba(248, 250, 252, 0.5); border-top: 1px solid #f1f5f9;">
+		<MudButton Variant="Variant.Text" Class="px-8 py-3" Style="color: #64748b; font-weight: 700;">Cancelar</MudButton>
+		<MudButton Variant="Variant.Filled" Color="Color.Primary" Class="px-10 py-3 mud-border-radius-md glass-button-gradient">
+		Salvar Alterações
+		</MudButton>
+		</div> *@
+	</MudPaper>
+
+
+
+@* </MudContainer>
+</MudLayout> *@
+
+
+@code {
+	private string _matricula;
+	private string _emailInput;
+	private MudTheme _customTheme = new()
+		{
+			PaletteLight = new PaletteLight()
+			{
+
+			}
+		};
+	private bool _isAltGradient = false;
+
+	// Definição dos dois estados de gradiente
+	private string _gradiente1 = "radial-gradient(circle at top left, #F8FAFC, #cbd5e1)";
+	private string _gradiente2 = "radial-gradient(circle at bottom right, #e2e8f0, #ffffff)";
+
+	// Propriedade calculada que injeta o valor na variável CSS
+	private string StyleGradient => $"--meu-gradiente-radial: {(_isAltGradient ? _gradiente2 : _gradiente1)};";
+
+	private void AlternarGradiente()
+	{
+		_isAltGradient = !_isAltGradient;
+		StateHasChanged();
+		Console.WriteLine("Clickei!");
+	}
+
+
+	private List<UserDto> _users = new()
+	{
+		new UserDto("João Silva", "M123456", false),
+		new UserDto("João Silva", "M123456", false),
+
+
+		new UserDto("Maria Souza", "M789012", true)
+	};
+
+	private List<string> _emails = new() { "financeiro@empresa.com", "diretoria@empresa.com", "rh_gestao@empresa.com" };
+
+	private string GetInitials(string name) => string.Concat(name.Split(' ').Select(x => x[0])).ToUpper();
+
+	private void RemoveEmail(string email) => _emails.Remove(email);
+
+	public record UserDto(string Nome, string Matricula, bool IsGestor);
+}

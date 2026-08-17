@@ -1,0 +1,128 @@
+﻿<h3>PageModel</h3>
+
+<body  class="container">
+    <div class="page-contabilidade ">
+        <div class="card-header container-header-item">
+            <MudIcon Icon="@Icons.Material.Filled.Search" Size="Size.Large"></MudIcon>
+            <h1>Consultar Lote</h1>
+        </div>
+            @if (!string.IsNullOrEmpty(ErroMessage))
+            {
+                <MudAlert Class="card-alert" Severity="Severity.Error">
+                    @ErroMessage
+                </MudAlert>
+            }
+        <div class="card-body ">
+            CONTEUDO BODY
+        </div>      
+        <div class="card-input">
+            CONTEUDO BODY
+        </div>
+        <div class="card-tabela">
+            CONTEUDO BODY
+        </div>
+    </div>
+    <div class="container-footer-item">
+        <p class="footer-text">2025 - CN Ativo do FTGS - CEFGA <span>#INTERNO.CONFIDENCIAL</span></p>
+    </div>
+</body>
+
+
+
+<PageTitle>Página Título</PageTitle>
+<MudContainer>        
+    <MudCard Class="ml-6" Elevation="0" >
+        <MudCard Class="d-flex flex-column pb-4 mt-2" Elevation="0">
+            <MudCard Class="d-flex flex-row mt-2 gap-1" Elevation="0">
+                <MudIcon Icon="@Icons.Material.Filled.Search" Size="Size.Large"></MudIcon>
+                <MudText Typo="Typo.h3" Style="font-weight:400">TÍTULO</MudText>
+            </MudCard>
+            <MudDivider Class="mt-2 flex-grow-1" DividerType="DividerType.FullWidth"></MudDivider>
+            @if (!string.IsNullOrEmpty(ErroMessage))
+            {
+                <MudAlert Class="mt-4" Severity="Severity.Error">
+                    @ErroMessage
+                </MudAlert>
+            }
+        </MudCard>
+        <MudPaper Class="card-body">
+            <MudItem Class="d-flex justify-end gap-6 mb-4">
+                 CONTEÚDO 1ª LINHA
+            </MudItem>         
+            <MudItem Class="d-flex justify-end gap-4 mt-4">                  
+                <MudItem>
+                    BOTAO 1 
+                </MudItem>
+                <MudItem>
+                    BOTAO 2
+                </MudItem>
+            </MudItem>
+        </MudPaper>
+    </MudCard>
+</MudContainer>
+<MudTFootRow Class="container-footer-item align-center pl-4">
+    <MudText Typo="Typo.body2">2025 - CN Ativo do FTGS - CEFGA   <span class="footer-text ">#INTERNO.CONFIDENCIAL</span></MudText>
+</MudTFootRow>
+
+
+
+
+<PageTitle>Página Título</PageTitle>
+<MudContainer>
+    <MudCard Class="ml-6" Elevation="0">
+        <MudCard Class="d-flex flex-column pb-4 mt-2" Elevation="0">
+            <MudCard Class="d-flex flex-row mt-2 gap-1" Elevation="0">
+                <MudIcon Icon="@Icons.Material.Filled.Search" Size="Size.Large"></MudIcon>
+                <MudText Typo="Typo.h3" Style="font-weight:400">Consultar Lote</MudText>
+            </MudCard>
+            <MudDivider Class="mt-2 flex-grow-1" DividerType="DividerType.FullWidth"></MudDivider>
+            @if (!string.IsNullOrEmpty(ErroMessage))
+            {
+                <MudAlert Class="mt-4" Severity="Severity.Error">
+                    @ErroMessage
+                </MudAlert>
+            }
+        </MudCard>
+        <MudPaper Class="card-body">
+            <MudItem Class="d-flex justify-end gap-6 mb-4">
+              
+            </MudItem>
+            <MudItem Class="d-flex justify-end gap-6 mb-4">
+                <MudButton Class="btn-caixa-small"
+                           Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           OnClick="AdicionarMetodo"
+                           FullWidth>Buscar</MudButton>
+                <MudButton Class="btn-caixa-small"
+                           Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           OnClick="AdicionarMetodo"
+                           FullWidth>Todos Lotes</MudButton>
+            </MudItem>
+            <MudItem Class="d-flex justify-end gap-6 mb-2">
+                <MudItem>
+                    BOTAO 1
+                </MudItem>
+                <MudItem>
+                    BOTAO 2
+                </MudItem>
+            </MudItem>
+        </MudPaper>
+    </MudCard>
+</MudContainer>
+<MudTFootRow Class="container-footer-item align-center pl-4">
+    <MudText Typo="Typo.body2">2025 - CN Ativo do FTGS - CEFGA   <span class="footer-text ">#INTERNO.CONFIDENCIAL</span></MudText>
+</MudTFootRow>
+
+
+
+
+
+
+
+
+@code {
+    private string ErroMessage;
+    public void AdicionarMetodo() { }
+
+}

@@ -1,0 +1,274 @@
+﻿
+@page "/ect3"
+@using MudBlazor
+
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<style>
+    /* Mantendo suas definições de variáveis e estilos base */
+    :root {
+        --text-main: #111827;
+        --text-muted: #6B7280;
+        --border-default: #E5E7EB;
+    }
+
+    .glass-panel {
+        background: rgba(255, 255, 255, 0.95) !important;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.8) !important;
+        border-radius: 1.5rem !important;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02) !important;
+    }
+
+    /* Estilos dos ícones 3D */
+    .icon-3d {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+    }
+
+    .icon-emerald {
+        background: linear-gradient(135deg, #6EE7B7 0%, #059669 100%);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+    }
+
+    .icon-blue {
+        background: linear-gradient(135deg, #60A5FA 0%, #1D4ED8 100%);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+    }
+
+    .icon-red {
+        background: linear-gradient(135deg, #F87171 0%, #B91C1C 100%);
+        box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+    }
+
+    .icon-yellow {
+        background: linear-gradient(135deg, #FDE047 0%, #EAB308 100%);
+        box-shadow: 0 4px 12px rgba(234, 179, 8, 0.2);
+    }
+
+    /* Seção de lista técnica */
+    .data-section-box {
+        background: #F9FAFB;
+        border-radius: 16px;
+        padding: 20px;
+        border: 1px solid #F3F4F6;
+    }
+
+    .status-card {
+        padding: 1.25rem;
+        border-radius: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        border: 1px solid transparent;
+        transition: transform 0.2s;
+    }
+
+        .status-card:hover {
+            transform: translateY(-2px);
+        }
+
+    .card-emerald {
+        background-color: #ECFDF5 !important;
+        border-color: #D1FAE5 !important;
+    }
+
+    .card-blue {
+        background-color: #EFF6FF !important;
+        border-color: #DBEAFE !important;
+    }
+
+
+    body {
+        font-family: 'Inter', sans-serif;
+      
+        height: 100%;
+        min-height: 100vh;
+    }
+</style>
+
+<MudThemeProvider Theme="_customTheme"></MudThemeProvider>
+
+<MudContainer Class="pt-6 pb-8">
+    @* <MudContainer MaxWidth="MaxWidth.Large"> *@
+    @* <MudContainer > *@
+
+        @* Único Card Principal que "Upa" a Página *@
+        <MudPaper Elevation="0" Class="glass-panel pa-8">
+
+            @* Header Interno do Card *@
+            <div class="d-flex justify-space-between align-start ">
+                <div>
+
+                    <MudText Typo="Typo.h4" Style="font-weight:800; color:#111827; letter-spacing:-1.5px;">Encontro de Contas</MudText>
+                    <div>
+
+                        <MudText Typo="Typo.body2" Style="color: #64748b; font-weight:500;">
+                            📅 19/02/2026 • <span>
+                                <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Style="background:#F3F4F6; font-weight:700; color:#6B7280;">
+                                    <div style="width:8px; height:8px; background:#9CA3AF; border-radius:50%; margin-right:8px;"></div> NÃO INICIADO
+                                </MudChip>
+                            </span>
+                        </MudText>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-3">
+                    <MudButton Variant="Variant.Outlined" Color="Color.Default" Style="text-transform:none; border-radius:10px; font-weight:600;">Exportar PDF</MudButton>
+                    <MudButton Variant="Variant.Filled"
+                               DisableElevation="true"
+                               Style="background: #005ca9; color: white; border-radius: 10px; padding: 10px 32px; font-weight: 700; text-transform: none;">
+                        INICIAR
+                    </MudButton>
+                </div>
+            </div>
+
+            <MudGrid Gutter="4">
+                @* COLUNA ESQUERDA: Listagem de Dados (Topificada) *@
+                <MudItem lg="12" md="12">
+                    @* <MudPaper Elevation="25" Class="glass-panel p-8 " Style="background: #ffffff; border: 1px solid #f0f0f0; border-radius: 24px; width: 100%;"> *@
+               
+
+                        <MudGrid Spacing="12">
+                            <MudItem lg="7" md="12">
+                                <MudText Typo="Typo.h5" Style="color: #3D4B63; font-weight: 600; margin-left: 4px;">Setor Público</MudText>
+                                <div class="mt-2 mb-6" style="background: #fcfcfc; border-radius: 16px; padding: 16px;">
+
+                                    @* Item 1 *@
+                                    <div class="d-flex align-center justify-space-between py-3">
+                                        <div class="d-flex align-center gap-3">
+                                            <MudIcon Icon="@Icons.Material.Filled.AccountBalance" Style="color: #3b82f6;" Size="Size.Small" />
+                                            <MudText Typo="Typo.body1" Style="color: #334155; font-weight: 600;">DEV-CEF</MudText>
+                                        </div>
+                                        <MudText Typo="Typo.body1" Style="font-family: 'JetBrains Mono', monospace; font-weight: 700;">R$ 1.250.000,00</MudText>
+                                    </div>
+                                    <MudDivider Style="background-color: #f1f5f9; opacity: 0.6;" />
+
+                                    @* Item 2 *@
+                                    <div class="d-flex align-center justify-space-between py-3">
+                                        <div class="d-flex align-center gap-3">
+                                            <MudIcon Icon="@Icons.Material.Filled.Description" Style="color: #f59e0b;" Size="Size.Small" />
+                                            <MudText Typo="Typo.body1" Style="color: #334155; font-weight: 600;">REG-DIA</MudText>
+                                        </div>
+                                        <MudText Typo="Typo.body1" Style="font-weight: 700;">150.000 <span style="font-size: 0.8rem; color: #94a3b8; font-weight: 400;">Contratos</span></MudText>
+                                    </div>
+                                    <MudDivider Style="background-color: #f1f5f9; opacity: 0.6;" />
+
+                                    @* Item 3 *@
+                                    <div class="d-flex align-center justify-space-between py-3">
+                                        <div class="d-flex align-center gap-3">
+                                            <MudIcon Icon="@Icons.Material.Filled.Percent" Style="color: #10b981;" Size="Size.Small" />
+                                            <MudText Typo="Typo.body1" Style="color: #334155; font-weight: 600;">TX-REG-DIA</MudText>
+                                        </div>
+                                        <MudText Typo="Typo.body1" Style="font-family: 'JetBrains Mono', monospace; font-weight: 700;">R$ 45.000,00</MudText>
+                                    </div>
+                                </div>
+
+                                @* Seção de Dados: Área Privada *@
+                                <MudText Typo="Typo.overline" Style="color: #94a3b8; font-weight: 800; margin-left: 4px;">ÁREA PRIVADA</MudText>
+                                <div class="mt-2" style="background: #fcfcfc; border-radius: 16px; padding: 16px;">
+
+                                    <div class="d-flex align-center justify-space-between py-3">
+                                        <div class="d-flex align-center gap-3">
+                                            <MudIcon Icon="@Icons.Material.Filled.Security" Style="color: #6366f1;" Size="Size.Small" />
+                                            <MudText Typo="Typo.body1" Style="color: #334155; font-weight: 600;">REG-PRIV</MudText>
+                                        </div>
+                                        <MudText Typo="Typo.body1" Style="font-weight: 700;">90.000 <span style="font-size: 0.8rem; color: #94a3b8; font-weight: 400;">Contratos</span></MudText>
+                                    </div>
+                                    <MudDivider Style="background-color: #f1f5f9; opacity: 0.6;" />
+
+                                    <div class="d-flex align-center justify-space-between py-3">
+                                        <div class="d-flex align-center gap-3">
+                                            <MudIcon Icon="@Icons.Material.Filled.Wallet" Style="color: #ec4899;" Size="Size.Small" />
+                                            <MudText Typo="Typo.body1" Style="color: #334155; font-weight: 600;">TX-PRIV</MudText>
+                                        </div>
+                                        <MudText Typo="Typo.body1" Style="font-family: 'JetBrains Mono', monospace; font-weight: 700;">R$ 30.000,00</MudText>
+                                    </div>
+                                </div>
+
+                            </MudItem>
+
+                            <MudItem lg="5" md="12" Class="mb-4">
+                                <MudText Typo="Typo.h5" Style="color: #3D4B63; font-weight: 600; margin-left: 4px;">Analítico</MudText>
+
+                                <MudGrid Class="mt-2" Spacing="3">
+                                    <MudItem xs="6">
+                                        <div class="status-card card-emerald">
+                                            <div class="icon-3d icon-emerald mb-2">
+                                                <MudIcon Icon="@Icons.Material.Filled.Description" Size="Size.Medium" />
+                                            </div>
+                                            <MudText Typo="Typo.caption" Style="font-weight:700; color:#065F46;">PÚBLICO</MudText>
+                                            <MudText Typo="Typo.h6" Style="font-weight:800;">1.404</MudText>
+                                        </div>
+                                    </MudItem>
+
+                                    <MudItem xs="6">
+                                        <div class="status-card card-blue">
+                                            <div class="icon-3d icon-blue mb-2">
+                                                <MudIcon Icon="@Icons.Material.Filled.PendingActions" Size="Size.Medium" />
+                                            </div>
+                                            <MudText Typo="Typo.caption" Style="font-weight:700; color:#1E40AF;">PRIVADO</MudText>
+                                            <MudText Typo="Typo.h6" Style="font-weight:800;">942</MudText>
+                                        </div>
+                                    </MudItem>
+
+                                    <MudItem xs="6">
+                                        <div class="status-card card-blue">
+                                            <div class="icon-3d icon-blue mb-2">
+                                                <MudIcon Icon="@Icons.Material.Filled.Payments" Size="Size.Medium" />
+                                            </div>
+                                            <MudText Typo="Typo.caption" Style="font-weight:700; color:#1E40AF;">VOL. EST.</MudText>
+                                            <MudText Typo="Typo.h6" Style="font-weight:800;">R$ 14.2M</MudText>
+                                        </div>
+                                    </MudItem>
+
+                                    <MudItem xs="6">
+                                        <div class="status-card card-emerald">
+                                            <div class="icon-3d icon-emerald mb-2">
+                                                <MudIcon Icon="@Icons.Material.Filled.VerifiedUser" Size="Size.Medium" />
+                                            </div>
+                                            <MudText Typo="Typo.caption" Style="font-weight:700; color:#065F46;">CONTRATOS</MudText>
+                                            <MudText Typo="Typo.h6" Style="font-weight:800;">2.346</MudText>
+                                        </div>
+                                    </MudItem>
+                                </MudGrid>
+
+                                @* Nota de rodapé opcional para preencher o espaço *@
+                                <div class="mt-6 pa-4" style="border: 1px dashed #E5E7EB; border-radius: 12px;">
+                                    <MudText Typo="Typo.caption" Style="color:#94a3b8; line-height:1.2;">
+                                        * Os dados acima são consolidados em tempo real baseados nas últimas operações contabilizadas no sistema.
+                                    </MudText>
+                                </div>
+                            </MudItem>
+                        </MudGrid>
+
+                        @* Seção de Dados: Área Pública *@
+
+                  
+                </MudItem>
+
+                @* COLUNA DIREITA: Cards de Status Integrados *@
+
+            </MudGrid>
+
+        </MudPaper>
+  @*   </MudContainer> *@
+</MudContainer>
+
+@code {
+    private MudTheme _customTheme = new MudTheme()
+        {
+            PaletteLight = new PaletteLight
+            {
+                Primary = "#005ca9",
+                Secondary = "#6366f1", 
+                Background = "#F1F5F5"
+            }
+        };
+}

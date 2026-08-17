@@ -1,0 +1,131 @@
+﻿@page "/contratacao"
+@using PlataformaOperacional.Model.ContratatacaoModel
+@using PlataformaOperacional.Service
+@inject ISnackbar Snackbar
+@inject ContratacaoService ContratacaoServiceInject
+@inject NavigationManager Navigation
+
+
+<PageTitle>Contratação</PageTitle>
+<MudContainer>
+  @if (!CarregandoHomePage)
+    {
+        <MudItem Class="d-flex justify-center my-8" lg="12">
+            <MudProgressCircular  Color="Color.Secondary" Size="Size.Large" Indeterminate="true" />  
+        </MudItem>
+    }
+    else
+    {
+    <MudGrid Spacing="6" >
+        <MudItem xs="12" Class="titulo-page">
+            <MudCard Elevation="0" Class="d-flex flex-row gap-2">
+                    <MudText Typo="Typo.h5" Style="color:#005ca9">Contratação</MudText>
+            </MudCard>
+            <MudDivider Class="mt-2 flex-grow-1" DividerType="DividerType.FullWidth"></MudDivider>
+        </MudItem>
+            <MudItem xs="12">               
+            <MudPaper Class="card-body pa-6" Elevation="1">
+                <MudGrid Class="d-flex  justify-space-around">
+                        <MudItem lg="4" xs="12" sm="6" md="4">
+                            <MudLink OnClick="@(() => ConsultarVerificacoes(""))" Class="card-hover" Underline="Underline.None">
+                            <MudCard Class="pa-4 d-flex flex-column no-underline">
+                                <MudItem Class="gap-2 d-flex flex-row align-center">
+                                        @* <MudImage Src="imgs/IconFile.png" Height="60" Width="60" /> *@
+                                        <div class="rounded-button">
+                                            <MudIcon Icon="@Icons.Material.Filled.FileCopy" Style="fill:#005ca9" Size="Size.Large" />
+                                        </div>
+                                    <MudText Typo="Typo.body1" Style="font-weight:500">Total Contratos</MudText>
+                                </MudItem>
+                                <MudItem Class="mt-6">
+                                        <MudText Typo="Typo.h6" Style="font-weight:400">@ConsultaGeralCheckList.totalContratosVerificados</MudText>
+                                        <MudText Class="ml-2" Typo="Typo.body2" Style="fonte-weight:400">Contratos</MudText>
+                                </MudItem>
+                            </MudCard>
+                        </MudLink>
+                        </MudItem>
+                        <MudItem lg="4" xs="12" sm="6" md="4">
+                            <MudLink OnClick="@(() => ConsultarVerificacoes("finalizado"))" Class="card-hover" Underline="Underline.None">
+                            <MudCard Class="pa-4 d-flex flex-column no-underline" >
+                                <MudItem Class="gap-2 d-flex flex-row align-center">
+                                       @*  <MudImage Src="imgs/IconCheck.png" Height="60" Width="60" /> *@
+                                        <div class="rounded-button">
+                                            <MudIcon Icon="@Icons.Material.Filled.Check" Style="fill:#0BAe10" Size="Size.Large" />
+                                        </div>
+                                    <MudText Typo="Typo.body1" Style="font-weight:500">Finalizados </MudText>
+                                </MudItem>
+                                <MudItem Class="mt-6 d-flex justify-space-between">
+                                    <MudItem>
+                                            <MudText Typo="Typo.h6" Style="font-weight:400">@ConsultaGeralCheckList.totalContratosConcluidos</MudText>
+                                        <MudText Class="ml-2" Typo="Typo.body2" Style="font-weight:400">Contratos</MudText>
+                                    </MudItem>                             
+                                </MudItem>
+                            </MudCard>
+                        </MudLink>
+                    </MudItem>                                      
+                        <MudItem lg="4" xs="12" sm="6" md="4">
+                            <MudLink OnClick="@(() => ConsultarVerificacoes("com pendência"))" Class="card-hover" Underline="Underline.None">
+                            <MudCard Class="pa-4 d-flex flex-column no-underline">
+                                <MudItem Class="gap-2 d-flex flex-row align-center">
+                                    @* <MudImage Src="imgs/IconAtention.png" Height="55" Width="55" />                        *@
+                                        <div class="rounded-button">
+                                            <MudIcon Icon="@Icons.Material.Filled.FmdBad" Style="fill:#F39200" Size="Size.Large" />
+                                        </div>
+                                    <MudText Class="ml-2" Typo="Typo.body1" Style="font-weight:500">Pendentes</MudText>
+                                </MudItem> 
+                                <MudItem Class="mt-6">
+                                        <MudText Typo="Typo.h6" Style="font-weight:400">@ConsultaGeralCheckList.totalIrregulares</MudText>
+                                    <MudText Typo="Typo.body2" Style="font-weight:400">Contratos</MudText>
+                                </MudItem>
+                            </MudCard>
+                        </MudLink>
+                    </MudItem>                        
+                </MudGrid>
+           </MudPaper>
+        </MudItem>           
+      
+            @foreach (var tomador in ListaTomadores)
+            {
+                <MudItem lg="4" >
+                    <MudLink OnClick="@(() => ConsultarTomador(tomador.CoTomador))" Class="card-hover" Underline="Underline.None">
+                        <MudCard Elevation="4" Class="rounded-lg pa-4 no-underline ">
+                            <MudItem Class="gap-4 d-flex flex-row align-center">
+                                <MudIcon Icon="@Icons.Material.Filled.AccountBalance" Size="Size.Large" Color="Color.Secondary" />
+                                <MudText Typo="Typo.body1" Style="font-weight:500">@tomador.DeTomador</MudText>
+                            </MudItem>
+                            <MudDivider Class="my-3" />
+                            <MudItem Class="flex-row align-center d-flex  justify-space-between">
+                                <MudStack Row="true">
+                                    <MudIcon Icon="@Icons.Material.Filled.KeyboardArrowRight" Size="Size.Small" Color="Color.Secondary" />
+                                    <MudText Typo="Typo.body2" Style="font-weight:400">Total contratos:</MudText>
+                                </MudStack>
+                                <MudText Typo="Typo.body2" Style="font-weight:300">@tomador.TotalContratos</MudText>
+                            </MudItem>
+                            <MudItem Class="flex-row align-center d-flex  justify-space-between">
+                                <MudStack Row="true">
+                                    <MudIcon Icon="@Icons.Material.Filled.KeyboardArrowRight" Size="Size.Small" Color="Color.Secondary" />
+                                    <MudText Typo="Typo.body2" Style="fonte-weight:400">Total concluídos:</MudText>
+                                </MudStack>
+                                <MudText Typo="Typo.body2" Style="font-weight:300">@tomador.ContratosConcluidos</MudText>
+                            </MudItem>                        
+                            <MudItem Class="flex-row align-center d-flex  justify-space-between">
+                                <MudStack Row="true">
+                                    <MudIcon Icon="@Icons.Material.Filled.KeyboardArrowRight" Size="Size.Small" Color="Color.Secondary" />
+                                    <MudText Typo="Typo.body2" Style="font-weight:400">Contratos Pendentes:</MudText>
+                                </MudStack>
+                                <MudText Typo="Typo.body2" Style="font-weight:300">@tomador.ContratosIrregulares</MudText>
+                            </MudItem>
+                        </MudCard>
+                    </MudLink>
+                </MudItem>
+            } 
+       
+    </MudGrid>
+    <MudPaper Elevation="0" Class="pa-6">
+    </MudPaper>
+    }
+</MudContainer>
+
+    
+@code{
+ 
+ }

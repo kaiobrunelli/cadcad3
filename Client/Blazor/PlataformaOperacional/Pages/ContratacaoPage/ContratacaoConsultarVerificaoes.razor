@@ -1,0 +1,119 @@
+﻿@page "/consultarverificacoes"
+@using PlataformaOperacional.Model.ContratatacaoModel
+@using PlataformaOperacional.Service
+@inject ContratacaoService ContratacaoServiceInject
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+
+<PageTitle>Contratação</PageTitle>
+<MudContainer>
+    <MudContainer>
+        <MudItem lg="12">     
+            <MudCard Elevation="0" Class="d-flex flex-row gap-2">
+                <MudText Typo="Typo.h6">Relatório Por Situação</MudText>
+            </MudCard>
+            <MudDivider Class="mt-2 flex-grow-1" DividerType="DividerType.FullWidth"></MudDivider>
+        </MudItem>  
+        <MudGrid Class="d-flex justify-space-around my-6">            
+            <MudItem lg="3"  md="3" Class="pa-0">
+                <MudCard Class="pa-4 d-flex flex-column card-hover clickable-card no-underline" @onclick="() => ClearFilter()">
+                    <MudItem Class="gap-4 d-flex flex-row align-center">
+                        <div class="rounded-button">
+                            <MudIcon Icon="@Icons.Material.Filled.FileCopy" Style="fill:#005ca9" Size="Size.Large" />
+                        </div>
+                        <MudText Typo="Typo.body1" Style="font-weight:500">Total Contratos</MudText>
+                    </MudItem>
+                    <MudItem Class="mt-6">
+                        <MudText Typo="Typo.h6" Style="font-weight:400">@ConsultaGeralCheckList.totalContratosVerificados</MudText>
+                        <MudText Typo="Typo.body2" Style="fonte-weight:400">Contratos</MudText>
+                    </MudItem>
+                </MudCard>
+            </MudItem>
+            <MudItem lg="3" md="3" Class="pa-0">
+                <MudCard Class="pa-4 d-flex flex-column card-hover clickable-card no-underline" @onclick="() => FilterByCard(ValueFinalizado)">
+                    <MudItem Class="gap-4 d-flex flex-row align-center">
+                        <div class="rounded-button">
+                            <MudIcon Icon="@Icons.Material.Filled.Check" Style="fill:#0BAe10" Size="Size.Large" />
+                        </div>
+                        <MudText Typo="Typo.body1" Style="font-weight:500">Concluídos</MudText>
+                    </MudItem>
+                    <MudItem Class="mt-6 d-flex justify-space-between">
+                        <MudItem>
+                            <MudText Typo="Typo.h6" Style="font-weight:400">@ConsultaGeralCheckList.totalContratosConcluidos</MudText>
+                            <MudText Typo="Typo.body2" Style="fonte-weight:400">Contratos</MudText>
+                        </MudItem>
+                    </MudItem>
+                </MudCard>
+            </MudItem>
+            <MudItem lg="3" md="3" Class="pa-0">
+                <MudCard Class="pa-4 d-flex flex-column card-hover clickable-card no-underline" @onclick="() => FilterByCard(ValuePendente)">
+                    <MudItem Class="gap-4 d-flex flex-row align-center">
+                        <div class="rounded-button">
+                            <MudIcon Icon="@Icons.Material.Filled.FmdBad" Style="fill:#F39200" Size="Size.Large" />
+                        </div>
+                        <MudText Typo="Typo.body1" Style="font-weight:500">Pendentes</MudText>
+                    </MudItem>
+                    <MudItem Class="mt-6">
+                        <MudText Typo="Typo.h6" Style="font-weight:400">@ConsultaGeralCheckList.totalIrregulares</MudText>
+                        <MudText Typo="Typo.body2" Style="font-weight:400">Contratos</MudText>
+                    </MudItem>
+                </MudCard>
+            </MudItem>
+        </MudGrid>            
+        <MudPaper Class="card-body my-4">
+            <MudItem Class="mud-grid-item d-flex  justify-end flex-grow-1 gap-4 mb-6" Elevation="0">
+                <MudTextField Class="flex-none" T="DateTime?" Format="yyyy-MM-dd" @bind-Value="DataInicial"  Label="Data Inicial" InputType="InputType.Date" />
+                <MudTextField Class="flex-none" T="DateTime?" Format="yyyy-MM-dd" @bind-Value="DataFinal" Label="Data Final" InputType="InputType.Date" />
+                <MudButton Variant="Variant.Filled" Class="btn-caixa-small align-self-end" OnClick="FiltraData" Color="Color.Primary">Filtrar Data</MudButton>
+            </MudItem> 
+            <MudTable Class="ma-0" Items="@datasFiltradas" AllowUnsorted="false" Square="true" Hover="true" Striped="true" Filter="new Func<ContratacaoConsultarResumoTodosContratos,bool>(FilterFunc1)" @bind-SelectedItem="selectedItem1">
+                <ToolBarContent >
+                    <MudItem Class="d-flex  justify-end flex-grow-1">
+                        <MudSpacer/>
+                        <MudTextField @bind-Value="FiltroBuscarPalavra" Placeholder="Buscar" Style="width:200px" Class="mt-0 flex-none"></MudTextField>
+                        <MudButton Class="btn-caixa-small" Style="color:white" OnClick="ClearFilter">Limpar filtro</MudButton>
+                    </MudItem>           
+                 </ToolBarContent>
+                <HeaderContent>
+                    <MudTh>Tomador</MudTh> 
+                    <MudTh>Número do Contrato</MudTh>
+                    <MudTh>Situação</MudTh>
+                    <MudTh><MudTableSortLabel InitialDirection="SortDirection.Descending" SortBy="new Func<DateTime, object>(x=>x.Date )">Contratação</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel InitialDirection="SortDirection.Descending" SortBy="new Func<DateTime, object>(x=>x.Date )">Inclusão</MudTableSortLabel></MudTh>
+                    <MudTh>Ações</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.CoTomador</MudTd> 
+                    <MudTd>@context.Contrato</MudTd>
+                    <MudTd>@context.Situacao</MudTd>
+                    <MudTd>@context.DataAssinatura.ToString("dd/MM/yy")</MudTd>
+                    <MudTd>@context.DataSolicitacao.ToString("dd/MM/yy")</MudTd>
+                    <MudTd>
+                        <MudTooltip Text="Consultar contrato" Delay="400">
+                            <MudIconButton Icon="@Icons.Material.Filled.Search"
+                                           OnClick="@(() => ConsultarContratoTomadorParaAtualizar(context.Contrato))"
+                                           Variant="Variant.Filled"
+                                           Color="Color.Primary" Size="Size.Small" />
+                        </MudTooltip>
+                    </MudTd>
+                </RowTemplate>
+                <PagerContent >            
+                @if (datasFiltradas.Count() > 10)
+                {                        
+                    <MudTablePager Class="pager-buttons" RowsPerPageString="@rowsPerPageString" InfoFormat="@infoFormat" />                                             
+                }
+                </PagerContent> 
+            </MudTable>        
+        </MudPaper>
+    </MudContainer>
+    <MudPaper Elevation="0" Class="pa-6">
+    </MudPaper>    
+</MudContainer>
+
+
+
+
+
+
+

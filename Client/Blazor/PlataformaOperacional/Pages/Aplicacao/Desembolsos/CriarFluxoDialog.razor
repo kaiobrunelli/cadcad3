@@ -1,0 +1,245 @@
+﻿@using PlataformaOperacional.Model.DesembososModel
+@using System.Globalization
+
+<MudDialog Class="blur dialog-background fluxo-dialog"
+           TitleClass="dialog-background-title fluxo-dialog-title"
+           ContentClass="dialog-background-surface fluxo-dialog-content"
+           ActionsClass="dialog-background-surface fluxo-dialog-actions"
+           Style="width: min(92vw, 560px);">
+
+    <TitleContent>
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+            <MudIcon Icon="@Icons.Material.Filled.AddChart" Size="Size.Small" />
+            <MudText Typo="Typo.subtitle1" Class="font-weight-bold">
+                Criar Fluxo
+            </MudText>
+        </MudStack>
+    </TitleContent>
+
+    <DialogContent>
+        <MudText Typo="Typo.h6" Color="Color.Info" Class="mb-3">
+            Confirma a criação de fluxo de desembolsos com os dados abaixo?
+        </MudText>
+
+        <MudGrid Spacing="2">
+            @foreach (var resumo in Resumos)
+            {
+                <MudItem xs="12" sm="6" md="4">
+                    <MudPaper Outlined="true"
+                              Class="@GetCardClass(resumo)"
+                              Elevation="@(resumo.HasValue ? 2 : 0)">
+
+                        <MudStack Spacing="1">
+                            <MudStack Row="true"
+                                      Justify="Justify.SpaceBetween"
+                                      AlignItems="AlignItems.Center">
+
+                                <MudText Typo="Typo.body2"
+                                         Class="font-weight-bold"
+                                         Color="@(resumo.HasValue ? Color.Primary : Color.Default)">
+                                    @resumo.Nome
+                                </MudText>
+
+                                <MudChip T="int"
+                                         Size="Size.Small"
+                                         Variant="Variant.Outlined"
+                                         Color="@(resumo.HasValue ? Color.Primary : Color.Default)">
+                                    @resumo.Quantidade
+                                </MudChip>
+                            </MudStack>
+
+                            <MudText Typo="Typo.body2"
+                                     Class="resumo-valor"
+                                     Color="@(resumo.HasValue ? Color.Success : Color.Default)">
+                                @resumo.ValorFormatado
+                            </MudText>
+                        </MudStack>
+
+                    </MudPaper>
+                </MudItem>
+            }
+        </MudGrid>
+
+        <MudPaper Outlined="true" Class="total-card mt-3">
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                <MudText Typo="Typo.body2" Class="font-weight-bold">
+                    Total Geral
+                </MudText>
+
+                <MudText Typo="Typo.subtitle1" Color="Color.Success" Class="font-weight-bold">
+                    @TotalGeralFormatado
+                </MudText>
+            </MudStack>
+        </MudPaper>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Variant="Variant.Text"
+                   Size="Size.Small"
+                   OnClick="Cancel">
+            Cancelar
+        </MudButton>
+
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   Size="Size.Small"
+                   OnClick="Confirm"
+                   Disabled="@(!HasAnyValue)">
+            Confirmar
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+<style>
+    .blur {
+        backdrop-filter: blur(10px);
+    }
+
+    .dialog-background {
+        background-color: transparent;
+    }
+
+    .dialog-background-title {
+        background: var(--mud-palette-primary);
+        color: var(--mud-palette-white);
+    }
+
+    .dialog-background-surface {
+        background: var(--mud-palette-surface);
+    }
+
+    .fluxo-dialog-title {
+        padding: 10px 16px;
+    }
+
+    .fluxo-dialog-content {
+        padding: 16px !important;
+        margin: 0 !important;
+    }
+
+    .fluxo-dialog-actions {
+        padding: 8px 16px 12px 16px;
+    }
+
+    .resumo-card {
+        padding: 12px;
+        border-radius: 12px;
+        min-height: 82px;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+
+    .resumo-card-empty {
+        opacity: 0.55;
+        background-color: var(--mud-palette-background-grey);
+    }
+
+    .resumo-card-highlight {
+        border-color: var(--mud-palette-primary);
+        background: color-mix(in srgb, var(--mud-palette-primary) 6%, var(--mud-palette-surface));
+    }
+
+        .resumo-card-highlight:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--mud-elevation-4);
+        }
+
+    .resumo-valor {
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .total-card {
+        padding: 12px 14px;
+        border-radius: 12px;
+        background: color-mix(in srgb, var(--mud-palette-success) 7%, var(--mud-palette-surface));
+        border-color: var(--mud-palette-success);
+    }
+</style>
+
+@code
+{
+    [CascadingParameter]
+    private IMudDialogInstance? MudDialog { get; set; }
+
+    [Parameter]
+    public List<Desembolso> Desembolsos { get; set; } = [];
+
+    private static readonly CultureInfo PtBr = new("pt-BR");
+
+    private static readonly string[] TiposMovimentacao =
+    [
+        "LIBCEF",
+        "LIFGTDIA",
+        "LIFGTDES",
+        "OGUCEF",
+        "SUBOGU",
+        "PARCERIA"
+    ];
+
+    private List<ResumoLista> Resumos { get; set; } = [];
+
+    private decimal TotalGeral => Resumos.Sum(x => x.ValorTotal);
+
+    private string TotalGeralFormatado => FormatCurrency(TotalGeral);
+
+    private bool HasAnyValue => Resumos.Any(x => x.HasValue);
+
+    protected override void OnParametersSet()
+    {
+        Resumos = TiposMovimentacao
+            .Select(tipo => new ResumoLista(
+                tipo,
+                Desembolsos.Where(d => ContainsTipoMovimentacao(d, tipo))))
+            .ToList();
+    }
+
+    private static bool ContainsTipoMovimentacao(Desembolso desembolso, string tipo)
+    {
+        return desembolso.TipoMovimentacao?.Contains(
+            tipo,
+            StringComparison.OrdinalIgnoreCase) == true;
+    }
+
+    private static string FormatCurrency(decimal value)
+    {
+        return value.ToString("'R$' #,##0.00", new CultureInfo("pt-BR"));
+    }
+
+    private static string GetCardClass(ResumoLista resumo)
+    {
+        return resumo.HasValue
+            ? "resumo-card resumo-card-highlight"
+            : "resumo-card resumo-card-empty";
+    }
+
+    private void Cancel()
+    {
+        MudDialog?.Cancel();
+    }
+
+    private void Confirm()
+    {
+        MudDialog?.Close(DialogResult.Ok(true));
+    }
+
+    private sealed class ResumoLista
+    {
+        public string Nome { get; }
+        public int Quantidade { get; }
+        public decimal ValorTotal { get; }
+
+        public bool HasValue => ValorTotal > 0m;
+
+        public string ValorFormatado => FormatCurrency(ValorTotal);
+
+        public ResumoLista(string nome, IEnumerable<Desembolso> itens)
+        {
+            Nome = nome;
+
+            var lista = itens.ToList();
+
+            Quantidade = lista.Count;
+            ValorTotal = lista.Sum(x => x.VrTotal ?? 0m);
+        }
+    }
+}

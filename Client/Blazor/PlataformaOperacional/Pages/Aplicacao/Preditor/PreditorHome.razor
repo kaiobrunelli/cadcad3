@@ -1,0 +1,498 @@
+﻿@page "/PrevisaoDeDesembolso"
+@using PlataformaOperacional.Model.AplicacaoModel.Preditor
+
+
+
+@inject IDialogService DialogService
+@inject PreditorService PreditorService
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
+@inject UsuarioService Usuario
+
+<style>
+    * {
+        font-family: 'CAIXA Std'
+    }
+
+    .gap-4 {
+        gap: 1rem;
+    }
+
+    .gap-2 {
+        gap: 0.5rem;
+    }
+
+    .rounded-custom {
+        border-radius: 12px;
+    }
+
+    .mud-appbar {
+        background-color: #ffffff !important;
+        border-bottom: 1px solid #cfd7e7;
+        box-shadow: none !important;
+    }
+
+</style>
+
+<MudThemeProvider Theme="_customTheme"></MudThemeProvider>
+
+
+<MudContainer Class="mb-6 mt-0 ml-2 preditor-css">
+
+
+    @if (!_paginaCarregouPorCompleto)
+    {
+        <MudContainer Class="mt-2">
+            <MudPaper Class="rounded-custom border border-solid mud-border-lines-default pa-6" Elevation="0">
+                <MudSkeleton Height="24px" Width="60%" />
+                <MudSkeleton Height="18px" Width="40%" Class="mt-2" />
+            </MudPaper>
+        </MudContainer>
+    }
+    else
+    {
+        <MudContainer Class="mt-2">
+            <PredCabecalho_CPT OnClickConfiguracao="ConfiguracaoUsuario"
+                               OnClickFinalizar="FinalizarPreditor"
+                               StatusTexto="@(_controlePreditor.IcStatus =="Finalizado" ? "E-mail Enviado" : _controlePreditor.IcStatus)"
+                               BtnFinalizar="@(!_controlePreditor.BtnFinalizador)"
+                               BtnConfiguracao="@_controlePreditor.BtnConfigurar"
+                               DataCabecalho="@_controlePreditor.DtPredicao" />
+            @if (_ativarMock)
+            {
+                <PreditorAlertas_CPT ListaAlertas="@_controlePreditor.Alertas" />
+            }
+            @if (_controlePreditor.Alertas.Any())
+            {
+                <PreditorAlertas_CPT ListaAlertas="@_controlePreditor.Alertas" />
+            }
+
+            @if (_paginaCarregandoConsulta)
+            {
+                <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-6" />
+            }
+            <MudGrid Class="mb-8 fill-height" Spacing="6">
+                <MudItem xs="12" lg="6" md="6" Class="h-100 d-flex">
+                    <CardSetorPublico Title="Saneamento e Infraestrutura"
+                                      Icon="@Icons.Material.Filled.AccountBalance"
+                                      IconColor="Color.Info"
+                                      PreditorNaoFinalizado="@(_controlePreditor.IcStatus == "Não Iniciado")"
+                                      Subtitle=""
+                                      HabilitarBotaoSalvar="_habilitarBotaoPublicoSalvar"
+                                      OnClickSalvar="AtualizarAnaliticoPublico"
+                                      OnClickResetar="ResetarPublico"
+                                      AnalisarSetorPublico="_atualizarPreditorPublico"
+                                      ButtonText="Salvar" />
+                </MudItem>
+                <MudItem xs="12" lg="6" md="6" Class="h-100 d-flex">
+                    <CardSetorPrivado Title="Habitação"
+                                      PreditorNaoFinalizado="@(_controlePreditor.IcStatus == "Não Iniciado")"
+                                      Subtitle=""
+                                      Icon="@Icons.Material.Filled.Domain"
+                                      IconColor="Color.Secondary"
+                                      HabilitarBotaoSalvar="_habilitarBotaoPrivadoSalvar"
+                                      OnClickSalvar="AtualizarAnaliticoPrivado"
+                                      OnClickResetar="ResetarPrivado"
+                                      AnalisarPrivado="_atualizarPreditorPrivado"
+                                      ButtonText="Salvar" />
+
+                </MudItem>
+
+
+                @* 		<MudItem lg="12" md="12" Class="mb-8">
+					<PredTabelaResultados_CPT Dados="ResultadoRowMockFactory.CriarListaMock()" />
+				</MudItem>  *@
+
+                <MudItem lg="12" md="12" Class="mb-8">
+                    @* <NovaTabelaPreditor_CPT Dados="ControleGeralMock.ObterDados()"></NovaTabelaPreditor_CPT> *@
+                    @* <PredRelatorioDeResultados_CPT Dados="_readRelatorioDeResultados"></PredRelatorioDeResultados_CPT> *@
+                    <PreditorTabelaResultados_CPT DadosRelatorioDeResultados="_readRelatorioDeResultados"></PreditorTabelaResultados_CPT>
+                </MudItem>
+            </MudGrid>
+        
+            @* 			<MudText>ValorCalculado setor publico @_controlePreditor.AnaliticoSetorPublico.ValorCalculado</MudText>
+			<MudText>ValorTotal _controlePreditor @_controlePreditor.AnaliticoSetorPublico.ValorTotal</MudText>
+	
+			<MudText>ValorCalculado _atualizarPreditorPublico @_atualizarPreditorPublico.ValorCalculado</MudText>
+			<MudText>ValorTotal _atualizarPreditorPublico     @_atualizarPreditorPublico.ValorTotal</MudText> *@
+
+        </MudContainer>
+    }
+    <MudButton OnClick=" AtivarMock" />
+    @* 	<div class="mt-6">
+	Mockar
+	</MudButton>	<MudButton OnClick="  ConfiguracaoUsuario2">
+	Gerenciar
+	</MudButton>
+	</div> *@
+</MudContainer>
+
+@code {
+
+
+
+
+    #region Propriedades Gerais
+    private ControlePreditorDeDesembolso _controlePreditor = new();
+    private bool Setor_Privado = false;
+    private AnaliticoSetorPrivado? _atualizarPreditorPrivado;
+    private AnaliticoSetorPublico? _atualizarPreditorPublico;
+    private DateTime _dataAtual = DateTime.UtcNow.Date;
+    private bool _habilitarBotaoPrivadoSalvar => _controlePreditor.PriConfirmacao == null ? true : false;
+    private bool _habilitarBotaoPublicoSalvar => _controlePreditor.PubConfirmacao == null ? true : false;
+    private bool _paginaCarregouPorCompleto = false;
+    private bool _paginaCarregandoConsulta = false;
+    public List<ReadDestinatarioEmail> _destinatarioEmails = new();
+    #endregion
+    private bool _preditorFinalizado => _controlePreditor.IcStatus.ToUpper() == "FINALIZADO";
+    #region Propriedades e Metodos para mock
+    private List<ReadRelatorioDeResultados> _readRelatorioDeResultados;
+    private bool _ativarMock = false;
+    #endregion
+
+
+    private async Task AbrirDialogFinalizar()
+    {
+        var parametros = new DialogParameters
+        {
+            ["Email"] = "kaio@empresa.com",
+            ["Destinatario"] = "Kaio Brunelli"
+        };
+
+        var opcoes = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            BackdropClick = false,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true,
+            Position = DialogPosition.Center,
+            NoHeader = true
+        };
+
+        var dialog = await DialogService.ShowAsync<PreditorDialogFinalizar_CPT>(
+                            string.Empty, parametros, opcoes);
+        var resultado = await dialog.Result;
+
+        if (!resultado.Canceled)
+        {
+            await FinalizarPreditor();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CarregarDados();
+        _paginaCarregouPorCompleto = true;
+
+        var responseDestinatarioEmail = await PreditorService.ConsultarEmailPreditor();
+        _destinatarioEmails = await HttpResponseHandler.ResponseHandler<List<ReadDestinatarioEmail>>(responseDestinatarioEmail, Snackbar);
+    }
+
+    private MudTheme _customTheme = new()
+    {
+        PaletteLight = new PaletteLight
+        {
+            Primary = "005ca9",
+            Secondary = "F39200",
+            Tertiary = "9e9e9e",
+            Background = "#EDF2FF"
+
+        },
+        Typography = new Typography()
+        {
+            Default = new DefaultTypography()
+            {
+                FontFamily = new[] { "CAIXA Std", "Helvetica", "Arial", "sans-serif" }
+            }
+        }
+
+    };
+
+    #region Endpoints API
+    private async Task CarregarDados()
+    {
+        var response = await PreditorService.ConsultarDadosDoPreditorDeDesembolso();
+        _controlePreditor = await HttpResponseHandler.ResponseHandler<ControlePreditorDeDesembolso>(response, Snackbar)
+        ?? new ControlePreditorDeDesembolso();
+        var responseRelatorio = await PreditorService.ConsultarRelatorioDeResultados();
+        _readRelatorioDeResultados = await HttpResponseHandler.ResponseHandler<List<ReadRelatorioDeResultados>>(responseRelatorio, Snackbar);
+
+        if (_controlePreditor.AnaliticoSetorPrivado is null)
+        {
+            _atualizarPreditorPublico = new AnaliticoSetorPublico
+            {
+                VrAFCaixa =  0,
+                VrOutrosAF =  0,
+
+                ValorCalculado =  0,
+                ValorTotal =  0,
+            };
+        }
+        else
+        {
+            _atualizarPreditorPublico = new AnaliticoSetorPublico
+            {
+                VrAFCaixa = _controlePreditor.AnaliticoSetorPublico.VrAFCaixa ?? 0,
+                VrOutrosAF = _controlePreditor.AnaliticoSetorPublico.VrOutrosAF ?? 0,
+
+                ValorCalculado = _controlePreditor.AnaliticoSetorPublico.ValorCalculado ?? 0,
+                ValorTotal = _controlePreditor.AnaliticoSetorPublico.ValorTotal ?? 0,
+            };
+        }
+
+        if (_controlePreditor.AnaliticoSetorPublico is null)
+        {
+            _atualizarPreditorPrivado = new AnaliticoSetorPrivado
+            {
+                ValorConsolidado = 0,
+                ValorLegado = 0,
+                ValorProCotista = 0,
+                ValorCalculado = 0,
+                ValorTotal = 0,
+            };
+        }
+        else
+        {
+            _atualizarPreditorPrivado = new AnaliticoSetorPrivado
+            {
+                ValorConsolidado = _controlePreditor.AnaliticoSetorPrivado.ValorConsolidado ?? 0,
+                ValorLegado = _controlePreditor.AnaliticoSetorPrivado.ValorLegado ?? 0,
+                ValorProCotista = _controlePreditor.AnaliticoSetorPrivado.ValorProCotista ?? 0,
+                ValorCalculado = _controlePreditor.AnaliticoSetorPrivado.ValorCalculado ?? 0,
+                ValorTotal = _controlePreditor.AnaliticoSetorPrivado.ValorTotal ?? 0,
+            };
+        }
+        
+    }
+    private async Task FinalizarPreditor()
+    {
+        _paginaCarregandoConsulta = true;
+        var response = await PreditorService.FinalizarPreditorEnviarEmail();
+        await HttpResponseHandler.ResponseHandler(response, Snackbar);
+        await CarregarDados();
+        _paginaCarregandoConsulta = false;
+
+    }
+    private async Task AtualizarAnaliticoPublico()
+    {
+        if (!_habilitarBotaoPrivadoSalvar || !_habilitarBotaoPublicoSalvar)
+        {
+            _paginaCarregandoConsulta = true;
+            var response2 = await PreditorService.AtualizarPreditorAnaliticoPublico(_atualizarPreditorPublico);
+            await HttpResponseHandler.ResponseHandler(response2, Snackbar);
+            await CarregarDados();
+            _paginaCarregandoConsulta = false;
+            await AbrirDialogFinalizar();
+            return;
+        }
+        _paginaCarregandoConsulta = true;
+        var response = await PreditorService.AtualizarPreditorAnaliticoPublico(_atualizarPreditorPublico);
+        await HttpResponseHandler.ResponseHandler(response, Snackbar);
+        await CarregarDados();
+        _paginaCarregandoConsulta = false;
+
+    }
+    private async Task AtualizarAnaliticoPrivado()
+    {
+        if (!_habilitarBotaoPrivadoSalvar || !_habilitarBotaoPublicoSalvar)
+        {
+            _paginaCarregandoConsulta = true;
+            var response2 = await PreditorService.AtualizarPreditorAnaliticoPrivado(_atualizarPreditorPrivado);
+            await HttpResponseHandler.ResponseHandler(response2, Snackbar);
+            await CarregarDados();
+            _paginaCarregandoConsulta = false;
+
+            await AbrirDialogFinalizar();
+            return;
+
+        }
+        _paginaCarregandoConsulta = true;
+        var response = await PreditorService.AtualizarPreditorAnaliticoPrivado(_atualizarPreditorPrivado);
+        await HttpResponseHandler.ResponseHandler(response, Snackbar);
+        await CarregarDados();
+        _paginaCarregandoConsulta = false;
+		
+
+    }
+    private async Task ResetarPrivado()
+    {
+        _paginaCarregandoConsulta = true;
+        var response = await PreditorService.ResetarPreditorAnaliticoPrivado();
+        await HttpResponseHandler.ResponseHandler(response, Snackbar);
+        await CarregarDados();
+        _paginaCarregandoConsulta = false;
+
+    }
+    private async Task ResetarPublico()
+    {
+        _paginaCarregandoConsulta = true;
+        var response = await PreditorService.ResetarPreditorAnaliticoPublico();
+        await HttpResponseHandler.ResponseHandler(response, Snackbar);
+        await CarregarDados();
+        _paginaCarregandoConsulta = false;
+
+    }
+    private async Task ConfiguracaoUsuario()
+    {
+        var options = new DialogOptions()
+        {
+            CloseOnEscapeKey = true,
+        };
+        var parameters = new DialogParameters<List<ReadDestinatarioEmail>>()
+        {
+            {
+                "DestinatarioEmail", _destinatarioEmails
+            }
+        };
+        await DialogService.ShowAsync<DialogConfigPreditor>(null, parameters, options);
+
+    }
+    private async Task ConfiguracaoUsuario2()
+    {
+        var options = new DialogOptions()
+        {
+            CloseOnEscapeKey = true,
+        };
+        // await DialogService.ShowAsync<DialogPreditorTeste_CPT>("Inserir Observação", options);
+        await DialogService.ShowAsync<PreditorGerenciadorAutorizados>("Inserir Observação", options);
+    }
+    #endregion
+
+
+
+    #region Metodos para mock
+
+
+    private void AtivarMock()
+    {
+        _ativarMock = !_ativarMock;
+    }
+    #endregion
+
+
+    // public static class ResultadoRowMockFactory
+    // {
+    // 	public static List<ResultadoRow> CriarListaMock()
+    // 	{
+    // 		// Seed fixa => lista determinística (excelente para testes e mocks)
+    // 		var rng = new Random(20260302);
+
+    // 		var setores = new[]
+    // 		{
+    // 		"Habitação",
+    // 		"Infra/Sane"
+    // 	};
+
+    // 		// Queremos que a última data seja no máximo Fevereiro.
+    // 		// Como hoje é 02/03/2026, vamos fixar o fim em 28/02/2026.
+    // 		var dataFim = new DateTime(2026, 2, 28);
+
+    // 		// 30 dias => do 30º dia antes até dataFim (inclusive)
+    // 		var dataInicio = dataFim.AddDays(-29);
+
+    // 		// 2 setores por dia => 30 dias * 2 = 60 linhas
+    // 		var dias = 16;
+    // 		// 2 setores por dia => 16 * 2 = 32 linhas
+    // 		var lista = new List<ResultadoRow>(capacity: dias * setores.Length);
+
+    // 		for (int d = 0; d < dias; d++)
+
+    // 		{
+    // 			var data = dataInicio.AddDays(d);
+
+    // 			// Para a MESMA data, cria 2 linhas (uma por setor)
+    // 			foreach (var setor in setores)
+    // 			{
+    // 				// Previsto: 1.000.000 até 25.000.000
+    // 				var previsto = NextDecimal(rng, 1_000_000m, 25_000_000m);
+
+    // 				// Percentual: 90% até 130% (fator 0,90 a 1,30)
+    // 				var fator = NextDecimal(rng, 0.90m, 1.30m);
+
+    // 				// Realizado calculado a partir do previsto (garante percentual na faixa)
+    // 				var realizado = DecimalRound(previsto * fator, 2);
+
+    // 				// CalculadoInicial: baseline, previsto com variação -10%..+10%
+    // 				var calculadoInicial = DecimalRound(previsto * NextDecimal(rng, 0.90m, 1.10m), 2);
+
+    // 				lista.Add(new ResultadoRow
+    // 					{
+    // 						Data = data,
+    // 						Setor = setor,
+    // 						CalculadoInicial = calculadoInicial,
+    // 						TotalPrevisto = DecimalRound(previsto, 2),
+    // 						TotalRealizado = realizado
+    // 					});
+    // 			}
+    // 		}
+
+    // 		return lista;
+    // 	}
+
+    // 	private static decimal NextDecimal(Random rng, decimal min, decimal max)
+    // 	{
+    // 		var sample = (decimal)rng.NextDouble(); // [0,1)
+    // 		return min + (max - min) * sample;
+    // 	}
+
+    // 	private static decimal DecimalRound(decimal value, int decimals) =>
+    // 		Math.Round(value, decimals, MidpointRounding.AwayFromZero);
+    // }
+
+    // public static class ResultadoRowMockFactory
+    // {
+    // 	public static List<ResultadoRow> CriarListaMock()
+    // 	{
+    // 		// Seed fixa => lista determinística (excelente para testes e mocks)
+    // 		var rng = new Random(20260302);
+
+    // 		var setores = new[]
+    // 		{
+    // 		"Habitação", "Infra/Sane",
+    // 	};
+
+    // 		var lista = new List<ResultadoRow>(capacity: 30);
+
+    // 		// Datas: últimos 30 dias (um por dia)
+    // 		var dataBase = DateTime.Today.AddDays(-29);
+
+    // 		for (int i = 0; i < 30; i++)
+    // 		{
+    // 			// Previsto: 1.000.000 até 25.000.000
+    // 			var previsto = NextDecimal(rng, 1_000_000m, 25_000_000m);
+
+    // 			// Percentual: 90% até 120% (em fator 0,90 a 1,20)
+    // 			var fator = NextDecimal(rng, 0.90m, 1.30m);
+
+    // 			// Realizado calculado a partir do previsto (garante percentual na faixa)
+    // 			var realizado = DecimalRound(previsto * fator, 2);
+
+    // 			// "CalculadoInicial": pode ser um baseline, por ex. previsto com variação -10%..+10%
+    // 			var calculadoInicial = DecimalRound(previsto * NextDecimal(rng, 0.90m, 1.10m), 2);
+
+    // 			lista.Add(new ResultadoRow
+    // 				{
+    // 					Data = dataBase.AddDays(i),
+    // 					Setor = setores[i % setores.Length],
+    // 					CalculadoInicial = calculadoInicial,
+    // 					TotalPrevisto = DecimalRound(previsto, 2),
+    // 					TotalRealizado = realizado
+    // 				});
+    // 		}
+
+    // 		return lista;
+    // 	}
+
+    // 	private static decimal NextDecimal(Random rng, decimal min, decimal max)
+    // 	{
+    // 		// rng.NextDouble: [0,1)
+    // 		var sample = (decimal)rng.NextDouble();
+    // 		return min + (max - min) * sample;
+    // 	}
+
+    // 	private static decimal DecimalRound(decimal value, int decimals) =>
+    // 		Math.Round(value, decimals, MidpointRounding.AwayFromZero);
+    // }
+
+
+}

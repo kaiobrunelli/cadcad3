@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/Client/" />
+  <Folder Name="/Client/Blazor/">
+    <Project Path="Client/Blazor/PlataformaOperacional/PlataformaOperacional.csproj" />
+  </Folder>
+  <Folder Name="/Modulos.Client/">
+    <Project Path="Modulos.Client/ControleAnaliseDesembolso/ControleAnaliseDesembolso.csproj" />
+    <Project Path="Modulos.Client/PlataformaNotificacao.UI/PlataformaNotificacao.UI.csproj" />
+  </Folder>
+  <Project Path="ControleAnaliseDesembolso.Api/ControleAnaliseDesembolso.Api.csproj" />
+  <Project Path="ControleAnaliseDesembolso/ControleAnaliseDesembolso.csproj" />
+  <Project Path="Plataforma.UI.Shared/Plataforma.UI.Shared.csproj" />
+  <Project Path="PlataformaNotificacao/PlataformaNotificacao.csproj" />
+</Solution>

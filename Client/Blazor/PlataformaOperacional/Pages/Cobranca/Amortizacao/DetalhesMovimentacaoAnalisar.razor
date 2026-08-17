@@ -1,0 +1,28 @@
+﻿<style>
+    .text-center {
+        text-align: center !important;
+        ;
+    }
+</style>
+
+<MudTable T="MovimentacaoParaAnalise" Dense="true" Elevation="0" Style=" width:100%">
+    <ColGroup>      
+        <col />
+        <col />
+    </ColGroup>
+    <HeaderContent>      
+        <MudTh Class="text-center"><b>Log Usuário</b></MudTh>
+        <MudTh Class="text-center"><b>Log Carga</b></MudTh>
+    </HeaderContent>
+    <RowTemplate>      
+        <MudText Typo="Typo.body2">@Item.LogAcaoUsuario </MudText>
+        <MudText Typo="Typo.body2">@Item.LogApontamentos </MudText>
+    </RowTemplate>
+</MudTable>
+
+
+@code {
+
+    [Parameter] public MovimentacaoParaAnalise Item { get; set; }
+
+}

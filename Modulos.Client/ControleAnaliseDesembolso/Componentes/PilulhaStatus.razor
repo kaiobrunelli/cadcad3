@@ -1,0 +1,64 @@
+@* Status: pendente | aprovado | pendencia *@
+<span class="pilulha pilulha-@Status @(Tamanho == "lg" ? "pilulha-lg" : "pilulha-sm")">
+    <span class="pilulha-dot pilulha-dot-@Status"></span>
+    @TextoStatus
+</span>
+
+@code {
+    [Parameter, EditorRequired] public string Status  { get; set; } = "";
+    [Parameter] public string Tamanho { get; set; } = "sm"; // sm | lg
+
+    private string TextoStatus => Status switch
+    {
+        "pendente"  => "Analisar",
+        "aprovado"  => "Aprovado",
+        "pendencia" => "Aguardando",
+        "negado"    => "Rejeitado",
+        "valido"    => "Aprovado",
+        "invalido"  => "Inválido",
+        "baixado"   => "Baixado",
+        "neutro"    => "Informativo",
+        _           => Status
+    };
+}
+
+
+<style>
+.pilulha {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 700;
+    border-radius: var(--radius-lg);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    white-space: nowrap;
+}
+.pilulha-sm { font-size: 10.5px; padding: 4px 10px; }
+.pilulha-lg { font-size: 12px;   padding: 5px 12px; }
+
+.pilulha-pendente  { background: #FFEFD6; color: #663A00; }
+.pilulha-aprovado  { background: #E0F2E7; color: #1A7A4A; }
+.pilulha-pendencia { background: #FCE6E3; color: #9A2A1F; }
+.pilulha-negado    { background: #F1D9D6; color: #7A1F16; }
+.pilulha-valido    { background: #E0F2E7; color: #1A7A4A; }
+.pilulha-invalido  { background: #FCE6E3; color: #9A2A1F; }
+.pilulha-baixado   { background: #E0F2E7; color: #1A7A4A; }
+.pilulha-neutro    { background: #EDEFF2; color: #4B5563; }
+
+/* Dot */
+.pilulha-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: inline-block;
+}
+.pilulha-dot-pendente  { background: #D87B00; }
+.pilulha-dot-aprovado  { background: #1A7A4A; }
+.pilulha-dot-pendencia { background: #C0392B; }
+.pilulha-dot-valido    { background: #1A7A4A; }
+.pilulha-dot-invalido  { background: #C0392B; }
+.pilulha-dot-baixado   { background: #1A7A4A; }
+.pilulha-dot-neutro    { background: #6B7280; }
+</style>

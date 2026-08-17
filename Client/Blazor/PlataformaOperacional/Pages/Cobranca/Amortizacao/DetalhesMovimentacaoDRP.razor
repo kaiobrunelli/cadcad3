@@ -1,0 +1,24 @@
+﻿<MudTable T="MovimentacaoDrp" Dense="true" Elevation="0" Style=" width:100%">
+    <ColGroup>
+        <col style="width: 20%;" />
+        <col />
+    
+
+    </ColGroup>
+    <HeaderContent>
+        <MudTh><b>Valor</b></MudTh>
+        <MudTh><b>Observação</b></MudTh>
+    </HeaderContent>
+
+    <RowTemplate>
+        <MudTd> R$ @(Item.Valor?.ToString("N2") ?? "0,00")</MudTd>
+        <MudText Typo="Typo.body2">@Item.LogApontamentos </MudText>
+    </RowTemplate>
+</MudTable>
+
+
+@code {
+
+    [Parameter] public MovimentacaoDrp Item { get; set; }
+
+}

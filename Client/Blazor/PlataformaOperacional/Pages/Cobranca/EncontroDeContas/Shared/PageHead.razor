@@ -1,0 +1,16 @@
+@namespace Plataforma.Components.Shared
+<div class="page-head">
+    <div>      
+        <h1 class="page-title">Encontro de Contas</h1>
+    </div>
+    <div class="ref-date">
+        <span class="icon">📅</span>
+        <span class="label">Data de referência</span>
+        <span class="date">@DataFormatada</span>
+    </div>
+</div>
+
+@code {
+    [Parameter] public DateTime? ReferenciaData { get; set; } 
+    private  string DataFormatada => DateTime.Now.ToString("dd/MM/yyyy") ?? "Não informada";
+}

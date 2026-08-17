@@ -1,0 +1,199 @@
+﻿@using MudBlazor
+@using System.Collections.Generic
+@using System.Linq
+@using System.Threading.Tasks
+
+<style>
+	.borda-inferior-radius {
+		border-bottom-left-radius: 8px;
+		border-bottom-right-radius: 8px;
+	}
+
+	.mud-table .mud-table-toolbar {
+		border-top-left-radius: 8px;
+		border-top-right-radius: 8px;
+	}
+	.text-center {
+		text-align: center !important;		
+	}
+</style>
+
+<MudTable T="MovimentacaoDrp" Virtualize="false" Class="mb-2 pa-4" 
+		  Items="@Items" Context="item"
+		  Filter="new Func<MovimentacaoDrp,bool>(FilterFunc1)" @bind-SelectedItem="selectedItem1"
+		  Elevation="0"
+		  Style="border-radius: 10px;box-shadow: 0 1px 2px rgba(15, 23, 41, 0.04)"
+		  AllowUnsorted="false"
+		  Square="true"
+		  
+		  Hover="true"
+		  Dense="true"
+		  Loading="@Loading"
+		  Striped="true">
+
+	<ToolBarContent>
+
+		<MudItem Class="d-flex  justify-end flex-grow-1 borda-top-radius">
+			<MudSpacer />
+			<MudStack Row="true" Justify="Justify.FlexEnd" Class="d-flex  justify-end pa-1" Style="background-color:#005ca9; border-radius:8px;">
+				<MudTextField @bind-Value="FiltroBuscarPalavra" Placeholder="Buscar" Style="width:200px" Class="mt-0 flex-none"></MudTextField>
+				<MudButton Class="btn-caixa-small" Style="color:white" OnClick="ClearFilter">Limpar filtro</MudButton>
+			</MudStack>
+		</MudItem>
+	</ToolBarContent>
+	<LoadingContent>
+		<MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+	</LoadingContent>
+	<ColGroup>
+		<col style="width: 20%;" />
+		<col style="width: 20%;" />
+		<col />
+		<col />
+		<col />
+	</ColGroup>
+
+	<HeaderContent>
+		<MudTh Class="text-center">GIFUG</MudTh>
+		<MudTh Class="text-center"><b>Nº DRP</b></MudTh>
+		<MudTh Class="text-center"><b>Senha</b></MudTh>
+		<MudTh Class="text-center"><b>Qtd Movimentações</b></MudTh>
+		<MudTh><b></b></MudTh>
+	</HeaderContent>
+	<RowTemplate>
+		<MudTd Class="text-center">@item.Gifug - @item.GifugDv</MudTd>
+		<MudTd Class="text-center">@item.NuDrp</MudTd>
+		<MudTd Class="text-center">@item.Senha</MudTd>
+		<MudTd Class="text-center">@item.QtdMovimentacoes</MudTd>
+		<MudTd Class="text-center">
+			<MudIconButton Icon="@Icons.Material.Filled.Search" Color="Color.Primary"
+						   OnClick="@(() => ToggleExpand(item))" /> @* <-- O Botão que alterna o estado *@
+		</MudTd>
+	</RowTemplate>
+
+	<ChildRowContent>
+		@if (item.ExpandirObservacao)
+		{
+			<MudTd ColSpan="5" Class="pa-0">
+				<MudSimpleTable Dense Elevation="0" Style="background-color:#f5f5f5;" Bordered=true>
+					<colgroup>
+						<col style="width: 30%;" />
+						<col />
+				
+					</colgroup>
+					<thead>
+						<tr>
+							<th class="text-center">Valor</th>
+							<th class="text-center">Log Carga</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td class="text-center">
+								<MudField   Typo="Typo.body2" Variant="Variant.Text" Underline="false">
+									@ConverterValor(item.Valor)
+								</MudField>
+							</td>
+							<td class="text-center">
+								<MudField  Typo="Typo.body2" Variant="Variant.Text" Underline="false">
+									@item.DeObservacoes
+								</MudField>
+							</td>
+						</tr>
+					</tbody>
+				</MudSimpleTable>
+			</MudTd>
+		}
+	</ChildRowContent>
+	<PagerContent>
+		@if (Items?.Count() > 10)
+		{
+			<MudTablePager Class="pager-buttons borda-inferior-radius"
+						   RowsPerPageString="@RowsPerPageString"
+						   InfoFormat="@InfoFormat" />
+		}
+	</PagerContent>
+
+	<NoRecordsContent>
+		<MudText Color="Color.Primary" Typo="Typo.h6">
+			Nenhum registro encontrado
+		</MudText>
+	</NoRecordsContent>
+</MudTable>
+
+@code {
+	[Parameter] public IEnumerable<MovimentacaoDrp> Items { get; set; }
+	[Parameter] public bool Loading { get; set; }
+	[Parameter] public string RowsPerPageString { get; set; } = "Itens por página";
+	[Parameter] public string InfoFormat { get; set; } = "{first}–{last} de {total}";
+
+	// Função LÊ o estado atual. Se ExibirLinha é TRUE, a MudTable renderiza o ChildRowContent.
+	private bool IsRowExpanded(MovimentacaoDrp item) => item.ExpandirObservacao;
+
+
+	void ToggleExpand(MovimentacaoDrp item)
+	{
+		// Funçao ESCREVE o novo estado (Alternância)
+		item.ExpandirObservacao = !item.ExpandirObservacao;
+		StateHasChanged();
+	}
+
+	protected override Task OnParametersSetAsync()
+	{
+
+		ItemsNaoFiltrados = Items;
+		return base.OnParametersSetAsync();
+	}
+	private string ConverterData(DateTime? data)
+	{
+		if (data.HasValue)
+		{
+			return data.Value.ToString("dd/MM/yy");
+		}
+		return string.Empty;
+	}
+	private string ConverterValor(decimal? valor)
+	{
+
+		return "R$ " + (valor.HasValue
+				? valor.Value.ToString("N2", new System.Globalization.CultureInfo("pt-BR"))
+				: "0,00");
+
+	}
+	private IEnumerable<MovimentacaoDrp> ItemsNaoFiltrados { get; set; }
+	private string FiltroBuscarPalavra = "";
+	private MovimentacaoDrp selectedItem1;
+	private bool FilterFunc1(MovimentacaoDrp element) => FilterFunc(element, FiltroBuscarPalavra);
+
+	private bool FilterFunc(MovimentacaoDrp element, string searchString)
+	{
+		if (string.IsNullOrWhiteSpace(searchString))
+			return true;
+		if (element.Gifug != null)
+		{
+			if (element.Gifug.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+				return true;
+		}
+		if (element.NuDrp != null)
+		{
+			if (element.NuDrp.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+				return true;
+		}
+		if (element.Senha != null)
+		{
+			if (element.Senha.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+				return true;
+		}
+	
+		if (element.QtdMovimentacoes!.ToString()!.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+			return true;	
+		return false;
+	}
+
+	private void ClearFilter()
+	{
+		FiltroBuscarPalavra = "";
+		Items = ItemsNaoFiltrados;
+	}
+}
+
+

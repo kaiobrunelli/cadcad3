@@ -1,0 +1,35 @@
+﻿
+@inject NavigationManager Navigation
+
+<MudDialog>
+    
+    <TitleContent>Notificação: </TitleContent>
+
+    <DialogContent>
+        <p>@Mensagem</p>
+        @if ( Sucesso)
+        {     
+            <p><strong>Número da conta:</strong> texto aqui (propriedade da classe)</p>
+            <p><strong>Número da conta:</strong> texto aqui (propriedade da classe)</p>
+        }
+    </DialogContent>
+    <DialogActions>      
+        <MudButton Variant="Variant.Outlined" OnClick="Fechar">Fechar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+   
+    [Parameter] public string? Mensagem { get; set; } 
+    [Parameter] public bool Sucesso { get; set; }
+  
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    private void Fechar()
+    {     
+        MudDialog.Close(DialogResult.Ok(true));
+       
+    }   
+
+}

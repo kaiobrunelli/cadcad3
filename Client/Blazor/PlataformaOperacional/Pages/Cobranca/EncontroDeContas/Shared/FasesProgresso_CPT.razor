@@ -1,0 +1,464 @@
+@namespace Plataforma.Components.Shared
+
+<style>
+    .phases-card {
+        --pp-bg: #ffffff;
+        --pp-text: #0f172a;
+        --pp-text-soft: #475569;
+        --pp-muted: #64748b;
+        --pp-border: #e2e8f0;
+        --pp-soft: #f1f5f9;
+
+        --pp-brand: #005ca9;
+        --pp-brand-deep: #0a3d7a;
+        --pp-brand-soft: rgba(0, 92, 169, 0.08);
+        --pp-brand-border: rgba(0, 92, 169, 0.35);
+
+        --pp-ok: #059669;
+        --pp-ok-deep: #047857;
+        --pp-ok-soft: rgba(16, 185, 129, 0.10);
+        --pp-ok-border: rgba(16, 185, 129, 0.35);
+
+        --pp-pend: #94a3b8;
+        --pp-pend-soft: #f5f7fa;
+
+        position: relative;
+        background: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
+        border: 1px solid var(--pp-border);
+        border-radius: 16px;
+        padding: 18px 20px 20px;
+        box-shadow:
+            0 1px 2px rgba(15, 23, 42, 0.04),
+            0 4px 14px -8px rgba(15, 23, 42, 0.08);
+        margin-top: 14px;
+        font-family: 'CAIXA Std', Arial, sans-serif;
+        color: var(--pp-text);
+    }
+
+    .phases-card::before {
+        content: "";
+        position: absolute;
+        top: 0; left: 22px; right: 22px;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, rgba(0, 92, 169, 0.30), transparent);
+        opacity: 0.7;
+    }
+
+    .phases-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 14px;
+    }
+
+    .phases-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--pp-muted);
+    }
+
+    .phases-counter {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 9px;
+        border-radius: 999px;
+        background: var(--pp-soft);
+        color: var(--pp-text-soft);
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.02em;
+        font-family: var(--font-mono, ui-monospace, Consolas, monospace);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .phases-demand {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 11px;
+        border-radius: 999px;
+        background: var(--pp-brand-soft);
+        color: var(--pp-brand-deep);
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.02em;
+    }
+
+    .phases-demand b {
+        color: var(--pp-brand);
+        font-weight: 500;
+        font-family: var(--font-mono, ui-monospace, Consolas, monospace);
+    }
+
+    .phases-nav {
+        display: flex;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    .phases-arrow {
+        flex: 0 0 38px;
+        width: 38px;
+        align-self: center;
+        height: 38px;
+        border-radius: 999px;
+        border: 1px solid var(--pp-border);
+        background: #fff;
+        color: var(--pp-muted);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+        transition:
+            background 220ms cubic-bezier(0.22, 0.61, 0.36, 1),
+            color 220ms cubic-bezier(0.22, 0.61, 0.36, 1),
+            border-color 220ms cubic-bezier(0.22, 0.61, 0.36, 1),
+            transform 180ms cubic-bezier(0.22, 0.61, 0.36, 1),
+            box-shadow 220ms cubic-bezier(0.22, 0.61, 0.36, 1),
+            opacity 180ms ease;
+    }
+
+    .phases-arrow:hover:not(:disabled) {
+        background: var(--pp-brand);
+        color: #fff;
+        border-color: var(--pp-brand);
+        box-shadow: 0 8px 18px -6px rgba(0, 92, 169, 0.45);
+        transform: translateY(-1px);
+    }
+
+    .phases-arrow:active:not(:disabled) {
+        transform: translateY(0);
+        box-shadow: 0 2px 6px -2px rgba(0, 92, 169, 0.35);
+    }
+
+    .phases-arrow:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(0, 92, 169, 0.25);
+    }
+
+    .phases-arrow:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+        box-shadow: none;
+    }
+
+    .phases-viewport {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        padding: 4px;
+        margin: -4px;
+    }
+
+    .phases-track {
+        --gap: 10px;
+        --visible: 4;
+        --slot: calc((100% - var(--gap) * (var(--visible) - 1)) / var(--visible));
+        --offset: 0;
+
+        display: flex;
+        align-items: stretch;
+        gap: var(--gap);
+        transform: translate3d(calc(var(--offset) * -1 * (var(--slot) + var(--gap))), 0, 0);
+        transition: transform 460ms cubic-bezier(0.22, 0.61, 0.36, 1);
+        will-change: transform;
+    }
+
+    .phase-step {
+        --pp-accent: var(--pp-pend);
+        --pp-accent-deep: var(--pp-pend);
+        --pp-accent-soft: var(--pp-pend-soft);
+        --pp-accent-border: transparent;
+
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 0 0 var(--slot);
+        min-width: 0;
+        padding: 12px 14px;
+        background: var(--pp-accent-soft);
+        border: 1.5px solid var(--pp-accent-border);
+        border-radius: 12px;
+        transition:
+            background 320ms cubic-bezier(0.22, 0.61, 0.36, 1),
+            border-color 320ms cubic-bezier(0.22, 0.61, 0.36, 1),
+            box-shadow 320ms cubic-bezier(0.22, 0.61, 0.36, 1);
+    }
+
+    .phase-step.status-concluida {
+        --pp-accent: var(--pp-ok);
+        --pp-accent-deep: var(--pp-ok-deep);
+        --pp-accent-soft: var(--pp-ok-soft);
+        --pp-accent-border: var(--pp-ok-border);
+    }
+
+    .phase-step.status-emexecucao {
+        --pp-accent: var(--pp-brand);
+        --pp-accent-deep: var(--pp-brand-deep);
+        --pp-accent-soft: var(--pp-brand-soft);
+        --pp-accent-border: var(--pp-brand);
+        box-shadow:
+            0 0 0 3px rgba(0, 92, 169, 0.08),
+            0 8px 22px -10px rgba(0, 92, 169, 0.45);
+    }
+
+    .phase-bullet {
+        position: relative;
+        width: 36px;
+        height: 36px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: transparent;
+        color: var(--pp-pend);
+        font-family: var(--font-mono, ui-monospace, Consolas, monospace);
+        font-size: 13px;
+        font-weight: 500;
+        letter-spacing: 0.03em;
+        transition:
+            background 280ms cubic-bezier(0.22, 0.61, 0.36, 1),
+            color 280ms cubic-bezier(0.22, 0.61, 0.36, 1),
+            box-shadow 280ms cubic-bezier(0.22, 0.61, 0.36, 1),
+            transform 280ms cubic-bezier(0.22, 0.61, 0.36, 1);
+    }
+
+    .phase-step.status-concluida .phase-bullet {
+        background: var(--pp-ok);
+        color: #fff;
+        box-shadow:
+            0 4px 10px -3px rgba(16, 185, 129, 0.45),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.06);
+    }
+
+    .phase-step.status-emexecucao .phase-bullet {
+        background: #fff;
+        color: var(--pp-brand);
+        box-shadow:
+            0 0 0 2px var(--pp-brand) inset,
+            0 4px 12px -4px rgba(0, 92, 169, 0.30);
+    }
+
+    .phase-pulse {
+        width: 12px;
+        height: 12px;
+        border-radius: 999px;
+        background: var(--pp-brand);
+        box-shadow: 0 0 0 0 rgba(0, 92, 169, 0.55);
+        animation: phases-pulse 1.8s infinite cubic-bezier(0.4, 0, 0.6, 1);
+    }
+
+    @@keyframes phases-pulse {
+        0%   { box-shadow: 0 0 0 0 rgba(0, 92, 169, 0.50); transform: scale(1); }
+        70%  { box-shadow: 0 0 0 9px rgba(0, 92, 169, 0); transform: scale(1.05); }
+        100% { box-shadow: 0 0 0 0 rgba(0, 92, 169, 0); transform: scale(1); }
+    }
+
+    .phase-text {
+        min-width: 0;
+        line-height: 1.25;
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+    }
+
+    .phase-title {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--pp-text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        letter-spacing: -0.005em;
+    }
+
+    .phase-status {
+        font-size: 10.5px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.10em;
+        color: var(--pp-accent-deep);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .phase-step.status-pendente .phase-status {
+        color: var(--pp-muted);
+    }
+</style>
+
+<div>
+    <div class="phases-card">
+        <div class="phases-header">
+            <span class="phases-label">
+                Fase atual
+                @if (Fases.Count > 0)
+                {
+                    <span class="phases-counter">@FaseAtual / @Fases.Count</span>
+                }
+            </span>
+            @if (IdDemanda is not null and > 0)
+            {
+                <span class="phases-demand">Demanda <b>#@IdDemanda</b></span>
+            }
+        </div>
+
+        <div class="phases-nav">
+            <button type="button"
+                    class="phases-arrow"
+                    @onclick="MoverEsquerda"
+                    disabled="@(!PodeIrEsquerda)"
+                    aria-label="Fases anteriores">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6" />
+                </svg>
+            </button>
+
+            <div class="phases-viewport">
+                <div class="phases-track" style="--offset: @_inicioJanela;">
+                    @for (int i = 0; i < Fases.Count; i++)
+                    {
+                        var f = Fases[i];
+                        var status = StatusDe(f.Numero);
+
+                        <div class="phase-step status-@status.ToString().ToLower()">
+                            <div class="phase-bullet">
+                                @switch (status)
+                                {
+                                    case StatusFase.Concluida:
+                                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="20 6 9 17 4 12" />
+                                        </svg>
+                                        break;
+                                    case StatusFase.EmExecucao:
+                                        <span class="phase-pulse"></span>
+                                        break;
+                                    default:
+                                        <span class="phase-num">@f.Numero.ToString("00")</span>
+                                        break;
+                                }
+                            </div>
+                            <div class="phase-text">
+                                <div class="phase-title">@f.Titulo</div>
+                                <div style="margin-top: -1px;" >@f.Subtitulo</div>
+                                <div class="phase-status">@RotuloStatus(status)</div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <button type="button"
+                    class="phases-arrow"
+                    @onclick="MoverDireita"
+                    disabled="@(!PodeIrDireita)"
+                    aria-label="Próximas fases">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6" />
+                </svg>
+            </button>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    public enum StatusFase { Pendente, EmExecucao, Concluida, AguardandoInicio }
+
+    public class Fase
+    {
+        public int Numero { get; set; }
+        public string Titulo { get; set; } = "";
+        public string Subtitulo { get; set; } = "";
+    }
+
+    [Parameter] public int FaseAtual { get; set; }
+    [Parameter] public int? IdDemanda { get; set; }
+    [Parameter] public bool Executando { get; set; }
+    [Parameter] public List<Fase> Fases { get; set; } = new();
+
+    private const int TamanhoJanela = 3;
+    private int _inicioJanela = 0;
+    private int? _ultimaFaseSincronizada;
+    private int? _ultimoIdDemandaSincronizado;
+    private List<Fase>? _ultimaRefFases;
+
+    private int InicioMaximo => Math.Max(0, Fases.Count - TamanhoJanela);
+    private int FimJanela    => Math.Min(_inicioJanela + TamanhoJanela, Fases.Count);
+    private bool PodeIrEsquerda => _inicioJanela > 0;
+    private bool PodeIrDireita  => _inicioJanela + TamanhoJanela < Fases.Count;
+
+    protected override void OnParametersSet()
+    {
+        if (Fases.Count == 0) { _inicioJanela = 0; return; }
+
+        // 1) Nova lista de fases (referência diferente) → volta para o início
+        var listaMudou = !ReferenceEquals(_ultimaRefFases, Fases);
+        if (listaMudou)
+        {
+            _ultimaRefFases = Fases;
+            _inicioJanela = 0;
+            _ultimaFaseSincronizada = null;
+        }
+
+        // 2) Nova demanda (IdDemanda mudou) → também volta para o início
+        if (_ultimoIdDemandaSincronizado != IdDemanda)
+        {
+            _ultimoIdDemandaSincronizado = IdDemanda;
+            if (!listaMudou) _inicioJanela = 0;
+        }
+
+        // 3) FaseAtual mudou → auto-centra (ou volta ao início se 0)
+        if (_ultimaFaseSincronizada != FaseAtual)
+        {
+            _ultimaFaseSincronizada = FaseAtual;
+
+            if (FaseAtual <= 0)
+            {
+                _inicioJanela = 0;
+            }
+            else
+            {
+                var idx = Fases.FindIndex(f => f.Numero == FaseAtual);
+                if (idx >= 0)
+                    _inicioJanela = Math.Clamp(idx - 1, 0, InicioMaximo);
+            }
+        }
+
+        _inicioJanela = Math.Clamp(_inicioJanela, 0, InicioMaximo);
+    }
+
+    private void MoverEsquerda()
+    {
+        if (PodeIrEsquerda) _inicioJanela--;
+    }
+
+    private void MoverDireita()
+    {
+        if (PodeIrDireita) _inicioJanela++;
+    }
+
+    private StatusFase StatusDe(int numero) =>
+        numero < FaseAtual  ? StatusFase.Concluida
+      : numero > FaseAtual  ? StatusFase.Pendente
+      : Executando          ? StatusFase.EmExecucao
+                            : StatusFase.AguardandoInicio;
+
+    private static string RotuloStatus(StatusFase s) => s switch
+    {
+        StatusFase.Concluida   => "Concluída",
+        StatusFase.EmExecucao  => "Em andamento",
+        StatusFase.AguardandoInicio  => "Aguardando início",
+        _                       => "Aguardando"
+    };
+}

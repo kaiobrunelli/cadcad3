@@ -1,0 +1,118 @@
+﻿@using MudBlazor
+@using System.Globalization
+@inject MudBlazor.IDialogService DialogService
+@inject MudBlazor.ISnackbar Snackbar
+
+<style>
+
+
+	.mud-dialog .mud-dialog-title {
+		background-color: #005ca9;
+		color: white;
+	}
+</style>
+
+<MudDialog Style="width:371px;">
+	<TitleContent>
+		<MudStack Row="true" Spacing="2">
+			<MudIcon Icon="@Icons.Material.Filled.Create" Class="mr-2" />
+			<MudText Typo="Typo.h6">Preencher</MudText>
+		</MudStack>
+	</TitleContent>
+	<DialogContent>	
+				<MudStack Spacing="2" Class="mt-1">
+					<MudStack Row="true" Justify="Justify.SpaceBetween">
+						<MudText Typo="Typo.body2">Origem:</MudText>
+						<MudText Typo="Typo.body2"><b>R$ @OriginalValue.ToString("N2", formatoManual)</b></MudText>
+					</MudStack>
+					<MudStack Row="true" Justify="Justify.SpaceBetween">
+						<MudText Typo="Typo.body2">Amortização:</MudText>
+						<MudText Typo="Typo.body2"><b>R$ @Difference.ToString("N2", formatoManual)</b></MudText>
+					</MudStack>
+
+					<MudStack Row="true" Justify="Justify.SpaceBetween">
+						<MudText Typo="Typo.body2">CCI:</MudText>
+						<MudText Typo="Typo.body2"><b>R$ @ManualValue.ToString("N2", formatoManual)</b></MudText>
+					</MudStack>
+
+					<MudText Typo="Typo.h6">Inserir valor para CCI:</MudText>
+					<MudTextField @bind-Value="ManualValue"							
+								  Culture="culturaComFormatoManual"
+								  Immediate="true"
+								  Variant="Variant.Outlined"
+								  Error="@_valorValido"
+								  ErrorText="O valor de CCI não pode ser maior que o valor de origem." />
+				</MudStack>
+				<MudStack Style="height:100%" Class="mt-3" >
+					<MudText Typo="Typo.h6">Observação para tratativa</MudText>
+					<MudTextField @bind-Value="_observacao"
+								  Placeholder="Adicionar observação"
+								  Lines="4"							
+								  Immediate="true"
+								  Variant="Variant.Outlined"								
+								  OnBlur="() => _comecouEscrever = true"
+								  Error="@(!_observacaoValida && _comecouEscrever)"
+								  ErrorText="A observação deve conter pelo menos 3 caracteres." />
+				</MudStack>
+	</DialogContent>
+	<DialogActions>
+		<MudButton OnClick="Cancel">Cancelar</MudButton>
+		<MudTooltip Text="Necessário inserir valor CCI e comentário para confirmar" Delay="600">
+			<MudButton Color="Color.Secondary"
+					   OnClick="Submit"
+					   Variant="Variant.Filled"
+					   Disabled="@(!_podeConfirmar)">
+				Confirmar
+			</MudButton>
+		</MudTooltip>
+	</DialogActions>
+</MudDialog>
+
+@code {
+
+	private string _observacao = "";
+	private bool _comecouEscrever = false;
+
+
+	[CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+
+	[Parameter] public ControleGeralAmortizacaoCaixa Contrato { get; set; } = new();
+
+	private decimal OriginalValue => Contrato?.VlCci ?? 0;
+	private decimal ManualValue { get; set; }
+	private decimal Difference => OriginalValue - ManualValue;
+	private bool _valorValido => ManualValue > OriginalValue;
+
+	private bool _valorDigitado => ManualValue > 0;
+	private bool _observacaoValida => !string.IsNullOrWhiteSpace(_observacao) && _observacao.Trim().Length >= 3;
+	private bool _podeConfirmar => _valorDigitado && _observacaoValida;
+
+
+
+	private NumberFormatInfo formatoManual = new();
+
+	private CultureInfo culturaComFormatoManual = new CultureInfo("pt-BR");
+	void Submit()
+	{
+		MudDialog.Close(DialogResult.Ok(ManualValue));
+	}
+
+	void Cancel()
+	{
+		MudDialog.Cancel();
+	}
+
+	protected override void OnInitialized()
+	{
+		formatoManual = new NumberFormatInfo();
+
+		// Define os separadores manualmente
+		formatoManual.NumberGroupSeparator = ".";
+		formatoManual.NumberDecimalSeparator = ",";
+
+		culturaComFormatoManual.NumberFormat.NumberGroupSeparator = ".";
+		culturaComFormatoManual.NumberFormat.NumberDecimalSeparator = ",";
+
+	}
+}
+

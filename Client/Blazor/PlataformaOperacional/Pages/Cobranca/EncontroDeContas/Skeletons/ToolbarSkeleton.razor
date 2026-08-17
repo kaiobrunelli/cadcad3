@@ -1,0 +1,122 @@
+@*
+    ToolbarSkeleton
+    ---------------------------------------------------------------
+    Placeholder visual da Toolbar + ProgressBar enquanto o Controle
+    está em estado Idle/Loading (primeira carga, sem valor anterior).
+
+    Altura e silhueta mimetizam os componentes reais para evitar
+    "layout shift" (CLS) quando os dados chegam.
+
+    Uso:
+        <ToolbarSkeleton />
+        <ToolbarSkeleton ButtonCount="3" />
+*@
+
+<div class="tb-skel" role="status" aria-busy="true" aria-label="Carregando barra de ferramentas">
+
+    @* ----- progress bar fake ----- *@
+    <div class="tb-skel__progress">
+        <div class="tb-skel__progress-track">
+            <div class="tb-skel__progress-bar"></div>
+        </div>
+        <div class="tb-skel__progress-label shimmer"></div>
+    </div>
+
+    @* ----- toolbar fake (título + botões) ----- *@
+    <div class="tb-skel__toolbar">
+        <div class="tb-skel__title-group">
+            <div class="tb-skel__title shimmer"></div>
+            <div class="tb-skel__subtitle shimmer"></div>
+        </div>
+
+        <div class="tb-skel__actions">
+            @for (int i = 0; i < ButtonCount; i++)
+            {
+                <div class="tb-skel__button shimmer"></div>
+            }
+        </div>
+    </div>
+
+</div>
+
+<style>
+    .tb-skel {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 12px 16px;
+        background: var(--mud-palette-surface, #fff);
+        border-radius: 8px;
+        border: 1px solid var(--mud-palette-lines-default, #e0e0e0);
+    }
+
+    .tb-skel__progress { display: flex; flex-direction: column; gap: 6px; }
+
+    .tb-skel__progress-track {
+        height: 6px;
+        background: var(--mud-palette-background-grey, #f0f0f0);
+        border-radius: 999px;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .tb-skel__progress-bar {
+        position: absolute;
+        left: 0; top: 0; bottom: 0;
+        width: 30%;
+        background: linear-gradient(
+            90deg,
+            rgba(0,0,0,0.06) 0%,
+            rgba(0,0,0,0.14) 50%,
+            rgba(0,0,0,0.06) 100%);
+        animation: tb-skel-slide 1.4s ease-in-out infinite;
+    }
+
+    .tb-skel__progress-label { height: 10px; width: 220px; border-radius: 4px; }
+
+    .tb-skel__toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+    }
+
+    .tb-skel__title-group { display: flex; flex-direction: column; gap: 6px; }
+    .tb-skel__title       { height: 18px; width: 260px; border-radius: 4px; }
+    .tb-skel__subtitle    { height: 12px; width: 180px; border-radius: 4px; }
+
+    .tb-skel__actions { display: flex; gap: 8px; }
+    .tb-skel__button  { height: 36px; width: 108px; border-radius: 6px; }
+
+    .shimmer {
+        background: linear-gradient(
+            90deg,
+            rgba(0,0,0,0.06) 0%,
+            rgba(0,0,0,0.12) 50%,
+            rgba(0,0,0,0.06) 100%);
+        background-size: 200% 100%;
+        animation: tb-skel-shimmer 1.4s ease-in-out infinite;
+    }
+
+    @@keyframes tb-skel-shimmer {
+        0%   { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+
+    @@keyframes tb-skel-slide {
+        0%   { transform: translateX(-100%); }
+        100% { transform: translateX(400%); }
+    }
+
+    @@media (max-width: 768px) {
+        .tb-skel__toolbar { flex-direction: column; align-items: stretch; }
+        .tb-skel__actions { flex-wrap: wrap; }
+        .tb-skel__title    { width: 100%; max-width: 260px; }
+        .tb-skel__subtitle { width: 60%;  max-width: 180px; }
+    }
+</style>
+
+@code {
+    /// <summary>Quantos botões fake desenhar. Default 4 (Executar, Cancelar, Config, extra).</summary>
+    [Parameter] public int ButtonCount { get; set; } = 4;
+}

@@ -1,0 +1,391 @@
+﻿@using System.Globalization
+@inject PreditorService PreditorService
+<style>
+    :root {
+        -mud-palette-background-grey: #f6f6f8 !important;
+    }
+
+    .valores-preditor {
+        background-color: #f6f6f8;
+        border: 1px solid #e5e7eb;
+    }
+
+    .mud-input > input.mud-input-root {
+        margin-top: 0px !important;
+    }
+
+    .rounded-custom {
+        border-radius: 12px;
+    }
+
+
+    .rounded-custom {
+        border-radius: 12px;
+    }
+
+    .input-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+        width: 100%;
+    }
+
+    .currency-symbol {
+        position: absolute;
+        left: 12px;
+        color: #64748b; /* slate-500 */
+        font-weight: 500;
+        pointer-events: none; /* impede que o usuário clique no R$ */
+    }
+
+    .input-field::-webkit-outer-spin-button,
+    .input-field::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    /* Remove as setas no Firefox */
+    .input-field {
+        -moz-appearance: textfield;
+        appearance: textfield;
+    }
+
+    .input-field {
+        width: 100%;
+        padding: 12px 12px 12px 35px; /* O padding-left (35px) abre espaço para o R$ */
+        border-radius: 0.75rem; /* rounded-xl */
+        background-color: #f8fafc; /* bg-slate-50 */
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        outline: none;
+        font-weight: 400;
+        transition: border-color 0.2s;
+    }
+
+        .input-field:focus {
+            border-color: #594AE2; /* Seu azul muddraw */
+            box-shadow: 0 0 0 2px rgba(0, 92, 169, 0.1);
+        }
+</style>
+
+<MudPaper Class="rounded-custom border border-solid mud-border-lines-default overflow-hidden d-flex flex-column h-100" Elevation="0">
+
+
+    <MudGrid Class="pa-6 mb-3">
+        <MudItem xs="12" md="12" lg="12">
+
+            <MudStack Row="true" AlignItems="AlignItems.Start" Class="gap-3" Justify="Justify.SpaceBetween">
+                <MudStack Row="true" AlignItems="AlignItems.Center">
+                    @* <div class="d-flex align-center gap-3"> *@
+                    <MudAvatar Color="@IconColor" Variant="Variant.Filled" Size="Size.Medium" Class="rounded-icon">
+                        <MudIcon Icon="@Icon" />
+                    </MudAvatar>
+                    <div>
+                        <MudText Typo="Typo.h6" Style="color:#424242;">@Title</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Tertiary">@Subtitle</MudText>
+
+                    </div>
+                </MudStack>
+                <MudChip T="string" Color="@_statusColor" Size="Size.Small" Variant="Variant.Text" Class="font-weight-bold">
+                    @_statusText
+                </MudChip>
+            </MudStack>
+        </MudItem>
+
+
+
+
+        <MudItem md="6" lg="6" xs="12">
+            <MudText Typo="Typo.body2" Class="mb-2" Style="font-weight:600">AF Caixa</MudText>
+            @* 	<div class="input-wrapper">
+				<span class="currency-symbol" style="font-weight:600">R$</span>
+				<input class="input-field" readonly="@_desabilitarInputValor"
+					   type="number"
+					value="@(AnalisarSetorPublico.ValorSaneamento.HasValue 
+						? AnalisarSetorPublico.ValorSaneamento.Value.ToString(CultureInfo.InvariantCulture) 
+						: 0.00)"				
+					   @oninput="@(e => OnInputChanged(e, "Saneamento"))" />
+			</div> *@
+            <div class="input-wrapper">
+                <span class="currency-symbol" style="font-weight:600">R$</span>
+                <input class="input-field" readonly="@_desabilitarInputValor"
+                       type="text"
+                       value="@valorExibicaoAFCaixa"
+                       @oninput="@(e => OnInputChanged(e, "AFCAIXA"))" />
+            </div>
+
+
+        </MudItem>
+        <MudItem md="6" lg="6" xs="12">
+            <MudText Typo="Typo.body2" Class="mb-2" Style="font-weight:600">Outros AF</MudText>
+       
+            <div class="input-wrapper">
+                <span class="currency-symbol" style="font-weight:600">R$</span>
+                <input class="input-field" readonly="@_desabilitarInputValor"
+                       type="text"
+                       value="@valorExibicaoOutrosAFs"
+                       @oninput="@(e => OnInputChanged(e, "OUTROSAF"))" />
+            </div>
+        </MudItem>
+   
+
+        <MudSpacer />
+        <MudGrid Style="margin-top:99.72px; padding-left:24px;">
+            <MudItem md="6" lg="6" xs="12">
+                <MudPaper Class="pa-3 rounded-lg border-solid mud-border-lines-default valores-detalhes valores-preditor" Elevation="0">
+                    <MudText Typo="Typo.caption" Color="Color.Primary" Style="font-weight:500;">Calculado Inicial</MudText>
+                    @* <MudText Typo="Typo.body1" Style="font-weight:600;">R$ @(AnalisarSetorPublico.ValorCalculado?.ToString("N2") ?? "0,00")</MudText> *@
+                    <MudText Typo="Typo.body1" Style="font-weight:600;">R$ @(AnalisarSetorPublico.ValorCalculado.HasValue? FmtValor(AnalisarSetorPublico.ValorCalculado.Value): "0")
+                    </MudText>
+                </MudPaper>
+            </MudItem>
+            <MudItem md="6" lg="6" xs="12">
+                <MudPaper Class="pa-3 rounded-lg border-solid mud-border-lines-default valores-detalhes valores-preditor" Elevation="0">
+                    <MudText Typo="Typo.caption" Color="Color.Primary" Style="font-weight:500;">Total Previsto</MudText>
+                    @* 		<MudText Typo="Typo.body1" Style="font-weight:600;">R$ @(AnalisarSetorPublico.ValorTotal?.ToString("N2") ?? "0,00")</MudText> *@
+                    <MudText Typo="Typo.body1" Style="font-weight:600;">R$ @(AnalisarSetorPublico.ValorTotal.HasValue? FmtValor(AnalisarSetorPublico.ValorTotal.Value) : "0")</MudText>
+              
+
+                </MudPaper>
+            </MudItem>
+
+        </MudGrid>
+	
+		
+    </MudGrid>
+    <div class="pa-4 d-flex justify-end gap-2" style="background-color: var(--mud-palette-background-grey); border-top: 1px solid var(--mud-palette-lines-default);">
+
+        <MudStack Row="true" AlignItems="AlignItems.Center">
+            @if (!HabilitarBotaoSalvar && PreditorNaoFinalizado)
+            {
+                <MudTooltip Delay="300" Duration="300" Text="Editar valor">
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                   Color="Color.Primary"
+                                   Size="Size.Small"
+                                   Disabled="@(HabilitarBotaoSalvar)"
+                                   OnClick="OnClickResetar">
+                    </MudIconButton>
+                </MudTooltip>
+
+            }
+            <MudButton Variant="@ButtonVariant"
+                       Color="@ButtonColor"
+                       Size="Size.Medium"
+                       StartIcon="@Icons.Material.Filled.Save"
+                       Class=" px-6 py-2 shadow-sm rounded-lg "
+                       Style="letter-spacing:1px;text-transform: none !important "
+                       Disabled="@(!HabilitarBotaoSalvar)"
+                       OnClick="Salvar">
+                @ButtonText
+            </MudButton>
+        </MudStack>
+    </div>
+    @*  	<MudText>ValorCalculado @AnalisarSetorPublico.ValorCalculado</MudText>
+	<MudText>VrOutrosAF @AnalisarSetorPublico.VrOutrosAF</MudText>
+	<MudText>ValorTotal @AnalisarSetorPublico.ValorTotal</MudText>
+	<MudText>VrAFCaixa @AnalisarSetorPublico.VrAFCaixa</MudText>  *@
+
+</MudPaper>
+
+@code {
+
+    #region Parameters
+    [Parameter] public decimal? VrSaneamento { get; set; }
+    [Parameter] public decimal? VrInfra { get; set; }
+    [Parameter] public decimal? VrProMoradia { get; set; }
+    [Parameter] public decimal? VrTransporte { get; set; }
+    [Parameter] public AnaliticoSetorPublico AnalisarSetorPublico { get; set; } = new();
+
+    [Parameter] public bool HabilitarBotaoSalvar { get; set; }
+    [Parameter] public bool HabilitarEditar { get; set; }
+    [Parameter] public bool PreditorNaoFinalizado { get; set; }
+    private bool _desabilitarInputValor => PreditorNaoFinalizado ? false : true;
+    [Parameter] public decimal? Value { get; set; }
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string Subtitle { get; set; } = "";
+    [Parameter] public string Icon { get; set; }
+    [Parameter] public Color IconColor { get; set; } = Color.Primary;
+    [Parameter] public decimal? ValorCalculado { get; set; }
+    [Parameter] public decimal? ValorEfetivado { get; set; }
+
+    [Parameter] public string ButtonText { get; set; }
+    [Parameter] public Variant ButtonVariant { get; set; } = Variant.Filled;
+    [Parameter] public Color ButtonColor { get; set; } = Color.Primary;
+    #endregion
+    #region Events
+    [Parameter] public EventCallback<decimal?> ValueChanged { get; set; }
+    [Parameter] public EventCallback OnClickSalvar { get; set; }
+    [Parameter] public EventCallback OnClickResetar { get; set; }
+    [Parameter] public EventCallback<bool> FinalizouChanged { get; set; }
+    #endregion
+
+    private CultureInfo culturaBR = new CultureInfo("pt-BR");
+
+    private string FmtValor(decimal valor) => valor.ToString("N0", culturaBR); // ex: 1.250
+
+    private string formatarDinamicamente(decimal valor, string inputOriginal)
+    {
+        if (inputOriginal.Contains(","))
+            return inputOriginal;
+		
+        return valor.ToString("N0", culturaBR);
+    }
+    private string LimparInput(string input)
+    {
+        // Remove tudo que não é dígito ou vírgula
+        var regex = new System.Text.RegularExpressions.Regex(@"[^0-9,]");
+        string limpo = regex.Replace(input, "");
+
+        // Garante que só exista uma vírgula
+        int primeiraVirgula = limpo.IndexOf(',');
+        if (primeiraVirgula != -1)
+        {
+            string parteInteira = limpo.Substring(0, primeiraVirgula);
+            string parteDecimal = limpo.Substring(primeiraVirgula + 1).Replace(",", "");
+            return parteInteira + "," + parteDecimal;
+        }
+        return limpo;
+    }
+
+  
+    private static readonly CultureInfo PtBr = CultureInfo.GetCultureInfo("pt-BR");
+    private decimal? Valor;
+
+    private decimal _valorCalculado = 0;
+    private bool _finalizouSetor = false;
+    private string _statusText => HabilitarBotaoSalvar ? "Pendente" : "Finalizado";
+    private Color _statusColor => HabilitarBotaoSalvar ? Color.Warning : Color.Success;
+    private bool _desabilitarBtnEditar => !HabilitarBotaoSalvar;
+
+    private decimal valorDecimalOutrosAFs;
+    private string valorExibicaoOutrosAFs = "";
+    private decimal valorDecimalAFCaixa;
+    private string valorExibicaoAFCaixa = "";
+
+
+    
+    private async Task OnInputChanged(ChangeEventArgs e, string campo)
+    {
+       
+
+        // remove tudo que não seja número
+        string input = e.Value?.ToString() ?? "";
+        string apenasNumerosEVirgula = LimparInput(input);
+        switch (campo)
+        {
+            case "AFCAIXA":
+                if (string.IsNullOrEmpty(apenasNumerosEVirgula))
+                {
+                    valorDecimalAFCaixa = 0;
+                    valorExibicaoAFCaixa = "0";
+                    AnalisarSetorPublico.VrAFCaixa = 0;
+         
+                }
+               
+
+                // 2. Tenta converter para decimal usando a cultura brasileira
+                if (decimal.TryParse(apenasNumerosEVirgula, out decimal resultadoAFCaixa))
+                {
+                 
+                    valorDecimalAFCaixa = resultadoAFCaixa;
+                    valorExibicaoAFCaixa = resultadoAFCaixa.ToString("N0", culturaBR);
+                    AnalisarSetorPublico.VrAFCaixa = resultadoAFCaixa;
+                }
+              
+
+                break;
+            case "OUTROSAF":
+                if (decimal.TryParse(apenasNumerosEVirgula, NumberStyles.Any, culturaBR, out decimal resultadoLegado))
+                {
+                    valorDecimalOutrosAFs = resultadoLegado;
+                    AnalisarSetorPublico.VrOutrosAF = resultadoLegado;
+
+                    if (apenasNumerosEVirgula.EndsWith(","))
+                    {
+                        valorExibicaoOutrosAFs = resultadoLegado.ToString("N0", culturaBR) + ",";
+                    }
+                    else
+                    {
+                        valorExibicaoOutrosAFs = formatarDinamicamente(resultadoLegado, apenasNumerosEVirgula);
+                    }
+                }
+
+                break;
+        }
+
+        AnalisarSetorPublico.ValorTotal =
+            (AnalisarSetorPublico.VrAFCaixa ?? 0) +
+            (AnalisarSetorPublico.VrOutrosAF ?? 0);
+
+        StateHasChanged();
+    }
+
+    private async Task Resetar()
+    {
+        await OnClickResetar.InvokeAsync();
+        _finalizouSetor = true;
+        await FinalizouChanged.InvokeAsync(_finalizouSetor);
+    }
+    private async Task Salvar()
+    {
+        
+        await OnClickSalvar.InvokeAsync();
+        _finalizouSetor = true;
+        await FinalizouChanged.InvokeAsync(_finalizouSetor);
+    }
+    protected override void OnParametersSet()
+    {
+     
+        if (AnalisarSetorPublico is not null)
+        {
+            // Outros AFs
+            if (AnalisarSetorPublico.VrOutrosAF.HasValue)
+            {
+                valorDecimalOutrosAFs = AnalisarSetorPublico.VrOutrosAF.Value;             
+                // AnalisarSetorPublico.VrOutrosAF.Value.ToString("N2", culturaBR);                
+                valorExibicaoOutrosAFs = AnalisarSetorPublico.VrOutrosAF.Value.ToString("N0", culturaBR);
+                   
+
+            }
+            else
+            {
+                valorDecimalOutrosAFs = 0m;
+                valorExibicaoOutrosAFs = "";
+            }
+
+            // AF Caixa
+            if (AnalisarSetorPublico.VrAFCaixa.HasValue)
+            {
+                valorDecimalAFCaixa = AnalisarSetorPublico.VrAFCaixa.Value;
+                // valorExibicaoAFCaixa =AnalisarSetorPublico.VrAFCaixa.Value.ToString("N2", culturaBR);
+                valorExibicaoAFCaixa = FmtValor(AnalisarSetorPublico.VrAFCaixa.Value);
+            }
+            else
+            {
+                valorDecimalAFCaixa = 0m;
+                valorExibicaoAFCaixa = "";
+            }
+
+            // Total público (sempre decimal)
+            AnalisarSetorPublico.ValorTotal =
+                (AnalisarSetorPublico.VrAFCaixa ?? 0m) +
+                (AnalisarSetorPublico.VrOutrosAF ?? 0m);
+        }
+
+        // mantém o resto do seu fluxo
+        AtualizarStatusDoSetor();
+    }
+
+
+    private void AtualizarStatusDoSetor()
+    {
+
+    }
+
+    private async Task OnValueChanged(decimal? novoValor)
+    {
+        Value = novoValor;
+        await ValueChanged.InvokeAsync(novoValor);
+    }
+}

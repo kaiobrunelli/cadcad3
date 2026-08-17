@@ -1,0 +1,1820 @@
+﻿@page "/Desembolsos"
+
+@using MudBlazor
+@using System.Globalization
+@using System.Net.Http.Json
+@using Microsoft.AspNetCore.Components
+@using Model.DesembososModel
+@using System.Text.Json
+@using System.Net.Http.Headers
+@using System.Collections.ObjectModel
+
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+@inject DesembolsosService Service
+
+<MudThemeProvider Theme="DSCtheme" />
+
+<MudExitPrompt Disabled="!_exitPromptActive" UseNativePrompt />
+
+<MudPaper Class="page-shell rounded-xl pa-6">
+    <MudStack Spacing="4">
+
+        <MudStack Row Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="2" Class="page-header">
+
+            <MudText Typo="Typo.h5" Class="page-title">
+                Desembolsos CAIXA
+            </MudText>
+
+            <MudTooltip Text="Configurações">
+                <MudIconButton Icon="@Icons.Material.Filled.Settings" OnClick="AbrirConfiguracoes" Size="Size.Small" />
+            </MudTooltip>
+        </MudStack>
+
+        <div class="tm-cards-auto-grid">
+            @foreach (var card in TmCards)
+            {
+                <MudCard Class="@GetTmCardClass(card)"
+                         Style="@($"background: {card.Gradient};")"
+                         Elevation="0">
+
+                    <div class="tm-card-orb orb-top"></div>
+                    <div class="tm-card-orb orb-bottom"></div>
+
+                    <MudCardContent Class="tm-card-content">
+                        <div class="tm-card-title">@card.Title</div>
+
+                        @if (_carregandoCards)
+                        {
+                            <MudProgressCircular Indeterminate
+                                                 Size="Size.Small"
+                                                 Class="tm-card-loader" />
+                        }
+                        else
+                        {
+                            <div class="tm-card-quantidade">@card.Quantity</div>
+                            <div class="tm-card-label">Valor total</div>
+                            <div class="tm-card-valor">@FormatCurrency(card.Value)</div>
+                        }
+                    </MudCardContent>
+                </MudCard>
+            }
+        </div>
+
+        <br />
+
+        <MudPaper Class="content-card rounded-xl pa-6" Elevation="0">
+            <MudTabs ActivePanelIndex="@_activeTabIndex"
+                     ActivePanelIndexChanged="OnActiveTabIndexChanged"
+                     Centered
+                     Rounded
+                     Elevation="0"
+                     Color="Color.Default"
+                     Class="tabs-workspace">
+
+
+                <MudTabPanel Text="Desembolsos"
+                             BadgeData="@_desembolsos.Count"
+                             BadgeColor="@(_desembolsos.Count > 0 ? Color.Info : Color.Success)"
+                             Style="min-width: 180px">
+                    <MudStack Spacing="4" Class="pt-4">
+
+                        @TimelineContent
+
+                        <MudStack Spacing="3">
+                            @ContentHeader
+
+                            @if (MostrarDesembolsosGrid)
+                            {
+                                @DesembolsosGrid
+                            }
+
+                            @if (MostrarDrpsEmissaoGrid)
+                            {
+                                @DrpsEmissaoGrid
+                            }
+
+                            @if (!MostrarDesembolsosGrid && !MostrarDrpsEmissaoGrid && !_carregandoTabela)
+                            {
+                                <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
+                                    @MensagemSemGrid
+                                </MudAlert>
+                            }
+                        </MudStack>
+
+                    </MudStack>
+                </MudTabPanel>
+
+                <MudTabPanel Text="DRPs"
+                             BadgeData="_drpsBaixa.Count"
+                             BadgeColor="@(_drpsBaixa.Count > 0 ? Color.Info : Color.Success)">
+                    <MudStack Spacing="4" Class="pt-4">
+
+                        <MudStack Spacing="3">
+                            @ContentHeader
+
+                            @if (MostrarDrpsBaixaGrid)
+                            {
+                                @DrpsBaixaGrid
+
+                                @if (_drpsFinalizadas.Count > 0)
+                                {
+                                    <MudDivider Class="my-4" />
+
+                                    <MudPaper Elevation="0"
+                                              Class="rounded-xl pa-3"
+                                              Style="background-color: rgba(84, 187, 171, 0.10); border: 1px solid rgba(84, 187, 171, 0.25);">
+
+                                        <MudStack Row
+                                                  AlignItems="AlignItems.Center"
+                                                  Justify="Justify.SpaceBetween">
+
+                                            <MudStack Row AlignItems="AlignItems.Center" Spacing="1">
+                                                <MudIcon Icon="@Icons.Material.Filled.CheckCircle"
+                                                         Color="Color.Success"
+                                                         Size="Size.Small" />
+
+                                                <MudText Typo="Typo.subtitle1">
+                                                    <strong>DRPs Finalizadas</strong>
+                                                </MudText>
+                                            </MudStack>
+
+                                            <MudChip T="string"
+                                                     Color="Color.Success"
+                                                     Variant="Variant.Outlined"
+                                                     Size="Size.Small">
+                                                @_drpsFinalizadas.Count
+                                            </MudChip>
+
+                                        </MudStack>
+
+                                    </MudPaper>
+
+                                    @DrpsFinalizadasGrid
+                                }
+                            }
+
+                            @if (!MostrarDrpsBaixaGrid && !_carregandoTabela)
+                            {
+                                <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
+                                    @MensagemSemGrid
+                                </MudAlert>
+                            }
+                        </MudStack>
+
+                    </MudStack>
+                </MudTabPanel>
+            </MudTabs>
+        </MudPaper>
+
+    </MudStack>
+</MudPaper>
+
+<style>
+
+    .page-shell {
+        background-color: #f7fafa;
+    }
+
+    .page-header {
+        margin-bottom: 4px;
+    }
+
+    .page-title {
+        font-weight: 600;
+        letter-spacing: .2px;
+    }
+
+    .tabs-workspace {
+        background-color: transparent;
+    }
+
+    .tm-cards-auto-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+        gap: 16px;
+        width: 100%;
+    }
+
+        .tm-cards-auto-grid .tm-card {
+            width: 100%;
+            min-width: 0;
+        }
+
+    .tm-card {
+        position: relative;
+        overflow: hidden;
+        width: 100%;
+        min-width: 0;
+        min-height: 132px;
+        border-radius: 16px !important;
+        box-shadow: 0 6px 18px rgba(34, 41, 46, 0.16) !important;
+        transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+    }
+
+        .tm-card:hover {
+            transform: translateY(-5px) scale(1.015);
+            box-shadow: 0 14px 28px rgba(15, 23, 42, 0.22) !important;
+            filter: saturate(1.08);
+        }
+
+    .tm-card-empty {
+        filter: grayscale(.25) saturate(.85);
+        opacity: .82;
+    }
+
+        .tm-card-empty:hover {
+            opacity: 1;
+            filter: grayscale(.05) saturate(1);
+        }
+
+    .tm-card-content {
+        position: relative;
+        z-index: 2;
+        height: 132px;
+        width: 100%;
+        padding: 14px 16px !important;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .tm-card-title {
+        color: #fff;
+        font-size: 1rem;
+        font-weight: 700;
+        line-height: 1.2;
+        margin-bottom: 8px;
+    }
+
+    .tm-card-quantidade {
+        color: #fff;
+        font-size: 1.35rem;
+        font-weight: 800;
+        line-height: 1;
+        letter-spacing: .2px;
+    }
+
+    .tm-card-label {
+        margin-top: auto;
+        color: rgba(255, 255, 255, .80);
+        font-size: .72rem;
+        font-weight: 500;
+        line-height: 1.2;
+        margin-bottom: 4px;
+    }
+
+    .tm-card-valor {
+        color: #fff;
+        font-size: .78rem;
+        font-weight: 700;
+        line-height: 1.2;
+        white-space: nowrap;
+    }
+
+    .tm-card-loader {
+        color: #fff;
+        margin-top: 12px;
+    }
+
+    .tm-card-orb {
+        position: absolute;
+        border-radius: 999px;
+        pointer-events: none;
+        z-index: 1;
+        background: rgba(255, 255, 255, .12);
+        transition: transform .18s ease;
+    }
+
+    .tm-card:hover .orb-top {
+        transform: translate(-6px, 4px) scale(1.08);
+    }
+
+    .tm-card:hover .orb-bottom {
+        transform: translate(6px, -4px) scale(1.08);
+    }
+
+    .orb-top {
+        width: 92px;
+        height: 92px;
+        top: -32px;
+        right: -14px;
+    }
+
+    .orb-bottom {
+        width: 84px;
+        height: 84px;
+        left: -28px;
+        bottom: -34px;
+        background: rgba(255, 255, 255, .10);
+    }
+
+    .phase-alert {
+        transition: transform .15s ease, box-shadow .15s ease;
+    }
+
+        .phase-alert:hover {
+            transform: translateX(4px);
+            box-shadow: var(--mud-elevation-2);
+        }
+
+    .phase-alert-disabled {
+        cursor: default;
+    }
+
+    .content-card {
+        background-color: #f7fafa;
+        box-shadow: 0 18px 36px rgba(15, 23, 42, .12);
+        border: 1px solid rgba(124, 124, 205, .20);
+        transition: box-shadow .18s ease, border-color .18s ease;
+    }
+
+        .content-card:hover {
+            box-shadow: 0 22px 44px rgba(15, 23, 42, .14);
+            border-color: rgba(124, 124, 205, .32);
+        }
+
+    .content-header {
+        gap: 12px;
+    }
+
+    .action-button {
+        border-radius: 12px;
+        padding: 10px 28px;
+        font-weight: 700;
+        text-transform: none;
+    }
+
+    .search-field {
+        border-radius: 16px;
+        width: min(420px, 100%);
+        margin-top: 16px;
+        margin-bottom: 16px;
+    }
+
+    .data-grid {
+        border-radius: 16px;
+        font-weight: 600;
+        overflow: hidden;
+    }
+
+    .mud-table .mud-table-toolbar {
+        background: white !important;
+        border-top-left-radius: 16px;
+        border-top-right-radius: 16px;
+    }
+
+    .cursor-pointer {
+        cursor: pointer;
+    }
+
+    @@media (max-width: 960px) {
+        .content-header {
+            flex-direction: column !important;
+            align-items: stretch !important;
+        }
+
+        .action-button {
+            width: 100%;
+        }
+    }
+</style>
+
+@code {
+    private enum AreaOperacional
+    {
+        Desembolsos,
+        DRPs
+    }
+
+    private AreaOperacional _areaSelecionada = AreaOperacional.Desembolsos;
+    private int _activeTabIndex = 0;
+
+    private static readonly CultureInfo PtBr = new("pt-BR");
+    private static readonly StringComparison IgnoreCase = StringComparison.OrdinalIgnoreCase;
+
+    private List<Desembolso> _desembolsos = [];
+    private List<Desembolso> _desembolsosSelecionados = [];
+    private List<Desembolso> _desembolsosNaoSelecionados = [];
+    private List<Desembolso> _desembolsosFluxo = [];
+
+    private List<Drp> _drpsEmissao = [];
+    private List<Drp> _drpsBaixa = [];
+    private List<Drp> _drpsFinalizadas = [];
+
+    private Controle _controleAtual = new();
+    private ResultadoFlunt? _resultado;
+
+    private string _mensagemErro = string.Empty;
+    private string _searchString = string.Empty;
+    private string _senhaCriptografada = string.Empty;
+
+    private int _fase = 1;
+    private int _faseReal = 1;
+    private string _tabelaTitulo = string.Empty;
+
+    private bool _processando;
+    private bool _carregandoTabela = true;
+    private bool _carregandoCards = true;
+    private bool _processarDesabilitado = true;
+    private bool _criarFluxoDesabilitado = true;
+
+    private string _situacaoCarga = string.Empty;
+    private string _descSituacaoCarga = string.Empty;
+    private string _situacaoDesembolsos = string.Empty;
+    private string _descSituacaoDesembolsos = string.Empty;
+    private string _situacaoDrpsEmissao = string.Empty;
+    private string _descSituacaoDrpsEmissao = string.Empty;
+    private string _situacaoDrpsBaixa = string.Empty;
+    private string _descSituacaoDrpsBaixa = string.Empty;
+    private string _situacaoFinalizacao = string.Empty;
+    private string _descSituacaoFinalizacao = string.Empty;
+
+    private List<ResumoCards> _resumoCards = [];
+
+    private bool cancelarFluxoDesabilitado = true;
+
+    private bool desembolsosLancados = false;
+    private bool drpsEmitidas = false;
+
+    private bool _exitPromptActive => _processando;
+
+    private bool HasFluxo => _desembolsosFluxo.Count > 0;
+
+    private string AreaSelecionadaTexto =>
+        _areaSelecionada == AreaOperacional.Desembolsos
+            ? "Emissão"
+            : "Baixa";
+
+    private bool EmissaoAguardandoBaixa =>
+        _areaSelecionada == AreaOperacional.Desembolsos &&
+        _faseReal > 3;
+
+    private bool IsEmissaoWaitingPhase3 =>
+        _areaSelecionada == AreaOperacional.Desembolsos &&
+        _faseReal > 3 &&
+        _fase == 3;
+
+    private bool CanSelectDesembolsos =>
+        _areaSelecionada == AreaOperacional.Desembolsos &&
+        _fase == 1 &&
+        !HasFluxo;
+
+    private bool BotaoCriarFluxoVisivel =>
+        _areaSelecionada == AreaOperacional.Desembolsos &&
+        _fase == 1 &&
+        !HasFluxo;
+
+    private bool BotaoCancelarFluxoVisivel =>
+        _areaSelecionada == AreaOperacional.Desembolsos &&
+        _fase == 1 &&
+        HasFluxo;
+
+    private bool BotaoProcessarVisivel =>
+        _areaSelecionada switch
+        {
+            AreaOperacional.Desembolsos => _fase > 1 && _fase <= 3 && !EmissaoAguardandoBaixa,
+            AreaOperacional.DRPs => _fase == 4,
+            _ => false
+        };
+
+    private bool MostrarDesembolsosGrid =>
+        _areaSelecionada == AreaOperacional.Desembolsos &&
+        _fase <= 2;
+
+    private bool MostrarDrpsEmissaoGrid =>
+        _areaSelecionada == AreaOperacional.Desembolsos &&
+        _fase == 3;
+
+    private bool MostrarDrpsBaixaGrid =>
+        _areaSelecionada == AreaOperacional.DRPs &&
+        _fase >= 4;
+
+    private string MensagemSemGrid =>
+        _areaSelecionada switch
+        {
+            AreaOperacional.Desembolsos when _fase == 3 && EmissaoAguardandoBaixa =>
+                "A emissão das DRPs já foi concluída. Aguardando baixa e finalização.",
+
+            AreaOperacional.Desembolsos =>
+                "Nenhum dado disponível para emissão.",
+
+            AreaOperacional.DRPs =>
+                "Nenhuma DRP disponível para baixa.",
+
+            _ =>
+                "Nenhum dado disponível para exibição."
+        };
+
+    private IEnumerable<Desembolso> DesembolsosGridItems =>
+        HasFluxo ? _desembolsosFluxo : _desembolsosNaoSelecionados;
+
+    private IEnumerable<FaseInfo> FasesVisiveis
+    {
+        get
+        {
+            if (_areaSelecionada == AreaOperacional.Desembolsos)
+            {
+                if (EmissaoAguardandoBaixa)
+                {
+                    return
+                    [
+                        new FaseInfo(1, _situacaoCarga, _descSituacaoCarga),
+                        new FaseInfo(2, _situacaoDesembolsos, _descSituacaoDesembolsos),
+                        new FaseInfo(3, "Pendente", "Aguardando baixa de DRPs por outro empregado.")
+                    ];
+                }
+
+                return Fases
+                    .Where(x => x.Id >= 1 && x.Id <= 3)
+                    .Where(x => x.Id == 1 || ShouldShowPhase(x.Situacao));
+            }
+
+            if (_areaSelecionada == AreaOperacional.DRPs)
+            {
+                return Fases
+                    .Where(x => x.Id >= 4 && x.Id <= 5)
+                    .Where(x => ShouldShowPhase(x.Situacao));
+            }
+
+            return [];
+        }
+    }
+
+    private List<TmCardInfo> TmCards =>
+    [
+        BuildTmCard(
+        "LIBCEF",
+        "linear-gradient(135deg, #005CA9 0%, #54BBAB 100%)"),
+
+    BuildTmCard(
+        "LIFGTDIA",
+        "linear-gradient(135deg, #005CA9 0%, #EF765E 63%, #EF765E 100%)"),
+
+    BuildTmCard(
+        "LIFGTDES",
+        "linear-gradient(135deg, #54BBAB 0%, #B26F9B 100%)"),
+
+    BuildTmCard(
+        "OGUCEF",
+        "linear-gradient(135deg, #54BBAB 0%, #AFCA0B 100%)"),
+
+    BuildTmCard(
+        "SUBOGU",
+        "linear-gradient(135deg, #54BBAB 0%, #00B5E5 100%)"),
+
+    BuildTmCard(
+        "PARCERIA",
+        "linear-gradient(135deg, #005CA9 0%, #005CA9 23%, #54BBAB 60%, #F9B000 90%, #F9B000 100%)")
+    ];
+
+
+    private List<FaseInfo> Fases =>
+    [
+        new(1, _situacaoCarga, _descSituacaoCarga),
+        new(2, _situacaoDesembolsos, _descSituacaoDesembolsos),
+        new(3, _situacaoDrpsEmissao, _descSituacaoDrpsEmissao),
+        new(4, _situacaoDrpsBaixa, _descSituacaoDrpsBaixa),
+        new(5, _situacaoFinalizacao, _descSituacaoFinalizacao)
+    ];
+
+    private RenderFragment TimelineContent => @<MudTimeline TimelineOrientation="TimelineOrientation.Vertical"
+                                                            TimelinePosition="TimelinePosition.Start"
+                                                            Reverse>
+@if (_carregandoCards)
+    {
+    <MudSkeleton Height="98px" />
+    }
+    else
+{
+    @foreach (var fase in FasesVisiveis)
+    {
+            <MudTimelineItem Color="@GetTimelineItemColor(fase)"
+                             Variant="Variant.Filled"
+                             Size="@(fase.Id == _fase ? Size.Medium : Size.Small)">
+
+                <ItemContent>
+                    <MudAlert Dense="@(fase.Id != _fase)"
+                              Severity="@GetTimelineSeverity(fase)"
+                              Color="@GetTimelineColor(fase)"
+                              Icon="@GetTimelineIcon(fase)"
+                              Class="@GetPhaseAlertClass(fase.Id)"
+                              OnClick="@(() => AlterarFase(fase.Id))">
+                        @fase.Descricao
+                    </MudAlert>
+                </ItemContent>
+            </MudTimelineItem>
+    }
+}
+</MudTimeline>;
+
+private RenderFragment ContentHeader => @<MudStack Row
+                                                   Justify="Justify.SpaceBetween"
+                                                   AlignItems="AlignItems.Center"
+                                                   Class="content-header">
+
+    <MudText Typo="Typo.h6">
+        <strong>@_tabelaTitulo</strong>
+    </MudText>
+
+    <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+        @if (BotaoCriarFluxoVisivel)
+        {
+            <MudBadge Visible="@(_desembolsosSelecionados.Count > 0)"
+                      Content="@_desembolsosSelecionados.Count"
+                      Overlap
+                      Color="Color.Info">
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.PlaylistAddCheck"
+                           Class="action-button"
+                           Disabled="@_criarFluxoDesabilitado"
+                           Size="Size.Small"
+                           OnClick="@(() => CriarFluxo(_desembolsosSelecionados))">
+                    @if (_processando)
+                    {
+                        @("AGUARDE")
+                        <MudProgressCircular Class="ml-2"
+                                             Indeterminate
+                                             Size="Size.Small"
+                                             Color="Color.Inherit" />
+                    }
+                    else
+                    {
+                        @("CRIAR FLUXO")
+                    }
+                </MudButton>
+            </MudBadge>
+        }
+
+        @if (BotaoCancelarFluxoVisivel)
+        {
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Error"
+                       StartIcon="@Icons.Material.Filled.Delete"
+                       Class="action-button"
+                       Size="Size.Small"
+                       Disabled="@(_processando || cancelarFluxoDesabilitado)"
+                       OnClick="CancelarFluxo">
+                @if (_processando)
+                {
+                    @("AGUARDE")
+                    <MudProgressCircular Class="ml-2"
+                                         Indeterminate
+                                         Size="Size.Small"
+                                         Color="Color.Inherit" />
+                }
+                else
+                {
+                    @("CANCELAR")
+                }
+            </MudButton>
+        }
+
+        @if (BotaoProcessarVisivel)
+        {
+            <MudBadge Visible="true"
+                      Content="@ContadorBadge(_fase)"
+                      Overlap
+                      Color="Color.Info">
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.PlayArrow"
+                           Class="action-button"
+                           Disabled="_processarDesabilitado"
+                           Size="Size.Small"
+                           OnClick="ProcessarMovimentoAsync">
+                    @if (_processando)
+                    {
+                        @("AGUARDE")
+                        <MudProgressCircular Class="ml-2"
+                                             Indeterminate
+                                             Size="Size.Small"
+                                             Color="Color.Inherit" />
+                    }
+                    else
+                    {
+                        @ProcessarButtonText
+                    }
+                </MudButton>
+            </MudBadge>
+        }
+    </MudStack>
+</MudStack>;
+
+private RenderFragment DesembolsosGrid => @<MudDataGrid T="Desembolso"
+                                                        QuickFilter="@(_fase == 1 ? _quickFilter : null)"
+                                                        Items="@DesembolsosGridItems.OrderByDescending(x => x.Fid is not null ? x.Fid.Substring(8) : null).ThenByDescending(x => x.Tomador)"
+                                                        MultiSelection="@CanSelectDesembolsos"
+                                                        SelectedItemsChanged="SelectedItemsChanged"
+                                                        SelectOnRowClick="false"
+                                                        Loading="@_carregandoTabela"
+                                                        Hover
+                                                        Dense
+                                                        Elevation="0"
+                                                        Class="data-grid pb-8">
+
+    <ToolBarContent>
+        <MudTextField @bind-Value="_searchString"
+                      Placeholder="Código do tomador"
+                      Label="Filtrar tomador"
+                      Variant="Variant.Text"
+                      Adornment="Adornment.Start"
+                      Immediate="true"
+                      AdornmentIcon="@Icons.Material.Filled.Search"
+                      Underline="false"
+                      AdornmentColor="Color.Primary"
+                      IconSize="Size.Medium"
+                      Class="search-field" />
+    </ToolBarContent>
+
+    <Columns>
+        <SelectColumn T="Desembolso" Hidden="@(!CanSelectDesembolsos)" />
+
+        <PropertyColumn Property="x => x.Tomador"
+                        Title="Tomador"
+                        Style="font-weight:600;"
+                        CellStyle="font-weight:400;" />
+
+        <PropertyColumn Property="x => x.NuContrato + '-' + x.NuContratoDv"
+                        Title="Contrato"
+                        Style="font-weight:600;"
+                        CellStyle="font-weight:400;" />
+
+        <TemplateColumn Title="Entrada"
+                        SortBy="@(x => x.DtCredito is not null ? x.DtCredito : null)"
+                        Sortable="true"
+                        HeaderStyle="white-space: nowrap"
+                        CellStyle="white-space: nowrap">
+            <CellTemplate>
+                <MudText Typo="Typo.body2">
+                    @if (context.Item.DtCredito is not null)
+                    {
+                        @context.Item.DtCredito.Value.ToString("dd/MM/yyyy");
+                    }
+                </MudText>
+            </CellTemplate>
+        </TemplateColumn>
+
+        <TemplateColumn Title="TM">
+            <CellTemplate>
+                <MudTooltip Text="Detalhes">
+                    <MudChip T="string"
+                             Color="Color.Info"
+                             Size="Size.Small"
+                             OnClick="() => MostrarValoresTo(context.Item)">
+                        @context.Item.TipoMovimentacao
+                    </MudChip>
+                </MudTooltip>
+            </CellTemplate>
+        </TemplateColumn>
+
+        <TemplateColumn Title="Valor"
+                        SortBy="@(x => x.VrTotal is not null ? x.VrTotal : null)"
+                        Sortable="true"
+                        Culture="PtBr"
+                        CellStyle="white-space: nowrap">
+            <CellTemplate>
+                @FormatCurrency(context.Item.VrTotal)
+            </CellTemplate>
+        </TemplateColumn>
+
+        <TemplateColumn Title="Situação" Hidden="@(_fase == 1)">
+            <CellTemplate>
+                <StatusIcon Situacao="@context.Item.Situacao"
+                            Mensagem="@context.Item.Log_Siapf"
+                            Perfil="@PerfilUsuario.Emissao" />
+            </CellTemplate>
+        </TemplateColumn>
+
+        <TemplateColumn Title="Ações">
+            <CellTemplate>
+                <MudTooltip Text="Ações">
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                   Color="Color.Primary"
+                                   OnClick="@(() => ExpandirDetalhes(context.Item))" />
+                </MudTooltip>
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+
+    <NoRecordsContent>
+        <MudAlert Severity="Severity.Warning">
+            Nenhum desembolso encontrado.
+        </MudAlert>
+    </NoRecordsContent>
+</MudDataGrid>;
+
+private RenderFragment DrpsEmissaoGrid => @<MudDataGrid T="Drp"
+                                                        Items="@_drpsEmissao"
+                                                        Loading="@_carregandoTabela"
+                                                        Hover
+                                                        Dense
+                                                        Elevation="0"
+                                                        Class="data-grid">
+
+    <Columns>
+        <HierarchyColumn T="Drp" />
+
+        <PropertyColumn Property="x => x.Tomador"
+                        Title="Tomador"
+                        Style="font-weight:600;"
+                        CellStyle="font-weight:400; width:50%;" />
+
+        <PropertyColumn Property="x => x.QtdMovimentacoes"
+                        Title="Movimentações"
+                        Style="font-weight:600;"
+                        CellStyle="font-weight:400;" />
+
+        <TemplateColumn Title="Total" CellStyle="white-space: nowrap">
+            <CellTemplate>
+                @FormatCurrency(context.Item.Valor)
+            </CellTemplate>
+        </TemplateColumn>
+
+        <TemplateColumn Title="Situação">
+            <CellTemplate>
+                <StatusIcon Situacao="@context.Item.Situacao"
+                            Perfil="@PerfilUsuario.Emissao"
+                            AguardandoOutroEmpregado="@EmissaoAguardandoBaixa" />
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+
+    <ChildRowContent>
+
+        <MudSimpleTable Style="overflow-x: auto;">
+            <thead>
+                <tr>
+                    <th>Contrato</th>
+                    <th>Tipo</th>
+                    <th>Valor</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var des in _desembolsosFluxo.Where(d => d.IdDrp == context.Item.IdDrp))
+                {
+                    <tr>
+                        <td>@(des.NuContrato + '-' + des.NuContratoDv)</td>
+                        <td>
+                            <MudTooltip Text="Detalhes">
+                                <MudChip T="string"
+                                         Color="Color.Info"
+                                         Size="Size.Small"
+                                         OnClick="() => MostrarValoresTo(des)">
+                                    @des.TipoMovimentacao
+                                </MudChip>
+                            </MudTooltip>
+                        </td>
+                        <td>@(@FormatCurrency(des.VrTotal))</td>
+                    </tr>
+                }
+            </tbody>
+        </MudSimpleTable>
+    </ChildRowContent>
+    <NoRecordsContent>
+        <MudAlert Severity="Severity.Warning">
+            Nenhuma DRP encontrada para emissão.
+        </MudAlert>
+    </NoRecordsContent>
+</MudDataGrid>;
+
+private RenderFragment DrpsBaixaGrid => @<MudDataGrid T="Drp"
+                                                      Items="@_drpsBaixa"
+                                                      Loading="@_carregandoTabela"
+                                                      Hover
+                                                      Dense
+                                                      Elevation="0"
+                                                      Class="data-grid">
+
+    <Columns>
+
+        <PropertyColumn Property="x => x.Tomador"
+                        Title="Tomador"
+                        Style="font-weight:600;"
+                        CellStyle="font-weight:400; width:50%;" />
+
+        <PropertyColumn Property="x => x.NuDrp + '-' + x.DvDrp"
+                        Title="DRP"
+                        Style="font-weight:600;"
+                        CellStyle="font-weight:400;" />
+
+        <PropertyColumn Property="x => x.Senha"
+                        Title="Senha"
+                        Style="font-weight:600;"
+                        CellStyle="font-weight:400;" />
+
+        <PropertyColumn Property="x => x.QtdMovimentacoes"
+                        Title="Desembolsos"
+                        Style="font-weight:600;"
+                        CellStyle="font-weight:400;" />
+
+        <TemplateColumn Title="Total" CellStyle="white-space: nowrap">
+            <CellTemplate>
+                @FormatCurrency(context.Item.Valor)
+            </CellTemplate>
+        </TemplateColumn>
+
+        <TemplateColumn Title="Situação">
+            <CellTemplate>
+                <StatusIcon Situacao="@context.Item.Situacao"
+                            Perfil="@PerfilUsuario.Baixa" />
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+
+    <NoRecordsContent>
+        <MudAlert Severity="Severity.Warning">
+            Nenhuma DRP disponível para baixa.
+        </MudAlert>
+    </NoRecordsContent>
+</MudDataGrid>;
+
+private RenderFragment DrpsFinalizadasGrid => @<MudDataGrid T="Drp"
+                                                            Items="@_drpsFinalizadas"
+                                                            Loading="@_carregandoTabela"
+                                                            Hover
+                                                            Dense
+                                                            Elevation="0"
+                                                            Class="data-grid">
+
+    <Columns>
+
+        <PropertyColumn Property="x => x.Tomador"
+                        Title="Tomador"
+                        Style="font-weight:600;"
+                        CellStyle="font-weight:400; width:50%;" />
+
+        <PropertyColumn Property="x => x.NuDrp + '-' + x.DvDrp"
+                        Title="DRP"
+                        Style="font-weight:600;"
+                        CellStyle="font-weight:400;" />
+
+        <PropertyColumn Property="x => x.Senha"
+                        Title="Senha"
+                        Style="font-weight:600;"
+                        CellStyle="font-weight:400;" />
+
+        <PropertyColumn Property="x => x.QtdMovimentacoes"
+                        Title="Desembolsos"
+                        Style="font-weight:600;"
+                        CellStyle="font-weight:400;" />
+
+        <TemplateColumn Title="Total" CellStyle="white-space: nowrap">
+            <CellTemplate>
+                @FormatCurrency(context.Item.Valor)
+            </CellTemplate>
+        </TemplateColumn>
+
+        <TemplateColumn Title="Situação">
+            <CellTemplate>
+                <StatusIcon Situacao="@context.Item.Situacao"
+                            Perfil="@PerfilUsuario.Baixa" />
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+
+    <NoRecordsContent>
+        <MudAlert Severity="Severity.Warning">
+            Nenhuma DRP finalizada.
+        </MudAlert>
+    </NoRecordsContent>
+</MudDataGrid>
+;
+
+AggregateDefinition<Drp> _totalDrpAggregation = new AggregateDefinition<Drp>
+{
+    Type = AggregateType.Custom,
+    CustomAggregate = x =>
+    {
+        var valorTotal = x.Sum(z => z.Valor);
+        return $"Valor total: {FormatCurrency(valorTotal)}";
+    }
+};
+
+private string ProcessarButtonText =>
+    _areaSelecionada == AreaOperacional.DRPs
+        ? "BAIXAR DRPS"
+        : "PROCESSAR";
+
+protected override async Task OnInitializedAsync()
+{
+    await CarregarPaginaAsync();
+}
+
+private void OnActiveTabIndexChanged(int index)
+{
+    _activeTabIndex = index;
+
+    _areaSelecionada = index switch
+    {
+        0 => AreaOperacional.Desembolsos,
+        1 => AreaOperacional.DRPs,
+        _ => AreaOperacional.Desembolsos
+    };
+
+    _desembolsosSelecionados = [];
+    DefineFaseInicial();
+    AtualizarEstadoDaFase();
+}
+
+private async Task CarregarPaginaAsync()
+{
+    _carregandoCards = true;
+    _carregandoTabela = true;
+    _processarDesabilitado = true;
+    _criarFluxoDesabilitado = true;
+
+    try
+    {
+        ResetPageBeforeLoad();
+
+        var controlesDoUsuario = await SendAsync<List<Controle>>(
+            Service.ConsultarControlesExecucaoPorMatricula()) ?? [];
+
+        if (controlesDoUsuario.Count > 0)
+        {
+            _controleAtual = controlesDoUsuario.First();
+
+            SetSituacoesFromControle(forceCargaSuccess: true);
+
+            await CarregarDesembolsosFluxoAsync();
+
+            _drpsEmissao = await SendAsync<List<Drp>>(Service.ConsultarDrpsPendentes()) ?? [];
+        }
+        else
+        {
+            _descSituacaoCarga = "Fase atual: Selecionar desembolsos e Criar Fluxo";
+            _drpsEmissao = [];
+        }
+
+        await CarregarDesembolsosPendentesAsync();
+
+        await CarregarResumoCardsAsync();
+
+        desembolsosLancados = Contains(_situacaoDesembolsos, "Sucesso");
+
+        drpsEmitidas =
+            Contains(_situacaoDrpsEmissao, "Sucesso") ||
+            Contains(_descSituacaoDrpsEmissao, "Sucesso");
+
+        await CarregarDesembolsosNaoSelecionadosAsync();
+        await CarregarDrpsAsync();
+
+        DefineFaseInicial();
+        AtualizarEstadoDaFase();
+    }
+    catch (Exception ex)
+    {
+        Snackbar.Add($"Falha ao carregar página. {ex.Message}", Severity.Error);
+
+        _desembolsos = [];
+        _desembolsosFluxo = [];
+        _desembolsosNaoSelecionados = [];
+        _desembolsosSelecionados = [];
+        _drpsEmissao = [];
+        _drpsBaixa = [];
+        _drpsFinalizadas = [];
+        _resumoCards = [];
+
+        _processarDesabilitado = true;
+    }
+    finally
+    {
+        _carregandoCards = false;
+        _carregandoTabela = false;
+        StateHasChanged();
+    }
+}
+
+private void ResetPageBeforeLoad()
+{
+    _desembolsosSelecionados = [];
+    _mensagemErro = string.Empty;
+    _senhaCriptografada = string.Empty;
+}
+
+private async Task CarregarResumoCardsAsync()
+{
+    try
+    {
+        _resumoCards = await SendAsync<List<ResumoCards>>(
+            Service.ConsultarResumoCards()) ?? [];
+    }
+    catch
+    {
+        _resumoCards = [];
+        Snackbar.Add("Falha ao carregar resumo consolidado dos cards.", Severity.Warning);
+    }
+}
+
+private async Task CarregarDesembolsosPendentesAsync()
+{
+    try
+    {
+        await Service.AtualizarListaDesembolsos();
+    }
+    catch (Exception ex)
+    {
+        Snackbar.Add("Falha ao obter dados da esteira: " + ex.Message, Severity.Error);
+        _desembolsos = [];
+    }
+
+    try
+    {
+        _desembolsos = await SendAsync<List<Desembolso>>(
+            Service.ConsultarDesembolsosPendentes()) ?? [];
+    }
+    catch
+    {
+        _desembolsos = [];
+    }
+}
+
+private async Task CarregarDesembolsosFluxoAsync()
+{
+    try
+    {
+        _desembolsosFluxo = await SendAsync<List<Desembolso>>(
+            Service.ConsultarDesembolsosPorFluxo()) ?? [];
+
+        _desembolsosSelecionados = [];
+    }
+    catch
+    {
+        _desembolsosFluxo = [];
+    }
+}
+
+private async Task CarregarDesembolsosNaoSelecionadosAsync()
+{
+    try
+    {
+        _desembolsosNaoSelecionados = await SendAsync<List<Desembolso>>(
+            Service.ConsultarDesembolsosNaoSelecionados()) ?? [];
+    }
+    catch
+    {
+        _desembolsosNaoSelecionados = [];
+    }
+}
+
+private async Task CarregarDrpsAsync()
+{
+    try
+    {
+        _drpsBaixa = await SendAsync<List<Drp>>(
+            Service.ConsultarDrpsParaBaixa()) ?? [];
+
+        _drpsFinalizadas = await SendAsync<List<Drp>>(
+            Service.ConsultarDrpsFinalizadas()) ?? [];
+    }
+    catch
+    {
+        _drpsBaixa = [];
+        _drpsFinalizadas = [];
+    }
+}
+
+private async Task<T?> SendAsync<T>(Task<HttpResponseMessage> request)
+    where T : notnull
+{
+    var response = await request;
+    return await HttpResponseHandler.ResponseHandler<T>(response, Snackbar);
+}
+
+private void SetSituacoesFromControle(bool forceCargaSuccess)
+{
+    _situacaoCarga = forceCargaSuccess
+        ? "Sucesso"
+        : Required(_controleAtual.SituacaoCarga, "Situação da carga não identificada.");
+
+    _descSituacaoCarga = forceCargaSuccess
+        ? "Fluxo criado com sucesso."
+        : Required(_controleAtual.DescSituacaoCarga, "Descrição da carga não identificada.");
+
+    _situacaoDesembolsos = Required(_controleAtual.SituacaoDesembolsos, "Situação dos desembolsos não identificada.");
+    _descSituacaoDesembolsos = Required(_controleAtual.DescSituacaoDesembolsos, "Descrição dos desembolsos não identificada.");
+
+    _situacaoDrpsEmissao = Required(_controleAtual.SituacaoDrpEmissao, "Situação das DRPs não identificada.");
+    _descSituacaoDrpsEmissao = Required(_controleAtual.DescSituacaoDrpEmissao, "Descrição das DRPs não identificada.");
+
+    _situacaoDrpsBaixa = Required(_controleAtual.SituacaoDrpBaixa, "Situação da baixa das DRPs não identificada.");
+    _descSituacaoDrpsBaixa = Required(_controleAtual.DescSituacaoDrpBaixa, "Descrição da baixa das DRPs não identificada.");
+
+    _situacaoFinalizacao = Required(_controleAtual.SituacaoFinalizacao, "Situação da finalização não identificada.");
+    _descSituacaoFinalizacao = Required(_controleAtual.DescSituacaoFinalizacao, "Descrição da finalização não identificada.");
+}
+
+private static string Required(string? value, string errorMessage)
+{
+    return string.IsNullOrWhiteSpace(value)
+        ? throw new NullReferenceException(errorMessage)
+        : value;
+}
+
+private void DefineFaseInicial()
+{
+    _faseReal =
+        Contains(_situacaoDrpsBaixa, "Sucesso") ? 5 :
+        Contains(_situacaoDrpsEmissao, "Sucesso") ? 4 :
+        Contains(_situacaoDesembolsos, "Sucesso") ? 3 :
+        Contains(_situacaoCarga, "Sucesso") ? 2 :
+        1;
+
+    _fase = _areaSelecionada switch
+    {
+        AreaOperacional.Desembolsos => _faseReal <= 3 ? _faseReal : 3,
+        AreaOperacional.DRPs => _faseReal >= 4 ? _faseReal : 4,
+        _ => _faseReal
+    };
+}
+
+private void AlterarFase(int fase)
+{
+    if (!CanAccessFase(fase))
+        return;
+
+    _fase = fase;
+    AtualizarEstadoDaFase();
+}
+
+private bool CanAccessFase(int fase)
+{
+    return _areaSelecionada switch
+    {
+        AreaOperacional.Desembolsos => fase >= 1 && fase <= 3,
+        AreaOperacional.DRPs => fase >= 4 && fase <= 5,
+        _ => false
+    };
+}
+
+private string GetPhaseAlertClass(int fase)
+{
+    return CanAccessFase(fase)
+        ? "cursor-pointer phase-alert"
+        : "phase-alert-disabled";
+}
+
+private Color GetTimelineItemColor(FaseInfo fase)
+{
+    if (IsEmissaoWaitingPhase3 && fase.Id == 3)
+        return Color.Info;
+
+    return GetPhaseColor(fase.Situacao);
+}
+
+private Severity GetTimelineSeverity(FaseInfo fase)
+{
+    if (IsEmissaoWaitingPhase3 && fase.Id == 3)
+        return Severity.Info;
+
+    return GetPhaseSeverity(fase.Situacao);
+}
+
+private Color GetTimelineColor(FaseInfo fase)
+{
+    if (IsEmissaoWaitingPhase3 && fase.Id == 3)
+        return Color.Info;
+
+    return GetPhaseColor(fase.Situacao);
+}
+
+private string GetTimelineIcon(FaseInfo fase)
+{
+    if (IsEmissaoWaitingPhase3 && fase.Id == 3)
+        return Icons.Material.Filled.LockClock;
+
+    return string.Empty;
+}
+
+private void AtualizarEstadoDaFase()
+{
+    _tabelaTitulo = _areaSelecionada switch
+    {
+        AreaOperacional.Desembolsos => _fase switch
+        {
+            1 => HasFluxo ? "Desembolsos selecionados" : "Desembolsos disponíveis",
+            2 => "Desembolsos selecionados",
+            3 when EmissaoAguardandoBaixa => "Aguardando baixa de DRPs por outro empregado",
+            3 => "DRPs a emitir",
+            _ => string.Empty
+        },
+
+        AreaOperacional.DRPs => _fase switch
+        {
+            4 => "DRPs disponíveis para baixa",
+            5 => "Finalização",
+            _ => "DRPs disponíveis para baixa"
+        },
+
+        _ => string.Empty
+    };
+
+    cancelarFluxoDesabilitado = !Contains(_situacaoDesembolsos, "Pendente");
+
+    _criarFluxoDesabilitado =
+        _areaSelecionada != AreaOperacional.Desembolsos ||
+        _desembolsosSelecionados.Count == 0 ||
+        HasFluxo;
+
+    _processarDesabilitado = _areaSelecionada switch
+    {
+        AreaOperacional.Desembolsos => _fase switch
+        {
+            2 => _desembolsosFluxo.Count == 0 || desembolsosLancados,
+            3 when EmissaoAguardandoBaixa => true,
+            3 => _drpsEmissao.Count == 0 || drpsEmitidas,
+            _ => true
+        },
+
+        AreaOperacional.DRPs => _fase switch
+        {
+            4 => _drpsBaixa.Count == 0 || HasFluxo,
+            _ => true
+        },
+
+        _ => true
+    };
+}
+
+private Func<Desembolso, bool> _quickFilter => item =>
+{
+    if (string.IsNullOrWhiteSpace(_searchString))
+        return true;
+
+    return item.Tomador?.Contains(_searchString, IgnoreCase) == true;
+};
+
+private void SelectedItemsChanged(HashSet<Desembolso> items)
+{
+    _desembolsosSelecionados = items.ToList();
+    AtualizarEstadoDaFase();
+}
+
+private async Task CriarFluxo(List<Desembolso> desembolsos)
+{
+    if (_processando)
+        return;
+
+    if (_areaSelecionada != AreaOperacional.Desembolsos)
+        return;
+
+    if (desembolsos is null || desembolsos.Count == 0)
+    {
+        Snackbar.Add("Nenhum desembolso selecionado para criação do fluxo.", Severity.Warning);
+        return;
+    }
+
+    if (desembolsos.Any(x => string.IsNullOrWhiteSpace(x.NuContrato)))
+    {
+        Snackbar.Add("Existem desembolsos sem número de contrato.", Severity.Error);
+        return;
+    }
+
+    if (desembolsos.Any(x => string.IsNullOrWhiteSpace(x.Fid)))
+    {
+        Snackbar.Add("Existem desembolsos sem FID.", Severity.Error);
+        return;
+    }
+
+    var desembolsosFluxo = desembolsos
+        .Select(x => new DesembolsoFluxoDto(
+            x.NuContrato!.Trim(),
+            x.Fid!.Trim()))
+        .ToList();
+
+    var confirmado = await ConfirmarCriacaoFluxoAsync(desembolsos);
+
+    if (!confirmado)
+        return;
+
+    await ExecuteWithProcessingAsync(
+        operation: () => Service.CriarFluxoDesembolsos(desembolsosFluxo),
+        successMessage: "Fluxo criado com sucesso.",
+        errorPrefix: "Falha ao criar fluxo: ",
+        after: CarregarPaginaAsync);
+}
+
+private async Task<bool> ConfirmarCriacaoFluxoAsync(List<Desembolso> desembolsos)
+{
+    var parameters = new DialogParameters<CriarFluxoDialog>
+        {
+            { x => x.Desembolsos, desembolsos }
+        };
+
+    var options = new DialogOptions
+    {
+        MaxWidth = MaxWidth.Small,
+        FullWidth = false,
+        CloseButton = true,
+        BackdropClick = false,
+        NoHeader = true
+    };
+
+    var dialog = await DialogService.ShowAsync<CriarFluxoDialog>(
+        title: string.Empty,
+        parameters,
+        options);
+
+    var result = await dialog.Result;
+
+    return result is { Canceled: false };
+}
+
+protected async Task CancelarFluxo()
+{
+    if (_processando)
+        return;
+
+    if (_areaSelecionada != AreaOperacional.Desembolsos)
+        return;
+
+    var confirmed = await DialogService.ShowMessageBoxAsync(
+        title: "Confirmar cancelamento",
+        markupMessage: (MarkupString)"Deseja mesmo <strong style='color: var(--mud-palette-error);'>cancelar o fluxo</strong> de desembolsos?",
+        yesText: "Confirmar",
+        cancelText: "Voltar",
+        options: new DialogOptions
+        {
+            MaxWidth = MaxWidth.ExtraSmall,
+            FullWidth = false,
+            CloseButton = true,
+            BackdropClick = false
+        });
+
+    if (confirmed != true)
+        return;
+
+    await ExecuteWithProcessingAsync(
+        operation: () => Service.CancelarFluxoDesembolsos(_controleAtual.CoControle),
+        successMessage: "Fluxo cancelado com sucesso.",
+        errorPrefix: "Falha ao cancelar fluxo: ",
+        after: async () =>
+        {
+            _desembolsosFluxo = [];
+
+            if (_areaSelecionada == AreaOperacional.Desembolsos)
+                _fase = 1;
+
+            await CarregarPaginaAsync();
+
+            AtualizarEstadoDaFase();
+        });
+}
+
+private async Task ProcessarMovimentoAsync()
+{
+    if (_processando)
+        return;
+
+    if (!BotaoProcessarVisivel || _processarDesabilitado)
+        return;
+
+    List<int> controlesBaixa = [];
+
+
+    if (_areaSelecionada == AreaOperacional.DRPs)
+    {
+        controlesBaixa = _drpsBaixa
+            .Select(drp => drp.CoControle)
+            .Distinct()
+            .ToList();
+
+        if (controlesBaixa.Count == 0)
+        {
+            Snackbar.Add("Nenhuma DRP disponível para baixa.", Severity.Warning);
+            return;
+        }
+    }
+
+    var title = _areaSelecionada == AreaOperacional.DRPs
+        ? "Baixar DRPs"
+        : "Processar desembolsos";
+
+    var parameters = new DialogParameters<BoxSenha>
+        {
+            { x => x.Title, title }
+        };
+
+    var options = new DialogOptions
+    {
+        CloseOnEscapeKey = true,
+        MaxWidth = MaxWidth.ExtraSmall,
+        FullWidth = false
+    };
+
+    var dialog = await DialogService.ShowAsync<BoxSenha>(
+        title: string.Empty,
+        parameters,
+        options);
+
+    var result = await dialog.Result;
+
+    if (result is not { Canceled: false })
+        return;
+
+    if (result.Data is null)
+    {
+        Snackbar.Add("Dados inválidos.", Severity.Error);
+        return;
+    }
+
+    _senhaCriptografada = result.Data.ToString() ?? string.Empty;
+
+    var successMessage = _areaSelecionada == AreaOperacional.DRPs
+        ? "Baixa realizada com sucesso."
+        : "Processamento realizado com sucesso.";
+
+    var errorPrefix = _areaSelecionada == AreaOperacional.DRPs
+        ? "Falha ao processar baixa: "
+        : "Falha ao processar movimento: ";
+
+
+    Func<Task<HttpResponseMessage>> operation = _areaSelecionada switch
+    {
+        AreaOperacional.Desembolsos =>
+            () => Service.ProcessarDesembolsos(new SenhaUsuario(_senhaCriptografada)),
+
+        AreaOperacional.DRPs =>
+            () => Service.ProcessarDesembolsosBaixa(
+                new DesembolsoAutomacaoDados(_senhaCriptografada, controlesBaixa: controlesBaixa)),
+
+        _ =>
+            throw new InvalidOperationException("Área operacional inválida.")
+    };
+
+    await ExecuteWithProcessingAsync(
+        operation: operation,
+        successMessage: successMessage,
+        errorPrefix: errorPrefix,
+        after: CarregarPaginaAsync);
+}
+
+private async Task ExecuteWithProcessingAsync(
+    Func<Task<HttpResponseMessage>> operation,
+    string successMessage,
+    string errorPrefix,
+    Func<Task>? after = null)
+{
+    if (_processando)
+        return;
+
+    _processando = true;
+    AtualizarEstadoDaFase();
+    StateHasChanged();
+
+    try
+    {
+        var response = await operation();
+        await HandleServiceResponseAsync(response, successMessage, errorPrefix);
+    }
+    catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+    {
+        Snackbar.Add(
+            "O tempo limite da requisição foi excedido. Atualize a página em alguns instantes.",
+            Severity.Error);
+    }
+    finally
+    {
+        _processando = false;
+
+        if (after is not null)
+            await after();
+
+        AtualizarEstadoDaFase();
+        StateHasChanged();
+    }
+}
+
+private async Task HandleServiceResponseAsync(
+    HttpResponseMessage response,
+    string successMessage,
+    string errorPrefix)
+{
+    if (response.IsSuccessStatusCode)
+    {
+        Snackbar.Add(successMessage, Severity.Success);
+        return;
+    }
+
+    if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+    {
+        Snackbar.Add("Usuário não autorizado para executar esta operação.", Severity.Error);
+        return;
+    }
+
+    if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+    {
+        Snackbar.Add("Usuário sem permissão para executar esta operação.", Severity.Error);
+        return;
+    }
+
+    _mensagemErro = await ExtractErrorMessageAsync(response);
+    Snackbar.Add(errorPrefix + _mensagemErro, Severity.Error);
+}
+
+private async Task<string> ExtractErrorMessageAsync(HttpResponseMessage response)
+{
+    try
+    {
+        _resultado = await response.Content.ReadFromJsonAsync<ResultadoFlunt>();
+
+        return _resultado?.Notifications?.FirstOrDefault()?.Message
+            ?? "Erro desconhecido.";
+    }
+    catch (Exception ex)
+    {
+        var content = await response.Content.ReadAsStringAsync();
+
+        return string.IsNullOrWhiteSpace(content)
+            ? ex.Message
+            : content;
+    }
+}
+
+protected Task ExpandirDetalhes(Desembolso desembolso)
+{
+    var parameters = new DialogParameters
+        {
+            { nameof(DesembolsosDialog.Desembolso), desembolso }
+        };
+
+    var options = new DialogOptions
+    {
+        CloseButton = true,
+        MaxWidth = MaxWidth.Small,
+        FullWidth = true
+    };
+
+    return DialogService.ShowAsync<DesembolsosDialog>("Ações", parameters, options);
+}
+
+protected Task MostrarValoresTo(Desembolso desembolso)
+{
+    var parameters = new DialogParameters
+        {
+            { nameof(DesembolsosDialog.Desembolso), desembolso }
+        };
+
+    var options = new DialogOptions
+    {
+        CloseButton = true,
+        MaxWidth = MaxWidth.Small,
+        FullWidth = true
+    };
+
+    var titulo = $"Contrato {desembolso.NuContrato} - {desembolso.NuContratoDv}";
+
+    return DialogService.ShowAsync<TmDialog>(titulo, parameters, options);
+}
+
+private int? ContadorBadge(int fase)
+{
+    return _areaSelecionada switch
+    {
+        AreaOperacional.Desembolsos => fase switch
+        {
+            1 => _desembolsosSelecionados.Count,
+            2 => _desembolsosFluxo.Count,
+            3 => _drpsEmissao.Count,
+            _ => null
+        },
+
+        AreaOperacional.DRPs => fase switch
+        {
+            4 => _drpsBaixa.Count,
+            _ => null
+        },
+
+        _ => null
+    };
+}
+
+private TmCardInfo BuildTmCard(
+    string tipoMovimentacao,
+    string gradient)
+{
+    var resumo = _resumoCards.FirstOrDefault(x =>
+        string.Equals(
+            x.TipoMovimentacao,
+            tipoMovimentacao,
+            StringComparison.OrdinalIgnoreCase));
+
+    return new TmCardInfo(
+        Title: tipoMovimentacao,
+        Quantity: resumo?.QtEntradas ?? 0,
+        Value: resumo?.VrTotal ?? 0m,
+        Gradient: gradient);
+}
+
+private static bool ShouldShowPhase(string? situacao)
+{
+    return Contains(situacao, "Pendente")
+        || Contains(situacao, "Erro")
+        || Contains(situacao, "Sucesso");
+}
+
+private static Color GetPhaseColor(string? situacao)
+{
+    if (Contains(situacao, "Erro"))
+        return Color.Error;
+
+    if (Contains(situacao, "Sucesso"))
+        return Color.Success;
+
+    return Color.Warning;
+}
+
+private static Severity GetPhaseSeverity(string? situacao)
+{
+    if (Contains(situacao, "Erro"))
+        return Severity.Error;
+
+    if (Contains(situacao, "Sucesso"))
+        return Severity.Success;
+
+    return Severity.Warning;
+}
+
+private static string GetTmCardClass(TmCardInfo card)
+{
+    return card.HasValue
+        ? "tm-card"
+        : "tm-card tm-card-empty";
+}
+
+private static string FormatCurrency(decimal? value)
+{
+    return (value ?? 0m).ToString("'R$' #,##0.00", PtBr);
+}
+
+private static bool Contains(string? source, string value)
+{
+    return source?.Contains(value, IgnoreCase) == true;
+}
+
+private sealed record TmCardInfo(
+    string Title,
+    long? Quantity,
+    decimal? Value,
+    string Gradient)
+{
+    public bool HasValue =>
+        Quantity.GetValueOrDefault() > 0 ||
+        Value.GetValueOrDefault() > 0m;
+}
+
+private sealed record FaseInfo(
+    int Id,
+    string Situacao,
+    string Descricao);
+
+
+private async Task AbrirConfiguracoes()
+{
+    var options = new DialogOptions
+    {
+        MaxWidth = MaxWidth.Large,
+        FullWidth = true,
+        CloseButton = true,
+        CloseOnEscapeKey = true,
+        BackdropClick = true
+    };
+
+    await DialogService.ShowAsync<DialogConfiguracoesDesembolsos>(
+        "Configurações de Desembolsos",
+        options);
+}
+
+private IBrowserFile? _arquivo;
+
+private async Task OnFileSelected(IBrowserFile arquivo)
+{
+    _arquivo = arquivo;
+
+    await EnviarArquivo();
+    _arquivo = null;
+}
+
+private async Task EnviarArquivo()
+{
+    if (_arquivo is null)
+    {
+        Snackbar.Add("Arquivo não selecionado.", Severity.Warning);
+        return;
+    }
+
+    var response = await Service.ProcessarValidacaoAsync(_arquivo);
+    await HttpResponseHandler.ResponseHandler(response, Snackbar);
+
+
+}
+
+}
+
+
+
+

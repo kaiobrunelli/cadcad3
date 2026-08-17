@@ -1,0 +1,70 @@
+﻿@using MudBlazor
+@* <div class="d-flex flex-column flex-md-row justify-space-between align-md-end mb-4 gap-4"> *@
+<div class="mb-4">
+
+
+		<MudText Typo="Typo.h4" Class="font-bold text-dark mb-1">Previsão De Desembolso</MudText>
+
+
+	@* 	<div class="d-flex align-center gap-2"> *@
+	<MudStack Row="true" Justify="Justify.SpaceBetween">
+		<MudStack Row="true" AlignItems="AlignItems.Center">
+			<MudStack Row="true">
+				<MudIcon Icon="@Icons.Material.Filled.CalendarToday" Size="Size.Small" Color="Color.Primary" />
+				<MudText Typo="Typo.body1" Class="font-weight-medium" Color="Color.Primary">Referência: @(DataCabecalho?.ToString("dd/MM/yyyy"))</MudText>
+
+			</MudStack>		
+			@* <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Class="font-bold" Color="@StatusGeralCorTexto"> *@
+			<MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Style="font-weight:500; letter-spacing:1px; " Color="Color.Primary">
+				@StatusTexto
+			</MudChip>
+			
+
+		</MudStack>
+		<MudStack Row="true" Justify="Justify.FlexEnd">
+			@if (BtnConfiguracao)
+			{
+				<MudButton Variant="Variant.Outlined"
+						   Color="Color.Primary"
+						   OnClick="OnConfigClick"
+						   Size="Size.Small"
+						   StartIcon="@Icons.Material.Filled.Person"
+						   Class="rounded-lg pa-2">
+					Configuração
+				</MudButton>
+			}
+			<MudButton Variant="Variant.Filled"
+					   Color="Color.Primary"
+					   Size="Size.Small"
+					   StartIcon="@Icons.Material.Filled.CheckCircle"
+					   OnClick="Finalizar"
+					   Disabled="@BtnFinalizar"
+					   Class=" font-bold rounded-lg pa-2">
+				Enviar Previsão
+			</MudButton>
+		</MudStack>
+	</MudStack>
+</div>
+
+
+
+
+
+@code {
+	[Parameter] public EventCallback OnClickConfiguracao { get; set; }
+	[Parameter] public DateTime? DataCabecalho { get; set; }
+	[Parameter] public bool BtnConfiguracao { get; set; }
+	[Parameter] public bool BtnFinalizar { get; set; }
+	private async Task OnConfigClick()
+	{
+		await OnClickConfiguracao.InvokeAsync();
+	}
+	[Parameter] public EventCallback OnClickFinalizar { get; set; }
+	[Parameter] public string StatusTexto { get; set; } = "";
+	private Color StatusGeralCorTexto => StatusTexto == "Finalizado" ?  Color.Info : Color.Warning;
+	private string CorIcone => StatusTexto == "Não iniciado" ? "F39200" : "00c5a9";
+	private void Finalizar()
+	{
+		OnClickFinalizar.InvokeAsync();
+	}
+}

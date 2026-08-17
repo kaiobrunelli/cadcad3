@@ -1,0 +1,464 @@
+@page "/amortizacaocaixaconfiguracoes-sac-price"
+@using MudBlazor
+@using System.Collections.Generic
+@using System.Globalization
+@using System.Linq
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+@inject CobrancaService CobrancaService
+@using MudBlazor.Utilities
+
+<style>
+
+	.card-container {
+		width: 100%;
+		max-width: 1000px;
+		border-radius: 14px;
+		background-color: white;
+		padding: 20px;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+	}
+
+	.background-circle-color {
+		background-color: #FAF8F5;
+	}
+
+	.header-content {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		text-align: center;
+	}
+
+	.form-section {
+		border: 1px solid #e0e6ed;
+		border-radius: 12px;
+		padding: 24px;
+		margin-top: 24px;
+	}
+
+	.form-title {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin-bottom: 16px;
+	}
+
+	.form-group {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 16px;
+	}
+
+	.footer-buttons {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-top: 24px;
+	}
+
+	.mud-select .mud-select-input .mud-input-slot {
+		color: white;
+	}
+
+	.contrato-cci-section {
+		border: 1px solid #e0e6ed;
+		border-radius: 12px;
+		padding: 20px;
+		background-color: #FAFBFD;
+	}
+
+	.barra-proporcao-sac-price {
+		display: flex;
+		height: 8px;
+		border-radius: 4px;
+		overflow: hidden;
+		margin-top: 20px;
+		background-color: #e0e6ed;
+	}
+
+	.barra-sac {
+		background-color: #005ca9;
+	}
+
+	.barra-price {
+		background-color: #f39200;
+	}
+</style>
+
+<MudThemeProvider Theme="_customTheme" />
+<MudContainer Class="mb-6 mt-4">
+	<div class="card-container pb-2">
+		<MudGrid>
+			<MudItem xs="12" lg="12" md="12" Class="d-flex justify-space-between">
+				<MudText Typo="Typo.h5" Style="color: #64748B;">Configurações</MudText>
+				<MudButton Variant="Variant.Outlined"
+						   Color="Color.Primary"
+						   Size="Size.Small"
+						   Style="border-radius:24px;"
+						   Href="@($"{Navigation.BaseUri}amortizacaocaixa")"
+						   StartIcon="@Icons.Material.Filled.ArrowBack">
+					Voltar
+				</MudButton>
+			</MudItem>
+			<MudItem lg="12" md="12">
+				<MudGrid Spacing="4" Class="px-4 py-2">
+					<MudItem xs="12" md="4" Class="d-flex align-center ">
+						<MudAvatar Variant="Variant.Filled" Size="Size.Medium" Class="mr-3 background-circle-color">
+							<MudIcon Icon="@Icons.Material.Filled.Apps" Color="Color.Primary" Size="Size.Medium" />
+						</MudAvatar>
+						<div>
+							<MudText Typo="Typo.caption" Style="color: #616161;">Unidade De Movimento</MudText>
+
+							@if (_configuracoesGerais.UnidadeMovimento == null)
+							{
+								<MudSkeleton Animation="Animation.Wave" Width="100%" />
+							}
+							else
+							{
+								<MudText Typo="Typo.subtitle1" Class="font-weight-bold">
+									@_configuracoesGerais.UnidadeMovimento-@_configuracoesGerais.UnidadeMovimentoDv
+								</MudText>
+							}
+						</div>
+					</MudItem>
+
+					<MudItem xs="12" md="4" Class="d-flex align-center">
+						<MudAvatar Variant="Variant.Filled" Size="Size.Medium" Class="mr-3 background-circle-color">
+							<MudIcon Icon="@Icons.Material.Filled.Layers" Color="Color.Primary" Size="Size.Medium" />
+						</MudAvatar>
+						<div>
+							<MudText Typo="Typo.caption" Style="color: #616161;">Quantidade Máxima DRP</MudText>
+							@if (_configuracoesGerais.UnidadeMovimento == null)
+							{
+								<MudSkeleton Animation="Animation.Wave" Width="100%" />
+							}
+							else
+							{
+								<MudText Typo="Typo.subtitle1" Class="font-weight-bold">
+									@_configuracoesGerais.QtdMaximaPorDrp
+								</MudText>
+							}
+						</div>
+					</MudItem>
+
+					<MudItem xs="12" md="4" Class="d-flex align-center">
+						<MudAvatar Variant="Variant.Filled" Size="Size.Medium" Class="mr-3 background-circle-color">
+							<MudIcon Icon="@Icons.Material.Filled.Storage" Color="Color.Primary" Size="Size.Medium" />
+						</MudAvatar>
+						<div>
+							<MudText Typo="Typo.caption" Style="color: #616161;">Impressora Server</MudText>
+							<MudText Typo="Typo.subtitle1" Class="font-weight-bold">
+								@_configuracoesGerais.ImpressoraVirtualServer
+							</MudText>
+						</div>
+					</MudItem>
+
+					<MudItem xs="12" md="12" Class="d-flex align-center">
+						<MudAvatar Variant="Variant.Filled" Size="Size.Medium" Class="mr-3 background-circle-color">
+							<MudIcon Icon="@Icons.Material.Filled.Print" Color="Color.Primary" Size="Size.Medium" />
+						</MudAvatar>
+						<div>
+							<MudText Typo="Typo.caption" Style="color: #616161;">Impressora Rede Caixa</MudText>
+							<MudText Typo="Typo.subtitle1" Class="font-weight-bold">
+								@_configuracoesGerais.ImpressoraVirutalRedeCaixa
+							</MudText>
+						</div>
+					</MudItem>
+
+					<MudItem xs="12" md="12" Class="d-flex align-center">
+						<MudAvatar Variant="Variant.Filled" Size="Size.Medium" Class="mr-3 background-circle-color">
+							<MudIcon Icon="@Icons.Material.Filled.Folder" Color="Color.Primary" Size="Size.Medium" />
+						</MudAvatar>
+						<div>
+							<MudText Typo="Typo.caption" Style="color: #616161;">Destino Do Arquivo</MudText>
+							<MudText Typo="Typo.subtitle1" Class="font-weight-bold">
+								@_configuracoesGerais.DestinoArquivo
+							</MudText>
+						</div>
+					</MudItem>
+				</MudGrid>
+
+				<MudDivider Style="height:1.5px;" Class="my-4"></MudDivider>
+
+				<div class="contrato-cci-section">
+					<MudText Typo="Typo.subtitle1" Class="font-weight-bold mb-3" Style="color: #64748B;">Contrato CCI</MudText>
+					<MudGrid Spacing="4">
+						<MudItem xs="12" md="6" Class="d-flex align-center">
+							<MudAvatar Variant="Variant.Filled" Size="Size.Medium" Class="mr-3 background-circle-color">
+								<MudIcon Icon="@Icons.Material.Filled.Description" Color="Color.Primary" Size="Size.Medium" />
+							</MudAvatar>
+							<div>
+								<MudText Typo="Typo.caption" Style="color: #616161;">Contrato CCI SAC</MudText>
+								<MudText Typo="Typo.subtitle1" Class="font-weight-bold">
+									@_configuracoesGerais.ContratoCciSac-@_configuracoesGerais.ContratoCciSacDv
+								</MudText>
+								<MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Text" Class="mt-1">
+									@_configuracoesGerais.PercentualSac.ToString("N4", _culturaPtBr)% SAC
+								</MudChip>
+							</div>
+						</MudItem>
+
+						<MudItem xs="12" md="6" Class="d-flex align-center">
+							<MudAvatar Variant="Variant.Filled" Size="Size.Medium" Class="mr-3 background-circle-color">
+								<MudIcon Icon="@Icons.Material.Filled.Description" Color="Color.Secondary" Size="Size.Medium" />
+							</MudAvatar>
+							<div>
+								<MudText Typo="Typo.caption" Style="color: #616161;">Contrato CCI Price</MudText>
+								<MudText Typo="Typo.subtitle1" Class="font-weight-bold">
+									@_configuracoesGerais.ContratoCciPrice-@_configuracoesGerais.ContratoCciPriceDv
+								</MudText>
+								<MudChip T="string" Size="Size.Small" Color="Color.Secondary" Variant="Variant.Text" Class="mt-1">
+									@_configuracoesGerais.PercentualPrice.ToString("N4", _culturaPtBr)% PRICE
+								</MudChip>
+							</div>
+						</MudItem>
+					</MudGrid>
+
+					<div class="barra-proporcao-sac-price">
+						<div class="barra-sac" style="width: @(_configuracoesGerais.PercentualSac.ToString("0.####", CultureInfo.InvariantCulture))%;"></div>
+						<div class="barra-price" style="width: @(_configuracoesGerais.PercentualPrice.ToString("0.####", CultureInfo.InvariantCulture))%;"></div>
+					</div>
+				</div>
+
+				<MudDivider Style="height:1.5px;" Class="my-4"></MudDivider>
+
+			</MudItem>
+			<MudItem xs="12" lg="12" md="12" Class="pt-2 mb-2">
+				<MudStack Row="true" Justify="Justify.FlexEnd">
+
+					<MudButton Variant="Variant.Filled"
+							   Color="Color.Primary"
+							   Size="Size.Small"
+							   Style="border-radius:24px;"
+							   OnClick="AlterarConfiguracao"
+							   StartIcon="@Icons.Material.Filled.EditNote">
+						Editar Configurações
+					</MudButton>
+
+					<MudButton Variant="Variant.Filled"
+							   Color="Color.Primary"
+							   Size="Size.Small"
+							   Style="border-radius:24px;"
+							   OnClick="MostrarTabela"
+							   StartIcon="@Icons.Material.Filled.Search">
+						@(!_mostrarTabela ? "Exibir Histórico de Configuração" : "Ocultar Histórico")
+					</MudButton>
+				</MudStack>
+			</MudItem>
+			@if (_mostrarTabela)
+			{
+				<MudItem xs="12" lg="12" md="12" Class="pt-2 mb-3">
+					<MudItem xs="12" lg="12" md="12" Class="pt-2">
+						<MudTable T="HistoricoDeTm" Items="@_historicoDeTms" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0" Context="HistoricoTm">
+							<HeaderContent>
+								<MudTh><MudTableSortLabel SortBy="new Func<HistoricoDeTm, object>(x=>x.Processo)">Processo</MudTableSortLabel></MudTh>
+								<MudTh><MudTableSortLabel SortBy="new Func<HistoricoDeTm, object>(x=>x.Tipo)">Tipo</MudTableSortLabel></MudTh>
+								<MudTh><MudTableSortLabel SortBy="new Func<HistoricoDeTm, object>(x=>x.Tm)">TM</MudTableSortLabel></MudTh>
+
+								<MudTh><b>Histórico</b></MudTh>
+								<MudTh Style="width: 80px;"><b>Ações</b></MudTh>
+							</HeaderContent>
+							<ColGroup>
+								<col />
+								<col />
+								<col />
+								<col style="width: 50%;" />
+								<col style="width: 15%;" />
+							</ColGroup>
+							<RowTemplate>
+								@{
+									bool isEditing = _idEditacao == HistoricoTm.IdModelo;
+								}
+								<MudTd DataLabel="ID">@HistoricoTm.Processo</MudTd>
+								<MudTd DataLabel="ID">@HistoricoTm.Tipo</MudTd>
+								<MudTd DataLabel="Tipo de Movimentação">
+									<MudChip T="string" Color="@GetColorStatusMudChip(HistoricoTm.Tipo)" Variant="Variant.Text">@HistoricoTm.Tm</MudChip>
+								</MudTd>
+
+								<MudTd DataLabel="Histórico">
+									@if (isEditing)
+									{
+										<MudTextField @bind-Value="HistoricoTm.ModeloHistorico"
+													  Lines="4" Variant="Variant.Outlined"
+													  Margin="Margin.Dense"
+													  Typo="Typo.caption"
+													  T="string" />
+									}
+									else
+									{
+										<MudText Typo="Typo.caption" Class="mud-text-secondary">
+											@HistoricoTm.ModeloHistorico
+										</MudText>
+									}
+								</MudTd>
+
+								<MudTd DataLabel="Ações">
+									@if (isEditing)
+									{
+										<MudTooltip Text="Salvar Alterações">
+											<MudIconButton Icon="@Icons.Material.Filled.Check"
+														   Size="Size.Small"
+														   Color="Color.Success"
+														   OnClick="@(() => SalvarEdicao(HistoricoTm))" />
+										</MudTooltip>
+										<MudTooltip Text="Cancelar">
+											<MudIconButton Icon="@Icons.Material.Filled.Close"
+														   Size="Size.Small"
+														   Color="Color.Error"
+														   OnClick="@CancelarEdicao" />
+										</MudTooltip>
+									}
+									else
+									{
+										<MudTooltip Text="Editar Histórico">
+											<MudIconButton Icon="@Icons.Material.Filled.Edit"
+														   Size="Size.Small"
+														   Color="Color.Secondary"
+														   OnClick="@(() => EditarHistorico(HistoricoTm))" />
+										</MudTooltip>
+									}
+								</MudTd>
+							</RowTemplate>
+							<PagerContent>
+								<MudTablePager Style="border-bottom-left-radius:8px;border-bottom-right-radius:8px;" RowsPerPageString="@rowsPerPageString" />
+							</PagerContent>
+						</MudTable>
+
+					</MudItem>
+
+
+				</MudItem>
+			}
+		</MudGrid>
+	</div>
+</MudContainer>
+
+
+@code {
+
+	private readonly CultureInfo _culturaPtBr = new("pt-BR");
+
+	private bool _mostrarTabela = false;
+	private int _idEditacao = 0;
+	private string _historicoOriginal = string.Empty;
+	private string rowsPerPageString = "Linhas por página:";
+	private ConfiguracoesGeraisSacPrice _configuracoesGerais = new();
+	private List<HistoricoDeTm> _historicoDeTms = new();
+
+	private MudTheme _customTheme = new()
+		{
+		PaletteLight = new PaletteLight()
+			{
+				Primary = "#005ca9",
+				Secondary = "#f39200",
+				Tertiary = "#FF0000",
+				Background = "#EDF2FF"
+			}
+		};
+
+	protected override async Task OnInitializedAsync()
+	{
+		await ConsultarConfiguracoesGeraisHandle();
+		await ConsultarHistoricoDeTmsHandle();
+	}
+
+	private async Task AlterarConfiguracao()
+	{
+		var parameters = new DialogParameters<DialogConfiguracaoSacPrice>
+		{
+			{ nameof(DialogConfiguracaoSacPrice.ConfiguracoesGeraisData),_configuracoesGerais}
+		};
+		var options = new DialogOptions()
+		{
+			CloseOnEscapeKey = true,
+			CloseButton = true,
+			MaxWidth = MaxWidth.Medium,
+			FullWidth = true,
+		};
+
+		var dialog = await DialogService.ShowAsync<DialogConfiguracaoSacPrice>("Inserir Observação", parameters, options);
+		var result = await dialog.Result;
+
+		if (result!.Canceled)
+		{
+			await ConsultarConfiguracoesGeraisHandle();
+		}
+	}
+
+
+	#region Metodos do Service - Amortização Caixa
+	//##CONSULTAS##//
+	private async Task ConsultarConfiguracoesGeraisHandle()
+	{
+		var response = await CobrancaService.ConsultarConfiguracoesGerais();
+		var responseData = await HttpResponseHandler.ResponseHandler<ConfiguracoesGeraisSacPrice>(response, Snackbar);
+		_configuracoesGerais = responseData!;
+	}
+	private async Task ConsultarHistoricoDeTmsHandle()
+	{
+		var response = await CobrancaService.ConsultarHistoricoDeTms();
+		var responseData = await HttpResponseHandler.ResponseHandler<List<HistoricoDeTm>>(response, Snackbar);
+		_historicoDeTms = responseData!;
+	}
+	//##ALTERAÇÕES##//
+
+	#endregion
+
+	#region Metodos Gerais
+	private void MostrarTabela()
+	{
+		_mostrarTabela = !_mostrarTabela;
+	}
+
+	private async Task SalvarEdicao(HistoricoDeTm tm)
+	{
+		await AlterarHistoricoDeTmsHandle(tm.IdModelo, tm.ModeloHistorico);
+		_idEditacao = 0;
+		_historicoOriginal = string.Empty;
+	}
+	private async Task AlterarHistoricoDeTmsHandle(int idModelo, string historicoTm)
+	{
+		var response = await CobrancaService.AlterarHistoricoTms(idModelo, historicoTm);
+		await HttpResponseHandler.ResponseHandler(response, Snackbar);
+		await ConsultarHistoricoDeTmsHandle();
+		StateHasChanged();
+	}
+	private void EditarHistorico(HistoricoDeTm tm)
+	{
+		_idEditacao = tm.IdModelo;
+		_historicoOriginal = tm.ModeloHistorico;
+	}
+	private void CancelarEdicao()
+	{
+		if (_idEditacao != 0)
+		{
+			var tmParaReverter = _historicoDeTms.FirstOrDefault(m => m.IdModelo == _idEditacao);
+			if (tmParaReverter != null)
+			{
+				tmParaReverter.ModeloHistorico = _historicoOriginal;
+			}
+		}
+		_idEditacao = 0;
+		_historicoOriginal = string.Empty;
+	}
+	private Color GetColorStatusMudChip(string tipoTM)
+	{
+		if (string.IsNullOrEmpty(tipoTM))
+		{
+			return Color.Default;
+		}
+
+		var tipoNormalizado = tipoTM.ToUpperInvariant();
+
+		return tipoNormalizado switch
+		{
+			"AMORTIZACAO" => Color.Primary,
+			"DEVOLUCAO" => Color.Secondary,
+			_ => Color.Default,
+		};
+
+	}
+	#endregion
+}

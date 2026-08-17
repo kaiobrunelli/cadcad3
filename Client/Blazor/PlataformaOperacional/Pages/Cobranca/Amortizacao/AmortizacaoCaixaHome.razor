@@ -1,0 +1,1075 @@
+﻿@page "/amortizacaocaixa"
+@using System.Globalization
+
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+@inject CobrancaService CobrancaService
+@inject MudThemeService MudThemeService
+@inject SignalRService SignalRService
+@inject IJSRuntime JS
+
+<style>
+	.mud-alert-position {
+		display: flex;
+		align-items: center;
+		gap: 8px; 
+	}
+
+	.card-container {
+		width: 100%;
+		max-width: 1000px;
+		border-radius: 14px;
+		background-color: white;
+		padding: 20px;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+	}
+
+	.header-content {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		text-align: center;
+	}
+
+	.form-section {
+		border: 1px solid #e0e6ed;
+		border-radius: 12px;
+		padding: 24px;
+		margin-top: 24px;
+	}
+
+	.form-title {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin-bottom: 16px;
+	}
+
+	.form-group {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 16px;
+	}
+
+	.footer-buttons {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-top: 24px;
+	}
+
+	.borda-inferior-radius {
+		border-bottom-left-radius: 8px;
+		border-bottom-right-radius: 8px;
+	}
+
+	.mud-alert-message {
+		width: 100%;
+	}
+
+	.borda-inferior-radius {
+		border-bottom-left-radius: 8px;
+		border-bottom-right-radius: 8px;
+	}
+
+	.text-center {
+		text-align: center !important;
+	}
+</style>
+
+<MudThemeProvider Theme="_customTheme" />
+<MudContainer Class="mb-6 mt-0">
+
+	<div class="card-container">
+		<MudGrid>
+			<MudItem lg="3" md="3" />
+			<MudItem lg="6" md="6" Class="pt-4">
+				<MudStack Row="true" Justify="Justify.Center" AlignItems="AlignItems.Center">
+					<MudText Typo="Typo.h4" Style="color: #64748B;">
+						Amortização Caixa
+					</MudText>
+				</MudStack>
+			</MudItem>
+			<MudItem lg="3" md="3" Class="pt-4">
+				<MudStack Justify="Justify.FlexEnd" AlignItems="AlignItems.End">
+					<MudTooltip Text="Copiar endereço da pasta de arquivos do servidor" Delay="200" Duration="200">
+						<MudIconButton OnClick="CopiarEndereco" Icon="@Icons.Material.Filled.Folder" Color="Color.Primary" />
+					</MudTooltip>
+				</MudStack>
+			</MudItem>
+
+			<MudItem lg="12" md="12" Class="pt-2">
+				<MudStack Row="true"
+						  Justify="Justify.FlexEnd"
+						  AlignItems="AlignItems.Center"
+						  Spacing="2">
+				
+					@if (_paginaCarregouPorCompleto)
+					{
+						<ProgressBarSignalR HubConnectId="@_connectHubId"
+											AtualizarEstado="AtualizarEstadoDaPagina"
+											FaseAtual="@_faseAtual"
+											SenhaInvalidaEvent="ReiniciarControleBotoes"
+											ModoDebug="false" />
+					}
+
+
+				
+				</MudStack>
+			</MudItem>
+
+			@*### 	Cards ###*@
+			<MudItem xs="12" sm="9" lg="9" md="9" Class="mt-n3">
+				<MudGrid>
+					<MudItem xs="12" lg="4" md="4">
+						<AmortizacaoCaixaCardComponent OnClick="async () => await MostrarTabelaMovimentacao(TipoDeMovimentacaoAmortizacaoCaixa.TODAS)"
+													   Titulo="Total Contratos"
+													   IconCard="total"
+													   PageIsLoading="_pageIsLoading"
+													   QuantidadeContrato="@_movimentacaoControleGeral.QtdTotalApontamentos"
+													   ValorTotal="@_movimentacaoControleGeral.VlTotalApontamentos">
+						</AmortizacaoCaixaCardComponent>
+					</MudItem>
+					<MudItem xs="12" lg="4" md="4">
+						<AmortizacaoCaixaCardComponent OnClick="async () => await MostrarTabelaMovimentacao(TipoDeMovimentacaoAmortizacaoCaixa.AE_CAIXA)"
+													   Titulo="AE-CAIXA"
+													   IconCard=""
+													   PageIsLoading="_pageIsLoading"
+													   QuantidadeContrato="@_movimentacaoControleGeral.QtdAmortizacoes"
+													   ValorTotal="@_movimentacaoControleGeral.VlAmortizacoes">
+						</AmortizacaoCaixaCardComponent>
+					</MudItem>
+					<MudItem xs="12" lg="4" md="4">
+						<AmortizacaoCaixaCardComponent OnClick="async () => await MostrarTabelaMovimentacao(TipoDeMovimentacaoAmortizacaoCaixa.DEV_CAIXA)"
+													   Titulo="DEV-CAIXA"
+													   IconCard=""
+													   PageIsLoading="_pageIsLoading"
+													   QuantidadeContrato="@_movimentacaoControleGeral.QtdDevolucoes"
+													   ValorTotal="@_movimentacaoControleGeral.VlDevolucoes">
+						</AmortizacaoCaixaCardComponent>
+					</MudItem>
+					<MudItem xs="12" lg="4" md="4">
+						<AmortizacaoCaixaCardComponent OnClick="async () => await MostrarTabelaMovimentacao(TipoDeMovimentacaoAmortizacaoCaixa.CCI)"
+													   Titulo="CCI"
+													   IconCard="cci"
+													   PageIsLoading="_pageIsLoading"
+													   QuantidadeContrato="@_movimentacaoControleGeral.QtdCci"
+													   ValorTotal="@_movimentacaoControleGeral.VlCci">
+						</AmortizacaoCaixaCardComponent>
+					</MudItem>
+					<MudItem xs="12" lg="4" md="4">
+						<AmortizacaoCaixaCardComponent OnClick="async () => await MostrarTabelaMovimentacao(TipoDeMovimentacaoAmortizacaoCaixa.DRP)"
+													   Titulo="DRP"
+													   IconCard="drp"
+													   PageIsLoading="_pageIsLoading"
+													   QuantidadeContrato="@_movimentacaoControleGeral.QtdDrp"
+													   ValorTotal="@_movimentacaoControleGeral.VlDrp">
+						</AmortizacaoCaixaCardComponent>
+					</MudItem>
+					<MudItem xs="12" lg="4" md="4">
+						<AmortizacaoCaixaCardComponent OnClick="async () => await MostrarTabelaMovimentacao(TipoDeMovimentacaoAmortizacaoCaixa.ANALISAR)"
+													   StatusChip="true"
+													   FaseDaAnalise="@_movimentacaoControleGeral.Situacao"
+													   Titulo="Analisar"
+													   IconCard="analisar"
+													   PageIsLoading="_pageIsLoading"
+													   QuantidadeContrato="@_movimentacaoesAnalisarData.Count()">
+						</AmortizacaoCaixaCardComponent>
+					</MudItem>
+				</MudGrid>
+			</MudItem>
+
+			@*### 	Painel Botões ###*@
+			<MudItem lg="3" md="3" Class="mt-n3">
+				<MudPaper Class="pa-4" Elevation="0" Style="border: 1px solid #e0e6ed; border-radius:10px;">
+					@if (_desabilatarBotao)
+					{
+						<MudSkeleton SkeletonType="SkeletonType.Rectangle" Style="border-radius:16px;" Height="300px" Width="175px" />
+					}
+					else
+					{
+						<MudStack Row="false" Justify="Justify.FlexEnd">
+
+							<MudButton Variant="Variant.Filled"
+									   Color="Color.Primary"
+									   Style="border-radius:24px;width:100%; "
+									   Disabled="@(!_movimentacaoControleGeral.BotaoExecutar || _isProcessing)"
+									   OnClick="IniciarAutomacao"
+									   StartIcon="@Icons.Material.Filled.PlayArrow">
+								@_movimentacaoControleGeral.DescBotaoExecutar
+							</MudButton>					
+							@if (_movimentacaoControleGeral.BotaoConfigurar)
+							{
+								<MudButton Variant="Variant.Filled"
+										   Color="Color.Secondary"
+										   Disabled="@((!_movimentacaoControleGeral.BotaoExecutar || _isProcessing) && _movimentacaoControleGeral.DescBotaoExecutar != "Finalizado")"
+										   Style="border-radius:24px;"
+										   OnClick="@(() => Navigation.NavigateTo($"{Navigation.BaseUri}amortizacaocaixaconfiguracoes"))"
+										   StartIcon="@Icons.Material.Filled.Settings">
+									Configuração
+								</MudButton>
+							}
+							<MudButton Variant="Variant.Filled"
+									   Color="Color.Secondary"
+									   Disabled="@((!_movimentacaoControleGeral.BotaoExecutar || _isProcessing) && _movimentacaoControleGeral.DescBotaoExecutar != "Finalizado")"
+									   Style="border-radius:24px;"
+									   OnClick="@(() => Navigation.NavigateTo($"{Navigation.BaseUri}amortizacaocaixarelatorio"))"
+									   StartIcon="@Icons.Material.Filled.ContentPasteSearch">
+								Relatório
+							</MudButton>
+							@if (_movimentacaoControleGeral.BotaoCancelar)
+							{
+								<MudButton Variant="Variant.Filled"
+										   Color="Color.Secondary"
+										   Disabled="@(!_movimentacaoControleGeral.BotaoExecutar || _isProcessing)"
+										   Style="border-radius:24px;"
+										   OnClick="CancelarAutomacao"
+										   StartIcon="@Icons.Material.Filled.Cancel">
+									Cancelar
+									@* @_movimentacaoControleGeral.DescBotaoCancelar *@
+								</MudButton>
+							}
+							<MudStack Spacing="1" Class="mt-1" Justify="Justify.Center" AlignItems="AlignItems.Start">
+								<MudStack Class="ml-6" Row="true" Justify="Justify.Center" AlignItems="AlignItems.Start" Spacing="1">
+									<MudIcon Icon="@Icons.Material.Filled.CalendarMonth" Color="Color.Primary" Size="Size.Small"></MudIcon>
+									<MudTooltip Delay="400" Duration="200"
+												Text="Datas para amortização. Observar pendência na carga quando houver ícone de alerta ao lado da data.">
+										<MudText Style="line-height: 1.6;" Typo="Typo.body2">Datas Pendentes</MudText>
+									</MudTooltip>
+								</MudStack>
+								@foreach (var item in _controlesPentens)
+								{
+									var corChip = item.DtRecebimentoArquivo == null ? Color.Warning : Color.Primary;
+									var corIcone = item.DtRecebimentoArquivo == null ? Color.Warning : Color.Success;
+									var typeIcone = item.DtRecebimentoArquivo == null ? Icons.Material.Filled.AccessTimeFilled : Icons.Material.Filled.CheckCircle;
+
+									<div class="d-flex justify-space-around align-center">
+										<MudChip T="string" Variant="Variant.Outlined" Size="Size.Small" Class="ml-10" Color="@corChip">
+											@item.DtReferencia.ToString("dd/MM/yyyy")
+										</MudChip>
+										@if (@item.DtRecebimentoArquivo == null)
+										{
+											<MudTooltip Text="Aguardando recebimento da carga para presente data" Delay="200" Duration="200">
+												<MudIcon Icon="@Icons.Material.Filled.AccessTimeFilled"
+														 Color="Color.Warning"
+														 Class="mt-1"
+														 Size="Size.Small" />
+											</MudTooltip>
+										}
+
+									</div>
+								}
+
+							</MudStack>
+
+						</MudStack>
+					}
+				</MudPaper>
+
+			</MudItem>
+		</MudGrid>
+		@if (_movimentacaoControleGeral.Alertas.Count > 0)
+		{
+			foreach (var alerta in _movimentacaoControleGeral.Alertas)
+			{
+				@if (!string.IsNullOrEmpty(alerta.MensagemDeAlerta))
+				{
+					<MudItem xs="12" lg="12" md="12">
+						<MudAlert Severity="@alerta.AlertaSeverity">
+							@alerta.MensagemDeAlerta
+						</MudAlert>
+					</MudItem>
+				}
+			}
+		}
+
+		@*### 	Tabelas ###*@
+		<MudItem xs="12" lg="12" md="12" Class="@(_mostrarTabelaMovimentacoes ? "d-block" : "d-none")">
+			<TabelaMovimentacaoGeral Items="_movimentacaoesGeraisData"
+									 Loading="_processandoMovimentacao" />
+		</MudItem>
+		<MudItem xs="12" lg="12" md="12" Class="@(_mostrarTabelaCCI ? "d-block" : "d-none")">
+			<TabelaMovimentacaoCCI Items="_movimentacaoesCCI"
+								   MovimentaoGeral="_movimentacaoesGeraisData"
+								   CoControle="_movimentacaoControleGeral.CoControle"
+								   Loading="_processandoMovimentacao" />
+		</MudItem>
+		<MudItem xs="12" lg="12" md="12" Class="@(_mostrarTabelaDrp ? "d-block" : "d-none")">
+			<TabelaMovimentacaoDRP Items="@_movimentacoesDrpData"
+								   Loading="_tabelaIsLoading"
+								   RowsPerPageString="Itens por página"
+								   InfoFormat="{first}–{last} de {total}" />
+		</MudItem>
+		<MudItem xs="12" lg="12" md="12" Class="@(_mostrarTabelaTratativas ? "d-block" : "d-none")">
+
+			<MudTable T="MovimentacaoParaAnalise" Items="@_movimentacaoesAnalisarDataCache" Class="mb-2 pa-4" Context="context"
+					  Elevation="25"
+					  Style="border-radius: 24px;"
+					  AllowUnsorted="false"
+					  Square="true"
+					  Hover="true"
+					  Loading="_processandoMovimentacao"
+					  Striped="true">
+				<LoadingContent>
+					<MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+				</LoadingContent>
+				<ColGroup>
+					<col style="width: 15%;" />
+					<col style="width: 25%;" />
+					<col style="width: 25%;" />
+					<col style="width: 25%;" />
+					<col />
+				</ColGroup>
+				<HeaderContent>
+					<MudTh><b>Codigo Apontamento</b></MudTh>
+					<MudTh><b>Nº Contrato</b></MudTh>
+					<MudTh><b>TM</b></MudTh>
+					<MudTh><b>Valor</b></MudTh>
+					<MudTh><b></b></MudTh>
+				</HeaderContent>
+				<RowTemplate>
+					@{
+						bool isEditing = _idEditacao == context.CoApontamento;
+					}
+					<MudTd>@context.CoApontamento</MudTd>
+					<MudTd>@context.NuContrato - @context.NuContratoDv</MudTd>
+					<MudTd>@context.TipoMovimentacao</MudTd>
+					<MudTd>R$ @context.VrTotal.ToString() </MudTd>
+					<MudTd>
+						<MudStack Row="true" Spacing="2">
+							<MudTooltip Delay="400" Text="Tratar manual">
+								<MudIconButton Icon="@Icons.Material.Filled.Create"
+											   Disabled="_desativarBotaoTratativa"
+											   OnClick="@(() => EditarMovimentacao(context.CoApontamento, context))"
+											   Color="Color.Primary"
+											   Size="Size.Small">
+								</MudIconButton>
+							</MudTooltip>
+							<MudTooltip Delay="400" Text="Reprocessar">
+								<MudIconButton Disabled="_desativarBotaoTratativa"
+											   Icon="@Icons.Material.Filled.Loop"
+											   OnClick="()  => LancarMovimentacaoDialog(context,  TiposDeProcessamentoAmortizacaoCaixaAmortizacaoCaixa.REPROCESSAR)"
+											   Color="Color.Primary"
+											   Size="Size.Small">
+								</MudIconButton>
+							</MudTooltip>
+							<MudTooltip Delay="400" Text="Lançar Total em CCI">
+								<MudIconButton Disabled="_desativarBotaoTratativa"
+											   Icon="@Icons.Material.Filled.ArrowOutward"
+											   OnClick="() => LancarMovimentacaoDialog(context,  TiposDeProcessamentoAmortizacaoCaixaAmortizacaoCaixa.LANCARTOTALCCI)"
+											   Color="Color.Primary"
+											   Size="Size.Small">
+								</MudIconButton>
+							</MudTooltip>
+							<MudTooltip Delay="400" Text="Exibir detalhes">
+								<MudIconButton Disabled="_desativarBotaoTratativa"
+											   Icon="@Icons.Material.Filled.Search"
+											   Color="Color.Primary"
+											   OnClick="@(() => ToggleExpand(context))"
+											   Size="Size.Small">
+								</MudIconButton>
+							</MudTooltip>
+						</MudStack>
+					</MudTd>
+				</RowTemplate>
+				<ChildRowContent>
+					@if (context.ExpandirObservacao)
+					{
+						<MudTd ColSpan="5" Class="pa-0">
+							<MudSimpleTable Dense Elevation="0" Style="background-color:#f5f5f5;">
+								<colgroup>
+									<col />
+									<col />
+								</colgroup>
+								<thead>
+									<tr>
+										<th class="text-center">Log Carga</th>
+										<th class="text-center">Log Usuário</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr>
+										<td>
+											<MudField Typo="Typo.body2" Variant="Variant.Text" Underline="false">
+												@context.LogApontamentos
+											</MudField>
+										</td>
+										<td>
+											<MudField Typo="Typo.body2" Variant="Variant.Text" Underline="false">
+												@context.LogAcaoUsuario
+											</MudField>
+										</td>
+									</tr>
+								</tbody>
+							</MudSimpleTable>
+						</MudTd>
+					}
+					@if (context.EmTratamento)
+					{
+						<MudTd ColSpan="5" Class="pa-0">
+							<MudSimpleTable Dense Elevation="0" Style="background-color:#f5f5f5;">
+
+								<colgroup>
+									<col style="width: 25%;" />
+									<col style="width: 25%;" />
+									<col style="width: 25%;" />
+									<col style="width: 25%;" />
+								</colgroup>
+
+								<tbody>
+									<tr>
+										<td><MudField Typo="Typo.body2" Variant="Variant.Text" Underline="false" Class="align-self-center">Movimentação 1</MudField></td>
+										<td><MudNumericField Typo="Typo.body2" Immediate T="decimal" Min="0" Disabled="context.VrTo01 <= 0" ShrinkLabel HideSpinButtons AutoFocus @bind-Value="context.ValoresCCIEditar.valorCCI01" Label="Lançar em CCI" Variant="Variant.Text" Validation="@(new Func<decimal, string>((cci) => ValidaValorCCI(context.VrTo01, cci)))" /></td>
+										<td><MudField Underline="false" Typo="Typo.body2" Label="Contrato Original" Variant="Variant.Text">R$ @(context.VrTo01 - context.ValoresCCIEditar.valorCCI01)</MudField></td>
+										<td><MudField Underline="false" Typo="Typo.body2" Label="Total" Variant="Variant.Text">R$ @(context.VrTo01)</MudField></td>
+
+									</tr>
+									<tr>
+										<td><MudField Typo="Typo.body2" Variant="Variant.Text" Underline="false" Class="align-self-center">Movimentação 2</MudField></td>
+										<td><MudNumericField Typo="Typo.body2" Immediate T="decimal" Min="0" Disabled="context.VrTo02 <= 0" ShrinkLabel HideSpinButtons @bind-Value="context.ValoresCCIEditar.valorCCI02" Label="Lançar em CCI" Variant="Variant.Text" Validation="@(new Func<decimal, string>((cci) => ValidaValorCCI(context.VrTo02, cci)))" /></td>
+										<td><MudField Underline="false" Typo="Typo.body2" Label="Contrato Original" Variant="Variant.Text">R$ @(context.VrTo02 - context.ValoresCCIEditar.valorCCI02)</MudField></td>
+										<td><MudField Underline="false" Typo="Typo.body2" Label="Total" Variant="Variant.Text">R$ @(context.VrTo02)</MudField></td>
+									</tr>
+									<tr>
+										<td><MudField Typo="Typo.body2" Variant="Variant.Text" Underline="false" Class="align-self-center">Movimentação 3</MudField></td>
+										<td><MudNumericField Typo="Typo.body2" Immediate T="decimal" Min="0" Disabled="context.VrTo03 <= 0" ShrinkLabel HideSpinButtons @bind-Value="context.ValoresCCIEditar.valorCCI03" Label="Lançar em CCI" Variant="Variant.Text" Validation="@(new Func<decimal, string>((cci) => ValidaValorCCI(context.VrTo03, cci)))" /></td>
+										<td><MudField Underline="false" Typo="Typo.body2" Label="Contrato Original" Variant="Variant.Text">R$ @(context.VrTo03 - context.ValoresCCIEditar.valorCCI03)</MudField></td>
+										<td><MudField Underline="false" Typo="Typo.body2" Label="Total" Variant="Variant.Text">R$ @(context.VrTo03)</MudField></td>
+									</tr>
+									<tr>
+										<td><MudField Typo="Typo.body2" Variant="Variant.Text" Underline="false" Class="align-self-center">Movimentação 4</MudField></td>
+										<td><MudNumericField Typo="Typo.body2" Immediate T="decimal" Min="0" Disabled="context.VrTo04 <= 0" ShrinkLabel HideSpinButtons @bind-Value="context.ValoresCCIEditar.valorCCI04" Label="Lançar em CCI" Variant="Variant.Text" Validation="@(new Func<decimal, string>((cci) => ValidaValorCCI(context.VrTo04, cci)))" /></td>
+										<td><MudField Underline="false" Typo="Typo.body2" Label="Contrato Original" Variant="Variant.Text">R$ @(context.VrTo04 - context.ValoresCCIEditar.valorCCI04)</MudField></td>
+										<td><MudField Underline="false" Typo="Typo.body2" Label="Total" Variant="Variant.Text">R$ @(context.VrTo04)</MudField></td>
+									</tr>
+									<tr>
+										<td><MudField Typo="Typo.body2" Variant="Variant.Text" Underline="false" Class="align-self-center">Movimentação 5</MudField></td>
+										<td><MudNumericField Typo="Typo.body2" Min="0" Disabled="context.VrTo05 <= 0" Immediate T="decimal" ShrinkLabel HideSpinButtons @bind-Value="context.ValoresCCIEditar.valorCCI05" Label="Lançar em CCI" Variant="Variant.Text" Validation="@(new Func<decimal, string>((cci) => ValidaValorCCI(context.VrTo05, cci)))" /></td>
+										<td><MudField Underline="false" Typo="Typo.body2" Label="Contrato Original" Variant="Variant.Text">R$ @(context.VrTo05 - context.ValoresCCIEditar.valorCCI05)</MudField></td>
+										<td><MudField Underline="false" Typo="Typo.body2" Label="Total" Variant="Variant.Text">R$ @(context.VrTo05)</MudField></td>
+									</tr>
+									<tr>
+										<td><MudField Typo="Typo.body2" Variant="Variant.Text" Underline="false" Class="align-self-center">Movimentação 6</MudField></td>
+										<td><MudNumericField Typo="Typo.body2" Immediate T="decimal" Min="0" Disabled="context.VrTo06 <= 0" ShrinkLabel HideSpinButtons @bind-Value="context.ValoresCCIEditar.valorCCI06" Label="Lançar em CCI" Variant="Variant.Text" Validation="@(new Func<decimal, string>((cci) => ValidaValorCCI(context.VrTo06, cci)))" /></td>
+										<td><MudField Underline="false" Typo="Typo.body2" Label="Contrato Original" Variant="Variant.Text">R$ @(context.VrTo06 - context.ValoresCCIEditar.valorCCI06)</MudField></td>
+										<td><MudField Underline="false" Typo="Typo.body2" Label="Total" Variant="Variant.Text">R$ @(context.VrTo06)</MudField></td>
+									</tr>
+									<tr>
+										<td><MudField Typo="Typo.body2" Variant="Variant.Text" Underline="false" Class="align-self-center">Movimentação 7</MudField></td>
+										<td><MudNumericField Typo="Typo.body2" Immediate T="decimal" Min="0" Disabled="context.VrTo07 <= 0" ShrinkLabel HideSpinButtons @bind-Value="context.ValoresCCIEditar.valorCCI07" Label="Lançar em CCI" Variant="Variant.Text" Validation="@(new Func<decimal, string>((cci) => ValidaValorCCI(context.VrTo07, cci)))" /></td>
+										<td><MudField Underline="false" Typo="Typo.body2" Label="Contrato Original" Variant="Variant.Text">R$ @(context.VrTo07 - context.ValoresCCIEditar.valorCCI07)</MudField></td>
+										<td><MudField Underline="false" Typo="Typo.body2" Label="Total" Variant="Variant.Text">R$ @(context.VrTo07)</MudField></td>
+									</tr>
+								</tbody>
+
+							</MudSimpleTable>
+
+							<MudElement HtmlTag="div" Class="d-flex justify-center my-4 gap-6">
+								<MudButton Color="Color.Secondary"
+										   Variant="Variant.Filled"
+										   Size="Size.Small"
+										   Style="min-width: 85px"
+										   Disabled="!valoresCCIValidos"
+										   OnClick="() => LancarMovimentacaoDialog(context,
+																													   			 TiposDeProcessamentoAmortizacaoCaixaAmortizacaoCaixa.TRATARMANUAL,
+																													   			 new ConjuntoTo(context.ValoresCCIEditar.valorCCI01,
+																																	  			 context.ValoresCCIEditar.valorCCI02,
+																																	  			 context.ValoresCCIEditar.valorCCI03,
+																																	  			 context.ValoresCCIEditar.valorCCI04,
+																																	  			 context.ValoresCCIEditar.valorCCI05,
+																																	  			 context.ValoresCCIEditar.valorCCI06,
+																																	  			 context.ValoresCCIEditar.valorCCI07))">
+<MudText>
+										Salvar
+									</MudText>
+								</MudButton>
+								<MudButton Color="Color.Primary"
+										   Variant="Variant.Outlined"
+										   Size="Size.Small"
+										   Style="min-width: 85px"
+										   OnClick="@(() => context.EmTratamento = false)">
+									<MudText>
+										Cancelar
+									</MudText>
+								</MudButton>
+							</MudElement>
+						</MudTd>
+					}
+				</ChildRowContent>
+				<PagerContent>
+					@if (_movimentacaoesAnalisarData.Count() > 10)
+					{
+						<MudTablePager Style="border-bottom-left-radius:8px;border-bottom-right-radius:8px;"
+									   Class="pager-buttons"
+									   RowsPerPageString="@rowsPerPageString"
+									   InfoFormat="@infoFormat" />
+					}
+				</PagerContent>
+				<NoRecordsContent>
+					<MudText Color="Color.Primary" Typo="Typo.h6">
+						Nenhum registro encontrado
+					</MudText>
+				</NoRecordsContent>
+			</MudTable>
+		</MudItem>
+	</div>
+</MudContainer>
+
+
+
+@code {
+	private bool IsRowExpanded(MovimentacaoParaAnalise item) => item.ExpandirObservacao;
+	void ToggleExpand(MovimentacaoParaAnalise item)
+	{
+		item.EmTratamento = false;
+		item.ExpandirObservacao = !item.ExpandirObservacao;
+		StateHasChanged();
+	}
+
+	#region Propriedades e Status de controle
+	private int _idEditacao = 0;
+	private bool _processandoMovimentacao = false;
+	private bool _receiveConnectID = false;
+	private bool valoresCCIValidos = true;
+	private ObservadorAutomacao _observerAutomacao = new();
+	private MudTheme _customTheme = new()
+		{
+		PaletteLight = new PaletteLight()
+			{
+				Primary = "#005ca9",
+			// Secondary = "#D87B00",
+				Secondary = "#f39200",
+
+			Background = "#EDF2FF",
+		}
+	};
+	private string _senhaCriptografada = "";
+	private ProgressBar progressBarRef;
+	// public string severityError = "Severity.Error";
+	// private string _statusAtual = "";
+	// private string resposta = "";
+	private string _connectHubId { get; set; } = "";
+	private bool _statusProgressBar { get; set; } = false;
+	private bool _pageIsLoading = true;
+	private bool _tabelaIsLoading;
+	private bool _paginaCarregouPorCompleto = false;
+	private bool _desativarBotaoTratativa = false;
+	private bool _desabilatarBotao = true;
+	private DateTime _dataATratar;
+	private string? _mensagemDataSemRegistroATratar = null;
+	private string rowsPerPageString = "Linhas por página:";
+	private string infoFormat = "{first_item}-{last_item} de {all_items}";
+	private const string _powerBiUrl = "https://novobi.caixa/ReportsPBI/powerbi/Relat%C3%B3rios%20P%C3%BAblicos/5818%20%E2%80%93%20VIMAR/Fundo%20de%20Garantia/Todos/CEFGA/INFORMATIVO/Ativo%20do%20FGTS%20-%20Grandes%20N%C3%BAmeros?rs:embed=true";
+
+	private bool _isProcessing = false;
+	string _faseAtual = "";
+	#endregion
+
+
+	#region ENUM e Propriedades de Tabelas
+	private List<MovimentacaoGeral> _movimentacaoesGeraisData = [];
+	private List<MovimentacaoCCI> _movimentacaoesCCI = [];
+	private List<MovimentacaoCCI> _movimentacaoesCCIDataCache = [];
+	private Dictionary<TipoDeMovimentacaoAmortizacaoCaixa, List<MovimentacaoGeral>> _movimentacoesGeraisDataCache = [];
+	private List<MovimentacaoDrp> _movimentacoesDrpData = [];
+	private List<MovimentacaoDrp> _movimentacaoesDrpDataCache = [];
+	private List<MovimentacaoParaAnalise> _movimentacaoesAnalisarData = [];
+	private List<MovimentacaoParaAnalise> _movimentacaoesAnalisarDataCache = [];
+	private ControleGeralAmortizacaoCaixa _movimentacaoControleGeral = new();
+	private List<ControlePendente> _controlesPentens = [];
+	private ControlePendente _controlePendenteTratar = new();
+
+	// CONTROLE DE ESTADO DE EXIBIÇÃO
+	private TipoDeMovimentacaoAmortizacaoCaixa _controleTabela = TipoDeMovimentacaoAmortizacaoCaixa.OUTRO;
+	private bool _mostrarTabelaMovimentacoes = false;
+	private bool _mostrarTabelaDrp = false;
+	private bool _mostrarTabelaTratativas = false;
+	private bool _mostrarTabelaCCI = false;
+	#endregion
+
+	#region Inicialização da Página - Carregamento dos componentes
+
+	protected override async Task OnInitializedAsync()
+	{
+		await ControleGeralAmortizacaoCaixaHandle();
+		_connectHubId = _movimentacaoControleGeral.locationSignalR;
+		await SignalRService.ReiniciarEscutaDaOperacao("TesteSignalR");
+		await SignalRService.ReiniciarEscutaDaOperacao(_connectHubId);
+		await ConsultaControlesPendentesHandle();
+		await CarregarMovimentacaoParaAnalisar();
+		await CarregarMovimentacaoCCI();
+		ConsultarControlePendenteATratar();
+		CarregarFAseAtual();
+		StateHasChanged();
+	}
+
+	private void CarregarFAseAtual()
+	{
+		var data = _mensagemDataSemRegistroATratar ?? _controlePendenteTratar.DtReferencia.ToString("dd/MM/yyyy");
+		_faseAtual = _movimentacaoControleGeral.Situacao + " - " + data;
+		_paginaCarregouPorCompleto = true;
+	}
+
+
+
+	async Task CopiarEndereco()
+	{
+		string rotaCopiada = @"\\df7436sr659\ARQUIVOS\output\ativo\cefga12\AmortizacaoCaixa";
+		await JS.InvokeVoidAsync("navigator.clipboard.writeText", rotaCopiada);
+		Snackbar.Add("Endereço copiado com sucesso!", Severity.Success);
+	}
+	private async Task RefreshDadosAsync(bool isProcessing)
+	{
+		if (isProcessing) return;
+		await ConsultaControlesPendentesHandle();
+		await CarregarMovimentacaoParaAnalisar();
+		await CarregarMovimentacaoCCI();
+		await ControleGeralAmortizacaoCaixaHandle();
+		StateHasChanged();
+	}
+
+
+	#endregion
+
+	#region Métodos Gerenciar Movimentações (Service e Tabelas)
+
+	/// <summary>
+	/// Fluxo de controle UI/Service: Gerencia a exibição/alternância das tabelas a serem exibidas ao clicar no cards.
+	///
+	/// <param name="tipoMovimentacao">O tipo de movimentação/tabela a ser exibida.</param>
+	public async Task MostrarTabelaMovimentacao(TipoDeMovimentacaoAmortizacaoCaixa tipoMovimentacao)
+	{
+		if (_controleTabela == tipoMovimentacao)
+		{
+			_mostrarTabelaMovimentacoes = false;
+			_mostrarTabelaDrp = false;
+			_mostrarTabelaTratativas = false;
+			_mostrarTabelaCCI = false;
+			_controleTabela = TipoDeMovimentacaoAmortizacaoCaixa.OUTRO;
+			StateHasChanged();
+			return;
+		}
+
+		//Armazena qual tabela está aberta.
+		_controleTabela = tipoMovimentacao;
+		_processandoMovimentacao = true;
+
+		_mostrarTabelaMovimentacoes = false;
+		_mostrarTabelaDrp = false;
+		_mostrarTabelaTratativas = false;
+		_mostrarTabelaCCI = false;
+
+		StateHasChanged();
+
+		switch (tipoMovimentacao)
+		{
+			case TipoDeMovimentacaoAmortizacaoCaixa.DRP:
+				await CarregarMovimentacaoDRP();
+				_mostrarTabelaDrp = true;
+				break;
+			case TipoDeMovimentacaoAmortizacaoCaixa.ANALISAR:
+				await CarregarMovimentacaoParaAnalisar();
+				_mostrarTabelaTratativas = true;
+				break;
+			case TipoDeMovimentacaoAmortizacaoCaixa.CCI:
+				await CarregarMovimentacaoCCI();
+				_mostrarTabelaCCI = true;
+				break;
+			default:
+				await CarregarMovimentacaoGeral(tipoMovimentacao);
+				_mostrarTabelaMovimentacoes = true;
+				break;
+		}
+		_processandoMovimentacao = false;
+		StateHasChanged();
+	}
+	/// <summary>
+	/// Controle dos dados e mapeamento para cache. Caso a tabela já tenha sido carregada inicialmente,
+	///  evita nova chamada ao endpoint ao  buscar os registros no cache.//.
+	/// </summary>
+	/// <param name="tipoMovimentacao">O tipo de movimentação a ser carregado.</param>
+	private async Task CarregarMovimentacaoGeral(TipoDeMovimentacaoAmortizacaoCaixa tipoMovimentacao)
+	{
+		_tabelaIsLoading = true;
+		if (_movimentacoesGeraisDataCache.TryGetValue(tipoMovimentacao, out var cachedList))
+		{
+			_movimentacaoesGeraisData = cachedList;
+			_tabelaIsLoading = false;
+			return;
+		}
+
+		var response = tipoMovimentacao switch
+		{
+			TipoDeMovimentacaoAmortizacaoCaixa.TODAS => await CobrancaService.ConsultarTodasMovimentacoesDoControle(_movimentacaoControleGeral.CoControle),
+			TipoDeMovimentacaoAmortizacaoCaixa.AE_CAIXA => await CobrancaService.ConsultarMovimentacoesDeAmortizacao(_movimentacaoControleGeral.CoControle),
+			TipoDeMovimentacaoAmortizacaoCaixa.DEV_CAIXA => await CobrancaService.ConsultarMovimentacoesDeDevolucao(_movimentacaoControleGeral.CoControle),
+			TipoDeMovimentacaoAmortizacaoCaixa.CCI => await CobrancaService.ConsultarMovimentacoesDeCci(_movimentacaoControleGeral.CoControle),
+			_ => null
+		};
+
+		var data = await HttpResponseHandler.ResponseHandler<List<MovimentacaoGeral>>(response!, Snackbar);
+
+		if (data != null)
+		{
+			_movimentacoesGeraisDataCache[tipoMovimentacao] = data;
+			_movimentacaoesGeraisData = data;
+		}
+		else
+		{
+			_movimentacaoesGeraisData = new List<MovimentacaoGeral>();
+		}
+		_tabelaIsLoading = false;
+	}
+	private async Task CarregarMovimentacaoCCI()
+	{
+		_tabelaIsLoading = true;
+		if (_movimentacaoesCCIDataCache.Count > 0)
+		{
+			_movimentacaoesCCI = _movimentacaoesCCIDataCache;
+			_tabelaIsLoading = false;
+			return;
+		}
+
+		var response = await CobrancaService.ConsultarMovimentacoesDeCci(_movimentacaoControleGeral.CoControle);
+		var data = await HttpResponseHandler.ResponseHandler<List<MovimentacaoCCI>>(response, Snackbar);
+
+		if (data != null)
+		{
+
+			_movimentacaoesCCIDataCache = new List<MovimentacaoCCI>(data);
+			_movimentacaoesCCI = data;
+		}
+		else
+		{
+
+			_movimentacaoesCCI = new List<MovimentacaoCCI>();
+		}
+		_tabelaIsLoading = false;
+	}
+	//Metodos que invocam o Service da Amortização para carregar dados nas tabelas ao clicar nos cards
+	private async Task CarregarMovimentacaoParaAnalisar()
+	{
+		_tabelaIsLoading = true;
+		if (_movimentacaoesAnalisarDataCache.Count > 0)
+		{
+			_movimentacaoesAnalisarData = _movimentacaoesAnalisarDataCache;
+			_tabelaIsLoading = false;
+			return;
+		}
+
+		var response = await CobrancaService.ConsultarMovimentacoesParaAnalise(_movimentacaoControleGeral.CoControle);
+		var data = await HttpResponseHandler.ResponseHandler<List<MovimentacaoParaAnalise>>(response, Snackbar);
+
+		if (data != null)
+		{
+
+			_movimentacaoesAnalisarDataCache = new List<MovimentacaoParaAnalise>(data);
+			_movimentacaoesAnalisarData = data;
+		}
+		else
+		{
+
+			_movimentacaoesAnalisarData = new List<MovimentacaoParaAnalise>();
+		}
+		_tabelaIsLoading = false;
+	}
+	private async Task CarregarMovimentacaoDRP()
+	{
+		_tabelaIsLoading = true;
+		if (_movimentacoesDrpData.Count > 0)
+		{
+			_movimentacoesDrpData = _movimentacaoesDrpDataCache;
+			_tabelaIsLoading = false;
+			return;
+		}
+
+		var response = await CobrancaService.ConsultaDrpsDoControle(_movimentacaoControleGeral.CoControle);
+		var data = await HttpResponseHandler.ResponseHandler<List<MovimentacaoDrp>>(response, Snackbar);
+
+		if (data != null)
+		{
+			_movimentacaoesDrpDataCache = data;
+			_movimentacoesDrpData = data;
+		}
+		else
+		{
+			_movimentacoesDrpData = new List<MovimentacaoDrp>();
+		}
+		_tabelaIsLoading = false;
+	}
+	/// <summary>
+	/// Método que formula a lista de Controles Pendentes (datas a serem tratadas) consultando via API.
+	/// </summary>
+	/// <returns></returns>
+	private async Task ConsultaControlesPendentesHandle()
+	{
+		var response = await CobrancaService.ConsultaControlesPendentes();
+		if (response != null)
+		{
+			_controlesPentens = await HttpResponseHandler.ResponseHandler<List<ControlePendente>>(response, Snackbar);
+		}
+		else
+		{
+			_controlesPentens = [];
+		}
+	}
+	private async Task ControleGeralAmortizacaoCaixaHandle()
+	{
+		var response = await CobrancaService.ControleGeralAmortizacaoCaixa();
+		var contratos = await HttpResponseHandler.ResponseHandler<ControleGeralAmortizacaoCaixa>(response, Snackbar);
+		if (contratos != null)
+		{
+			_movimentacaoControleGeral = contratos;
+			_pageIsLoading = false;
+			_desabilatarBotao = false;
+		}
+		else
+		{
+			_movimentacaoControleGeral = new();
+			_pageIsLoading = false;
+			_desabilatarBotao = false;
+		}
+	}
+	private async Task ControleGeralaHandle()
+	{
+		var response = await CobrancaService.ConsultarControleGeral(_controlePendenteTratar.DtReferencia.ToString("yyyy-MM-ddTHH:mm:sszzz", CultureInfo.InvariantCulture));
+		var contratos = await HttpResponseHandler.ResponseHandler<ControleGeral>(response, Snackbar);
+
+	}
+	#endregion
+
+	#region Métodos Gerenciamento e Controle Diversos
+
+	private async Task IniciarProcesso()
+	{
+		await progressBarRef.ExibirProgressBar();
+	}
+
+
+
+	private async Task AtualizarEstadoDaPagina()
+	{
+		_isProcessing = false;
+		await ConsultaControlesPendentesHandle();
+		await CarregarMovimentacaoCCI();
+		await CarregarMovimentacaoParaAnalisar();
+		await CarregarMovimentacaoDRP();
+		await ControleGeralaHandle();
+		await ControleGeralAmortizacaoCaixaHandle();
+		StateHasChanged();
+	}
+
+
+	/// <summary>
+	/// Método para tratar manualmente as movimentações de CCI. Chamado ao clicar em uma das três ações existente na tabela Analisar.
+	/// A partir do tipo de movimentação, poderá reprocessar (icStatus volta para 0), lançar total em CCI ou tratar manualmente cada valor de CCI.
+	/// </summary>
+	/// <param name="context">Movimentação a ser tratada. Informar contexto.</param>
+	/// <param name="tipoProcessametno">Tipo: reprocessar (resetar icStatus para 0), manual ou total em CCI.</param>
+	/// <param name="conjuntoTO">Conjunto de valores de TO a serem alterados</param>
+	/// <returns></returns>
+	private async Task LancarMovimentacaoDialog(MovimentacaoParaAnalise context, TiposDeProcessamentoAmortizacaoCaixaAmortizacaoCaixa tipoProcessametno, ConjuntoTo conjuntoTOParametro = null)
+	{
+
+		var parameters = new DialogParameters();
+		var options = new DialogOptions() { CloseOnEscapeKey = true };
+		var dialog = await DialogService.ShowAsync<DialogCobrancaComentario>("Inserir Observação", options);
+		var result = await dialog.Result;
+		var conjuntoTO = new ConjuntoTo(0, 0, 0, 0, 0, 0, 0);
+		if (!result!.Canceled && result.Data != null)
+		{
+			var observacaoPreenchidaPeloEmpregado = result.Data as string;
+			if (TiposDeProcessamentoAmortizacaoCaixaAmortizacaoCaixa.REPROCESSAR == tipoProcessametno)
+			{
+				// var conjuntoTOReprocessar = new ConjuntoTo(0, 0, 0, 0, 0, 0, 0);
+				var resetarMovimentacaoFinanceira = new AlteracaoMovimentacaoFinanceira(context.CoMovimentacao, observacaoPreenchidaPeloEmpregado!, conjuntoTO);
+				var response = await CobrancaService.ResetarMovimentacaoFinanceira(resetarMovimentacaoFinanceira);
+				await HttpResponseHandler.ResponseHandler(response, Snackbar);
+			}
+			else if (TiposDeProcessamentoAmortizacaoCaixaAmortizacaoCaixa.TRATARMANUAL == tipoProcessametno)
+			{
+				if (conjuntoTO == null)
+				{
+					// verificar se funciona?
+					return;
+				}
+				var resetarMovimentacaoFinanceira = new AlteracaoMovimentacaoFinanceira(context.CoMovimentacao, observacaoPreenchidaPeloEmpregado!, conjuntoTO);
+				var response = await CobrancaService.LancarMovimentacaoFinanceiraParcialCci(resetarMovimentacaoFinanceira);
+				await HttpResponseHandler.ResponseHandler(response, Snackbar);
+			}
+			else if (TiposDeProcessamentoAmortizacaoCaixaAmortizacaoCaixa.LANCARTOTALCCI == tipoProcessametno)
+			{
+
+				var lancarTotalEmCCI = new AlteracaoMovimentacaoFinanceira(context.CoMovimentacao, observacaoPreenchidaPeloEmpregado!, conjuntoTO);
+				var response = await CobrancaService.LancarMovimentacaoFinanceiraTotalEmCci(lancarTotalEmCCI);
+				await HttpResponseHandler.ResponseHandler(response, Snackbar);
+				context.EmTratamento = false;
+			}
+			_processandoMovimentacao = true;
+			StateHasChanged();
+			var responseHttpMessage = await CobrancaService.ConsultarMovimentacoesParaAnalise(_movimentacaoControleGeral.CoControle);
+			var movimentacoesParaAnalise = await HttpResponseHandler.ResponseHandler<List<MovimentacaoParaAnalise>>(responseHttpMessage, Snackbar);
+
+			if (movimentacoesParaAnalise != null)
+			{
+				_movimentacaoesAnalisarDataCache = new List<MovimentacaoParaAnalise>(movimentacoesParaAnalise);
+				_movimentacaoesAnalisarData = movimentacoesParaAnalise;
+
+			}
+			Snackbar.Add("Ação realizada com sucesso!", Severity.Success);
+			StateHasChanged();
+
+			_processandoMovimentacao = false;
+		}
+	}
+
+	/// <summary>
+	/// Valida valor de CCI para não superar valor total, pois CCI não poderá ser superior ao valor total.
+	/// </summary>
+	/// <param name="total"></param>
+	/// <param name="cci"></param>
+	/// <returns></returns>
+	private string ValidaValorCCI(decimal? total, decimal? cci)
+	{
+		if (cci > total)
+		{
+			valoresCCIValidos = false;
+			return "Valor de CCI supera valor total.";
+		}
+		valoresCCIValidos = true;
+		return string.Empty;
+	}
+
+	/// <summary>
+	/// Expande a tabela para mostrar a tabela com as movimentações para edição manual (valores de CCI).
+	/// </summary>
+	/// <param name="nr"></param>
+	private void EditarMovimentacao(int? nr, MovimentacaoParaAnalise contexto)
+	{
+		if(nr is null){
+				Snackbar.Add("NR null", Severity.Warning);
+		}
+		if(contexto is null){
+					Snackbar.Add("contexto null", Severity.Warning);
+		}
+		contexto.ExpandirObservacao = false;
+		Movimentacao contrato = _movimentacaoesAnalisarDataCache.FirstOrDefault(f => f.CoApontamento == nr);
+		if(contrato is null){
+			Snackbar.Add("Movimentação para Analise não encontrada", Severity.Warning);
+			return;
+		}
+		contrato.EmTratamento = !contrato.EmTratamento;
+		// ZerarValoresTO();
+	}
+
+
+
+	/// <summary>
+	/// Controle pendentes são as datas a serem tratadas.
+	///  //Este método busca a primeira data da lista para ser exibida ao empregado na página inicial.
+	/// </summary>
+	/// <returns></returns>
+	private ControlePendente ConsultarControlePendenteATratar()
+	{
+		_controlePendenteTratar = _controlesPentens.OrderBy(d => d.DtReferencia).FirstOrDefault();
+		if (_controlePendenteTratar == null)
+		{
+			_mensagemDataSemRegistroATratar = "Período não encontrado";
+			_controlePendenteTratar = new();
+		}
+		return _controlePendenteTratar;
+	}
+
+
+	#endregion
+
+	#region Metodos Iniciar e Cancelar Automação
+	private async Task ReiniciarControleBotoes()
+	{
+		_isProcessing = false;
+		await ControleGeralaHandle();
+	}
+
+
+	private async Task IniciarAutomacao()
+	{
+		var options = new DialogOptions { CloseOnEscapeKey = true };
+		var parameters = new DialogParameters<BoxSenha>
+		{
+			{ x => x.Title, "Iniciar" }
+		};
+		var dialog = await DialogService.ShowAsync<BoxSenha>("", parameters, options);
+		var result = await dialog.Result;
+
+
+		if (!result!.Canceled)
+		{
+			_senhaCriptografada = result.Data.ToString();
+			if (_senhaCriptografada == null) return;
+			var usuario = new SenhaUsuario(_senhaCriptografada);
+
+			// await progressBarRef.ExibirProgressBar();
+			var response = await CobrancaService.ProcessarAmortizacaoCaixa(usuario);
+			if (response.IsSuccessStatusCode)
+			{
+				_isProcessing = true;
+			}
+			await HttpResponseHandler.ResponseHandler(response!, Snackbar);
+			if (_movimentacaoControleGeral.DescBotaoExecutar.ToUpper() == "FINALIZADO")
+			{
+				await ReiniciarControleBotoes();
+			}
+	
+			StateHasChanged();
+			await InvokeAsync(StateHasChanged);
+		}
+	}
+
+
+	private async Task SignalRTestButton()
+	{
+		await SignalRService.ReiniciarEscutaDaOperacao("TesteSignalR");
+		_isProcessing = true;
+		// await progressBarRef.ExibirProgressBar();
+		var response = await CobrancaService.TesteSignalR();
+		await HttpResponseHandler.ResponseHandler(response!, Snackbar);
+		StateHasChanged();
+		await InvokeAsync(StateHasChanged);
+	}
+	private async Task CancelarAutomacao()
+	{
+
+		var options = new DialogOptions { CloseOnEscapeKey = true };
+		var parameters = new DialogParameters<BoxSenha>
+		{
+			{ x => x.Title, _movimentacaoControleGeral.DescBotaoCancelar  }
+		};
+		var dialog = await DialogService.ShowAsync<BoxSenha>("", parameters, options);
+		var result = await dialog.Result;
+
+
+		if (!result!.Canceled)
+		{
+			_senhaCriptografada = result.Data.ToString();
+			if (_senhaCriptografada == null) return;
+			var usuario = new SenhaUsuario(_senhaCriptografada);
+			var response = await CobrancaService.CancelarOperacaoAmortizacaoCaixa(usuario);
+			await HttpResponseHandler.ResponseHandler(response!, Snackbar);
+			// await progressBarRef.ForcarAtualizacao();
+			await ControleGeralAmortizacaoCaixaHandle();
+			_isProcessing = false;
+			StateHasChanged();
+			await InvokeAsync(StateHasChanged);
+		}
+		// await progressBarRef.ForcarAtualizacao();
+
+	}
+	#endregion
+
+}
+
+
+
+
+

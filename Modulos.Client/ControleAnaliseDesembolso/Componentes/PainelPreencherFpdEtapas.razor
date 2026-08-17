@@ -1,0 +1,1013 @@
+@using System.Globalization
+@using System.Net.Http.Json
+@using System.Text.Json
+@using ControleAnaliseDesembolso.Modelos
+
+@inject ServicoUsuarioUI ServicoUsuario
+@inject ControleAnaliseDesembolsoService ControleAnaliseDesembolsoService
+@inject ISnackbar Snackbar
+
+<div class="overlay-fpd" @onclick="AoVoltar"></div>
+
+<div class="dialog-fpd" @onclick:stopPropagation>
+
+    <div class="dialog-fpd-header">
+        <div class="dialog-fpd-icone"><i class="bi @(ModoEdicao ? "bi-pencil-square" : "bi-clipboard-plus")"></i></div>
+        @if (ModoEdicao)
+        {
+            <div>
+                <div class="dialog-fpd-titulo">Editar FPD - @_fpd.AgenteFinanceiro</div>
+                <div class="dialog-fpd-subtitulo">Número do Contrato AF: @_fpd.ContratoAf</div>
+            </div>
+        }
+        else
+        {
+            <div>
+                <div class="dialog-fpd-titulo">Preencher FPD-AF</div>
+                <div class="dialog-fpd-subtitulo">Ficha de Previsão de Desembolso · em etapas</div>
+            </div>
+        }
+        <button class="dialog-fpd-fechar" @onclick="AoVoltar" title="Fechar"><i class="bi bi-x-lg"></i></button>
+    </div>
+
+    <!-- ═══ STEPPER ═══ -->
+    <div class="fpd-stepper">
+        @StepHeader(1, "bi-file-earmark-text", "Dados do contrato")
+        <div class="fpd-step-linha @(_etapaAtual > 1 ? "concluida" : "")"></div>
+        @StepHeader(2, "bi-check2-square", "Verificações")
+        <div class="fpd-step-linha @(_etapaAtual > 2 ? "concluida" : "")"></div>
+        @StepHeader(3, "bi-cash-stack", "Valores")
+    </div>
+
+    <div class="dialog-fpd-corpo" @ref="_corpoRef">
+
+        @if (_etapaAtual == 1)
+        {
+            <!-- ═══ ETAPA 1 — DADOS DO CONTRATO ═══ -->
+            <div class="fpd-grupo-campos">
+                <div class="fpd-ident">
+                    <div class="fpd-campo fpd-campo-af">
+                        <label class="fpd-label">Contrato AF <span class="fpd-obrigatorio">*</span></label>
+                        <div class="fpd-af-linha">
+                            <input class="fpd-input @(_erroContratoAf is not null ? "fpd-input-erro" : "")" placeholder="Ex.: 0558698-45"
+                                   @bind="_fpd.ContratoAf" @bind:event="oninput" @onblur="ValidarContratoAf" disabled="@_fpd.PrimeiroDesembolso" />
+                            <button class="fpd-btn-buscar" @onclick="BuscarContrato" disabled="@(_buscando || _fpd.PrimeiroDesembolso)">
+                                @if (_buscando) { <i class="bi bi-arrow-repeat spin"></i> } else { <i class="bi bi-search"></i> }
+                                <span>Buscar</span>
+                            </button>
+                        </div>
+                        @if (_erroContratoAf is not null) { <span class="fpd-erro-campo">@_erroContratoAf</span> }
+                        else if (!string.IsNullOrEmpty(_msgBusca)) { <span class="fpd-msg-busca @(_buscaOk ? "ok" : "falha")">@_msgBusca</span> }
+                    </div>
+                    <div class="fpd-campo"><label class="fpd-label">GIGOV</label>
+                        <input class="fpd-input @(_erroGigov is not null ? "fpd-input-erro" : "")" @bind="_fpd.Gigov" @bind:event="oninput" @onblur="ValidarGigov" />
+                        @if (_erroGigov is not null) { <span class="fpd-erro-campo">@_erroGigov</span> }
+                    </div>
+                    <div class="fpd-campo"><label class="fpd-label">Solicitante</label>
+                        <input class="fpd-input" value="@_fpd.Solicitante" readonly /></div>
+                    <div class="fpd-campo"><label class="fpd-label">Gestor</label>
+                        <input class="fpd-input @(_erroGestor is not null ? "fpd-input-erro" : "")" @bind="_fpd.Gestor" @bind:event="oninput" @onblur="ValidarGestor" />
+                        @if (_erroGestor is not null) { <span class="fpd-erro-campo">@_erroGestor</span> }
+                    </div>
+                    @* Data de solicitação não é editável pelo usuário — é sempre a data/hora
+                       em que a ficha é enviada, preenchida internamente pelo servidor
+                       (ver ControleAnaliseDesembolsoService.CriarFichaPedidoDesembolso,
+                       fpd.DtSolicitado = DateTime.UtcNow; no reenvio ela também não muda). *@
+                    @* <div class="fpd-campo"><label class="fpd-label">Solicitado</label>
+                        <input class="fpd-input" type="date" @bind="_fpd.DataSolicitado" /></div> *@
+                </div>
+
+                <!-- Primeiro / Último / Adiantamento — mutuamente exclusivos -->
+                <div class="fpd-excl-opcoes">
+                    <label class="fpd-check">
+                        <input type="checkbox" checked="@(_fpd.OpcaoExclusiva == "primeiro")" @onchange='() => DefinirOpcaoExclusiva("primeiro")' />
+                        <span>Primeiro desembolso</span>
+                    </label>
+                    <label class="fpd-check">
+                        <input type="checkbox" checked="@(_fpd.OpcaoExclusiva == "ultimo")" @onchange='() => DefinirOpcaoExclusiva("ultimo")' />
+                        <span>Último desembolso</span>
+                    </label>
+                    <label class="fpd-check">
+                        <input type="checkbox" checked="@(_fpd.OpcaoExclusiva == "adiantamento")" @onchange='() => DefinirOpcaoExclusiva("adiantamento")' />
+                        <span>Adiantamento</span>
+                    </label>
+                    @* SANEPAR não é uma validação do checklist (etapa 2) — é só a origem do
+                       desembolso, guardada como bool direto na ficha. Não marcar = falso. *@
+                    <label class="fpd-check">
+                        <input type="checkbox" @bind="_fpd.Sanepar" />
+                        <span>SANEPAR</span>
+                    </label>
+                </div>
+
+                @if (_fpd.UltimoDesembolsoSelecionado)
+                {
+                    <div class="fpd-subtoggles">
+                        <div class="fpd-sn-item"><label class="fpd-label">Funcionalidade</label>
+                            <ToggleSimNao @bind-Value="_fpd.Funcionalidade" /></div>
+                        <div class="fpd-sn-item"><label class="fpd-label">Conclusão</label>
+                            <ToggleSimNao @bind-Value="_fpd.Conclusao" /></div>
+                    </div>
+                }
+
+                <div class="fpd-agentes">
+                    @CampoAgente("Agente Financeiro", _fpd.AgenteFinanceiro, v => _fpd.AgenteFinanceiro = v, _fpd.CnpjAgenteFinanceiro, v => _fpd.CnpjAgenteFinanceiro = v, _erroAgenteFinanceiro, ValidarAgenteFinanceiro)
+                    @CampoAgente("Tomador / Mutuário", _fpd.Tomador, v => _fpd.Tomador = v, _fpd.CnpjTomador, v => _fpd.CnpjTomador = v)
+                    @CampoAgente("Agente Técnico OP", _fpd.AgenteTecnico, v => _fpd.AgenteTecnico = v, _fpd.CnpjAgenteTecnico, v => _fpd.CnpjAgenteTecnico = v)
+                    @CampoAgente("Agente Promotor", _fpd.AgentePromotor, v => _fpd.AgentePromotor = v, _fpd.CnpjAgentePromotor, v => _fpd.CnpjAgentePromotor = v)
+                    <div class="fpd-campo fpd-campo-cheio"><label class="fpd-label">Programa</label>
+                        <input class="fpd-input" @bind="_fpd.Programa" placeholder="Digite ou preencha com Buscar contrato" /></div>
+                </div>
+                <div class="fpd-grid4">
+                    <div class="fpd-campo"><label class="fpd-label">DT Emissão Eng.</label>
+                        <input class="fpd-input" type="date" @bind="_fpd.DataEmissaoEng" /></div>
+                    <div class="fpd-campo"><label class="fpd-label">Situação de obra</label>
+                        <input class="fpd-input" @bind="_fpd.SituacaoObra" /></div>
+                    <div class="fpd-campo">
+                        <label class="fpd-label">DT Sócio-ambiental</label>
+                        <div class="fpd-data-nsa">
+                            <input class="fpd-input" type="date" @bind="_fpd.DataEmissaoSocioAmb" disabled="@_fpd.Nsa" />
+                            <label class="fpd-check fpd-check-inline">
+                                <input type="checkbox" @bind="_fpd.Nsa" /> <span>NSA</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="fpd-campo"><label class="fpd-label">% de obra</label>
+                        <input class="fpd-input" type="number" step="0.01" @bind="_fpd.PercObra" /></div>
+                </div>
+
+                <div class="fpd-campo fpd-campo-cheio" style="margin-top:10px">
+                    <label class="fpd-label">OBS AF</label>
+                    <FioComentario Comentarios="ObterComentarios(TituloValoresDaFpd)" ApenasInformativo="true" LimitarUmComentario="true"
+                                   AoAdicionarComentario="c => AdicionarComentario(TituloValoresDaFpd, c)"
+                                   AoEditarComentario="c => EditarComentario(TituloValoresDaFpd, c)"
+                                   AoRemoverComentario="c => RemoverComentarioValidacao(TituloValoresDaFpd, c)" />
+                </div>
+            </div>
+        }
+        else if (_etapaAtual == 2)
+        {
+            <!-- ═══ ETAPA 2 — VERIFICAÇÕES (árvore) ═══ -->
+            <div class="fpd-grupo-head fpd-grupo-head-topo"><i class="bi bi-check2-square"></i><span>Verificações</span>
+                <span class="fpd-grupo-hint">clique no item para comentar</span></div>
+            <div class="fpd-arvore">
+                @ItemToggle("2.1", "licoperacao", "Licença de operação", () => _fpd.LicencaOperacao, v => _fpd.LicencaOperacao = v, true, null)
+                @ItemToggle("2.2", "licinstalacao", "Licença de instalação", () => _fpd.LicencaInstalacao, v => _fpd.LicencaInstalacao = v, true, null)
+                @ItemToggle("2.3", "tomadoradimp", "Tomador adimplente", () => _fpd.TomadorAdimplente, v => _fpd.TomadorAdimplente = v, false, null)
+                @ItemToggle("2.4", "promotoradimp", "Agente Promotor adimplente", () => _fpd.PromotorAdimplente, v => _fpd.PromotorAdimplente = v, false, null)
+                @ItemToggle("2.5", "placa", "Placa local", () => _fpd.PlacaLocal, v => _fpd.PlacaLocal = v, false, null)
+                @ItemToggle("2.6", "retorno", "Retorno parcial", () => _fpd.RetornoParcial, v => _fpd.RetornoParcial = v, false, null)
+                @ItemToggle("2.7", "excep", "Excepcionalização", () => _fpd.Excepcionalizacao, v => _fpd.Excepcionalizacao = v, false, null)
+                @ItemToggle("2.8", "cpalterada", "CP alterada", () => _fpd.CpAlterada, v => _fpd.CpAlterada = v, false, null)
+                @ItemToggle("2.9", "amortizacao", "Amortização", () => _fpd.Amortizacao, v => _fpd.Amortizacao = v, false, null)
+            </div>
+        }
+        else
+        {
+            <!-- ═══ ETAPA 3 — VALORES ═══ -->
+            <div class="fpd-grupo-campos">
+                <div class="fpd-grid3">
+                    <div class="fpd-campo"><label class="fpd-label">Solicitado VI</label><CampoMoeda @bind-Value="_fpd.SolicitadoVi" /></div>
+                    <div class="fpd-campo"><label class="fpd-label">Glosado VI</label><CampoMoeda @bind-Value="_fpd.GlosadoVi" /></div>
+                    <div class="fpd-campo"><label class="fpd-label">Aceito VI</label><CampoMoeda @bind-Value="_fpd.AceitoVi" /></div>
+                    <div class="fpd-campo"><label class="fpd-label">Participação FGTS <span class="fpd-obrigatorio">*</span></label><CampoMoeda @bind-Value="_fpd.ParticipacaoFgts" /></div>
+                    <div class="fpd-campo"><label class="fpd-label">Contrapartida</label><CampoMoeda @bind-Value="_fpd.Contrapartida" /></div>
+                    <div class="fpd-campo"><label class="fpd-label">VE (Valor Empréstimo) <span class="fpd-obrigatorio">*</span></label><CampoMoeda @bind-Value="_fpd.Ve" /></div>
+                    <div class="fpd-campo"><label class="fpd-label">CP Atual</label><CampoMoeda @bind-Value="_fpd.CpAtual" /></div>
+                    <div class="fpd-campo"><label class="fpd-label">Desembolsado</label><CampoMoeda @bind-Value="_fpd.Desembolsado" /></div>
+                    <div class="fpd-campo"><label class="fpd-label">Integralizado</label><CampoMoeda @bind-Value="_fpd.Integralizado" /></div>
+                    <div class="fpd-campo"><label class="fpd-label">Parcela FGTS</label><CampoMoeda @bind-Value="_fpd.ParcelaFgts" /></div>
+                    <div class="fpd-campo"><label class="fpd-label">Integralizar</label><CampoMoeda @bind-Value="_fpd.Integralizar" /></div>
+                    <div class="fpd-campo"><label class="fpd-label">Saldo a desembolsar</label><CampoMoeda @bind-Value="_fpd.SaldoDesembolsar" /></div>
+                    <div class="fpd-campo"><label class="fpd-label">Saldo a integralizar</label><CampoMoeda @bind-Value="_fpd.SaldoIntegralizar" /></div>
+                </div>
+                @* Comentado por enquanto, a pedido do usuário — quadrado de
+                   percentuais (FGTS/Contrapartida/Global) com fundo azul.
+                @if (_fpd.TemValoresFinanceiros)
+                {
+                    <div class="fpd-perc">
+                        <div class="fpd-perc-titulo">Percentuais</div>
+                        <div class="fpd-perc-linha"><span>FGTS</span><strong>@FmtPerc(_fpd.PercFgts)</strong></div>
+                        <div class="fpd-perc-linha"><span>Contrapartida</span><strong>@FmtPerc(_fpd.PercContrapartida)</strong></div>
+                        <div class="fpd-perc-linha global"><span>Global</span><strong>@FmtPerc(_fpd.PercGlobal)</strong></div>
+                    </div>
+                }
+                *@
+            </div>
+        }
+    </div>
+
+    <div class="dialog-fpd-rodape">
+        @if (!string.IsNullOrEmpty(_msgErroEnvio))
+        {
+            <div class="fpd-erro-envio"><i class="bi bi-exclamation-triangle-fill"></i> @_msgErroEnvio</div>
+        }
+        <div class="dialog-fpd-acoes">
+            <button class="btn-fpd-cancelar" @onclick="AoVoltar" disabled="@_enviando">Cancelar</button>
+
+            <div class="fpd-rodape-espaco"></div>
+
+            @if (_etapaAtual > 1)
+            {
+                <button class="btn-fpd-etapa-voltar" @onclick="EtapaAnterior" disabled="@_enviando">
+                    <i class="bi bi-chevron-left"></i> <span>Etapa anterior</span>
+                </button>
+            }
+
+            @if (_etapaAtual < 3)
+            {
+                <button class="btn-fpd-etapa-proxima" @onclick="ProximaEtapa">
+                    <span>Próxima etapa</span> <i class="bi bi-chevron-right"></i>
+                </button>
+            }
+            else
+            {
+                <button class="btn-fpd-solicitar" @onclick="Enviar" disabled="@_enviando">
+                    @if (_enviando) { <i class="bi bi-arrow-repeat spin"></i> <span>Enviando…</span> }
+                    else if (ModoEdicao) { <i class="bi bi-send-check"></i> <span>Enviar Edição</span> }
+                    else { <i class="bi bi-send-check"></i> <span>Solicitar Desembolso</span> }
+                </button>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+
+    [Parameter, EditorRequired] public EventCallback AoVoltar { get; set; }
+    [Parameter, EditorRequired] public EventCallback<PreenchimentoFpd> AoSolicitar { get; set; }
+
+    [Parameter] public bool ModoEdicao { get; set; }
+    [Parameter] public int? CoFpd { get; set; }
+    [Parameter] public DesembolsoDetalheDto? DadosParaEdicao { get; set; }
+
+    private readonly PreenchimentoFpd _fpd = new();
+    private ElementReference _corpoRef;
+    private readonly HashSet<string> _itensAbertos = [];
+
+    private List<ValidacaoTemplateDto> _catalogoValidacoes = [];
+
+    // "Valores da FPD" não é um dos 9 toggles — é o item onde a OBS AF é
+    // pendurada como comentário (ver ItemToggle/bloco de OBS AF na Etapa 1).
+    private const string TituloValoresDaFpd = "Valores da FPD";
+
+    // CoValidacao -> comentários. Em modo edição (CoDesembolso já existe de
+    // verdade), é sempre a "foto" mais recente vinda do servidor — recarregada
+    // a cada adicionar/editar/remover, igual ao DialogDesembolsoFpd. Em modo
+    // criação (Preencher FPD, sem desembolso ainda) é staging local até o
+    // envio, porque não existe CoDesembolso pra persistir nada de verdade
+    // antes disso — a ficha nem existe no banco.
+    private readonly Dictionary<int, List<Comentario>> _comentariosPorValidacao = new();
+
+    // Só usado em modo edição — "foto" do desembolso, recarregada após cada
+    // ação de comentário (não é o mesmo objeto do parâmetro DadosParaEdicao,
+    // que não muda depois que o componente inicializa).
+    private DesembolsoDetalheDto? _detalheAtual;
+
+    private int _etapaAtual = 1;
+    private bool _enviando, _buscando, _buscaOk;
+    private string? _msgBusca;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (ModoEdicao && DadosParaEdicao is not null)
+        {
+            PreencherParaEdicao(DadosParaEdicao);
+            _detalheAtual = DadosParaEdicao;
+        }
+        else
+        {
+            _fpd.Solicitante = ServicoUsuario.Matricula;
+        }
+
+        try
+        {
+            _catalogoValidacoes = await ControleAnaliseDesembolsoService.ObterValidacoesTemplateAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[FPD] Falha ao carregar catálogo de validações: {ex.Message}");
+        }
+
+        if (ModoEdicao && _detalheAtual is not null)
+        {
+            CarregarComentariosDoDetalhe();
+        }
+    }
+
+    private static string FmtPerc(decimal? p) => p is null ? "—" : $"{p.Value.ToString("0.000", new CultureInfo("pt-BR"))}%";
+    private static string? BoolParaSimNao(bool? b) => b switch { true => "sim", false => "nao", _ => null };
+    private static bool? SimNaoParaBool(string? s) => s switch { "sim" => true, "nao" => false, _ => null };
+
+    private static string MapTipoClienteParaServidor(string tipoCliente) => tipoCliente switch
+    {
+        "positivo" => "justificativa",
+        "negativo" => "parecer",
+        _ => "informativo",
+    };
+
+    private static string MapTipoServidorParaCliente(string tipoRegistro) => tipoRegistro switch
+    {
+        "justificativa" => "positivo",
+        "parecer" => "negativo",
+        _ => "informativo",
+    };
+
+    // Casa o título exibido na tela com o CoValidacao real do catálogo — é
+    // assim que o servidor sabe a qual validação o comentário pertence.
+    // Itens sem correspondência no catálogo (ex.: catálogo ainda não
+    // carregou) simplesmente não persistem — ver uso em AdicionarComentario.
+    private int? ResolverCoValidacao(string titulo) =>
+        _catalogoValidacoes.FirstOrDefault(v => v.DeValidacao == titulo)?.CoValidacao;
+
+    private List<Comentario> ObterComentarios(string titulo)
+    {
+        var coValidacao = ResolverCoValidacao(titulo);
+        if (coValidacao is null) return [];
+        return _comentariosPorValidacao.TryGetValue(coValidacao.Value, out var lista)
+            ? lista
+            : (_comentariosPorValidacao[coValidacao.Value] = []);
+    }
+
+    private void CarregarComentariosDoDetalhe()
+    {
+        _comentariosPorValidacao.Clear();
+        if (_detalheAtual is null) return;
+
+        foreach (var v in _detalheAtual.Checklist)
+        {
+            _comentariosPorValidacao[v.CoValidacao] = v.Comentarios
+                .OrderBy(c => c.DtCriacao)
+                .Select(c => new Comentario
+                {
+                    Id = c.CoRegistroValidacao,
+                    Tipo = MapTipoServidorParaCliente(c.TipoRegistro),
+                    Texto = c.Texto ?? "",
+                    Autor = c.NomeAutor ?? c.MatriculaAutor ?? "",
+                    MatriculaAutor = c.MatriculaAutor ?? "",
+                    UnidadeAutor = c.UnidadeAutor,
+                    Timestamp = c.DtCriacao,
+                }).ToList();
+        }
+    }
+
+    private async Task RecarregarDetalheAtual()
+    {
+        if (_detalheAtual is null) return;
+        try
+        {
+            var atualizado = await ControleAnaliseDesembolsoService.ObterDetalheDesembolsoAsync(_detalheAtual.CoDesembolso.ToString());
+            if (atualizado is not null) _detalheAtual = atualizado;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[FPD] Falha ao recarregar detalhe: {ex.Message}");
+        }
+        CarregarComentariosDoDetalhe();
+        StateHasChanged();
+    }
+
+    private async Task AdicionarComentario(string titulo, Comentario c)
+    {
+        var coValidacao = ResolverCoValidacao(titulo);
+        if (coValidacao is null) return; // item sem validação correspondente no catálogo
+
+        if (ModoEdicao && _detalheAtual is not null)
+        {
+            try
+            {
+                await ControleAnaliseDesembolsoService.AdicionarComentarioAsync(_detalheAtual.CoDesembolso.ToString(), coValidacao.Value,
+                    c.Texto, MapTipoClienteParaServidor(c.Tipo), ServicoUsuario.Matricula, ServicoUsuario.Nome, ServicoUsuario.UnidadeUsuario);
+            }
+            catch (Exception ex) { Console.WriteLine($"[FPD] Adicionar comentário: {ex.Message}"); }
+            await RecarregarDetalheAtual();
+        }
+        else
+        {
+            // Preencher FPD (ficha nova): ainda não existe CoDesembolso — fica
+            // em memória e só é enviado junto com a ficha inteira (ver
+            // MontarComentariosParaEnvio, chamado por MontarPedidoDesembolso).
+            ObterComentarios(titulo).Add(c);
+        }
+    }
+
+    private async Task EditarComentario(string titulo, Comentario editado)
+    {
+        // Em modo criação o FioComentario já muta o objeto local direto
+        // (mesmo item da lista) — nada a persistir, ainda não existe no banco.
+        if (!ModoEdicao || _detalheAtual is null) return;
+
+        var coValidacao = ResolverCoValidacao(titulo);
+        if (coValidacao is null) return;
+
+        try
+        {
+            await ControleAnaliseDesembolsoService.EditarComentarioAsync(_detalheAtual.CoDesembolso.ToString(), coValidacao.Value, editado.Id, editado.Texto, ServicoUsuario.Matricula);
+        }
+        catch (Exception ex) { Console.WriteLine($"[FPD] Editar comentário: {ex.Message}"); }
+        await RecarregarDetalheAtual();
+    }
+
+    private async Task RemoverComentarioValidacao(string titulo, Comentario c)
+    {
+        var coValidacao = ResolverCoValidacao(titulo);
+        if (coValidacao is null) return;
+
+        if (ModoEdicao && _detalheAtual is not null)
+        {
+            try
+            {
+                await ControleAnaliseDesembolsoService.RemoverComentarioAsync(_detalheAtual.CoDesembolso.ToString(), coValidacao.Value, c.Id, ServicoUsuario.Matricula);
+            }
+            catch (Exception ex) { Console.WriteLine($"[FPD] Remover comentário: {ex.Message}"); }
+            await RecarregarDetalheAtual();
+        }
+        else
+        {
+            ObterComentarios(titulo).Remove(c);
+        }
+    }
+
+    // Traz a ficha real (vinda de Service.ObterDetalheAsync) para dentro do
+    // formulário de preenchimento — mesmos campos, valores já existentes.
+    private void PreencherParaEdicao(DesembolsoDetalheDto d)
+    {
+        _fpd.Solicitante = d.MatriculaSolicitante;
+        _fpd.Gigov = d.CoGigov;
+        _fpd.Gestor = d.MatriculaGestor;
+        _fpd.ContratoAf = string.IsNullOrEmpty(d.CoContratoAfDv) ? d.CoContratoAf : $"{d.CoContratoAf}-{d.CoContratoAfDv}";
+        _fpd.DataSolicitado = d.DtSolicitado;
+
+        _fpd.OpcaoExclusiva = d.PrimeiroDesembolso ? "primeiro"
+            : d.UltimoDesembolso ? "ultimo"
+            : d.TipoDesembolso == "Adiantamento" ? "adiantamento"
+            : null;
+        _fpd.Amortizacao = BoolParaSimNao(d.Amortizacao);
+        _fpd.Sanepar = d.Sanepar ?? false;
+
+        _fpd.AgenteFinanceiro = d.AgenteFinanceiro;
+        _fpd.CnpjAgenteFinanceiro = d.CnpjAf;
+        _fpd.Tomador = d.MutuarioFinal;
+        _fpd.CnpjTomador = d.CnpjMutuarioFinal;
+        _fpd.AgenteTecnico = d.AgenteTecnicoOperador ?? "";
+        _fpd.CnpjAgenteTecnico = d.CnpjAgenteTecnicoOperador ?? "";
+        _fpd.AgentePromotor = d.AgentePromotor;
+        _fpd.CnpjAgentePromotor = d.CnpjAgentePromotor;
+        _fpd.Programa = d.Programa;
+
+        _fpd.Funcionalidade = BoolParaSimNao(d.Funcionalidade);
+        _fpd.Conclusao = d.Concluido is not null ? "sim" : "nao";
+        _fpd.RetornoParcial = BoolParaSimNao(d.RetornoParcial);
+        _fpd.PlacaLocal = BoolParaSimNao(d.PlacaLocal);
+        _fpd.LicencaInstalacao = BoolParaSimNao(d.LicensaInstalacao);
+        _fpd.LicencaOperacao = BoolParaSimNao(d.LicensaOperacao);
+        _fpd.Excepcionalizacao = BoolParaSimNao(d.Excepcionalizado);
+        _fpd.CpAlterada = BoolParaSimNao(d.ContrapartidaAlterada);
+        // TomadorAdimplente/PromotorAdimplente não existem na ficha do servidor hoje — ficam em branco.
+
+        _fpd.DataEmissaoEng = d.DtEngenharia;
+        _fpd.SituacaoObra = d.SituacaoObra ?? "Normal";
+        _fpd.DataEmissaoSocioAmb = d.DtSocioAmbiental;
+        _fpd.Nsa = d.DtSocioAmbiental is null;
+        _fpd.PercObra = d.PercentualObra;
+
+        _fpd.SolicitadoVi = d.SolicitadoVi;
+        _fpd.GlosadoVi = d.GlossadoVi;
+        _fpd.AceitoVi = d.AceitoVi;
+        _fpd.ParticipacaoFgts = d.ParticipacaoFgts;
+        _fpd.Contrapartida = d.Contrapartida;
+        _fpd.Ve = d.ValorEmprestimo;
+        _fpd.CpAtual = d.ContrapartidaAtual;
+        _fpd.Desembolsado = d.Desembolsado;
+        _fpd.Integralizado = d.Integralizado;
+        _fpd.SaldoDesembolsar = d.SaldoADesembolsar;
+        _fpd.SaldoIntegralizar = d.SaldoAIntegralizar;
+    }
+
+    // ── Stepper ──────────────────────────────────────────────────────────────
+    private RenderFragment StepHeader(int numero, string icone, string titulo) =>
+        @<button type="button" class="fpd-step @(EstadoEtapa(numero))" @onclick="() => IrParaEtapa(numero)" disabled="@(numero > _etapaAtual)">
+            <span class="fpd-step-num">
+                @if (numero < _etapaAtual) { <i class="bi bi-check-lg"></i> } else { @numero }
+            </span>
+            <span class="fpd-step-titulo">@titulo</span>
+        </button>;
+
+    private string EstadoEtapa(int numero) =>
+        numero == _etapaAtual ? "atual" : numero < _etapaAtual ? "concluida" : "";
+
+    // Só permite pular para etapas já visitadas (voltar) — avançar é sempre
+    // via "Próxima etapa", nunca clicando direto num número futuro.
+    private void IrParaEtapa(int numero)
+    {
+        if (numero > _etapaAtual) return;
+        _etapaAtual = numero;
+    }
+
+    private void ProximaEtapa()
+    {
+        if (_etapaAtual < 3) _etapaAtual++;
+    }
+
+    private void EtapaAnterior()
+    {
+        if (_etapaAtual > 1) _etapaAtual--;
+    }
+
+    private void DefinirOpcaoExclusiva(string opcao) =>
+        _fpd.OpcaoExclusiva = _fpd.OpcaoExclusiva == opcao ? null : opcao;
+
+    private RenderFragment CampoAgente(string rotulo, string valor, Action<string> setValor, string cnpj, Action<string> setCnpj,
+        string? erro = null, Action? aoSairDoCampo = null) =>
+        @<div class="fpd-campo">
+            <label class="fpd-label">@rotulo</label>
+            <div class="fpd-agente-linha">
+                <input class="fpd-input @(erro is not null ? "fpd-input-erro" : "")" value="@valor"
+                       @onchange="e => setValor(e.Value?.ToString() ?? string.Empty)" @onblur="() => aoSairDoCampo?.Invoke()" />
+                <input class="fpd-input fpd-cnpj" placeholder="CNPJ" value="@cnpj" @onchange="e => setCnpj(e.Value?.ToString() ?? string.Empty)" />
+            </div>
+            @if (erro is not null) { <span class="fpd-erro-campo">@erro</span> }
+        </div>;
+
+    // Item da árvore (verificação Sim/Não). Título/chevron expande; toggle é independente.
+    // Sem coloração verde/vermelho por resposta — só um indicador neutro de "respondido".
+    private RenderFragment ItemToggle(string num, string chave, string titulo, Func<string?> get, Action<string?> set,
+        bool comNsa, RenderFragment? extra, bool readOnly = false) =>
+        @<div class="fpd-tree-item @(get() is not null ? "respondido" : "") @(_itensAbertos.Contains(chave) ? "aberto" : "")">
+            <div class="fpd-tree-head">
+                <button class="fpd-tree-abrir" @onclick="() => AlternarItem(chave)">
+                    <span class="fpd-tree-num">@num</span>
+                    <span class="fpd-tree-titulo">@titulo</span>
+                </button>
+                <ToggleSimNao Value="@get()" ValueChanged="v => DefinirItem(chave, v, set)" ComNsa="comNsa" ReadOnly="readOnly" />
+                @if (ObterComentarios(titulo).Count > 0) { <span class="fpd-tree-comm"><i class="bi bi-chat-text-fill"></i>@ObterComentarios(titulo).Count</span> }
+                <button class="fpd-tree-chevron-btn" @onclick="() => AlternarItem(chave)" title="Comentar">
+                    <i class="bi bi-chevron-@(_itensAbertos.Contains(chave) ? "up" : "down")"></i>
+                </button>
+            </div>
+            <div class="acc-body @(_itensAbertos.Contains(chave) ? "aberto" : "")">
+                <div class="acc-inner">
+                    <div class="fpd-tree-corpo">
+                        @extra
+                        <FioComentario Comentarios="ObterComentarios(titulo)" ApenasInformativo="true" LimitarUmComentario="true"
+                                       AoAdicionarComentario="c => AdicionarComentario(titulo, c)"
+                                       AoEditarComentario="c => EditarComentario(titulo, c)"
+                                       AoRemoverComentario="c => RemoverComentarioValidacao(titulo, c)" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    ;
+
+    private void DefinirItem(string chave, string? valor, Action<string?> set)
+    {
+        set(valor);
+        StateHasChanged();
+    }
+
+    private void AlternarItem(string chave) { if (!_itensAbertos.Remove(chave)) _itensAbertos.Add(chave); }
+
+    private async Task BuscarContrato()
+    {
+        if (_buscando || string.IsNullOrWhiteSpace(_fpd.ContratoAf)) return;
+        _buscando = true; _msgBusca = null; StateHasChanged();
+        try
+        {
+            var (coContrato, coContratoDV) = SepararContratoDv(_fpd.ContratoAf);
+
+            var response = await ControleAnaliseDesembolsoService.BuscarContratoAFAsync(coContrato, coContratoDV);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var contratoAF = await response.Content.ReadFromJsonAsync<ContratoAFResponse>();
+                if (contratoAF is not null) PreencherDeContrato(contratoAF);
+                _buscaOk = true;
+                _msgBusca = "Contrato encontrado — campos preenchidos.";
+            }
+            else { _buscaOk = false; _msgBusca = "Contrato não encontrado — preencha manualmente."; }
+        }
+        catch (Exception ex) { _buscaOk = false; _msgBusca = "Falha na consulta."; Console.WriteLine($"[FPD] {ex.Message}"); }
+        finally { _buscando = false; StateHasChanged(); }
+    }
+
+    // ── Nomes dos enums seguem a mesma ordem declarada no servidor
+    // (ControleAnaliseDesembolso.Domain.Enums) — mapeamento pra reenviar como int. ──
+    private static int ProgramaParaInt(string nome) => nome switch
+    {
+        "Pro_Transporte" => 0, "Pro_Moradia" => 1, "Saneamento" => 2, "Saude" => 3, _ => 1,
+    };
+
+    private static int SituacaoObraParaInt(string? nome) => nome switch
+    {
+        "Atrasado" => 1, _ => 0,
+    };
+
+    private object MontarPedidoDesembolso()
+    {
+        var (coContrato, coContratoDv) = SepararContratoDv(_fpd.ContratoAf);
+        return new
+        {
+            MatriculaSolicitante = _fpd.Solicitante,
+            CoGigov = _fpd.Gigov,
+            MatriculaGestor = _fpd.Gestor,
+            CoContratoAf = coContrato,
+            CoContratoAfDv = coContratoDv,
+            PrimeiroDesembolso = _fpd.PrimeiroDesembolso,
+            AgenteFinanceiro = _fpd.AgenteFinanceiro,
+            CnpjAf = _fpd.CnpjAgenteFinanceiro,
+            MutuarioFinal = _fpd.Tomador,
+            CnpjMutuarioFinal = _fpd.CnpjTomador,
+            AgenteTecnicoOperador = _fpd.AgenteTecnico,
+            CnpjAgenteTecnicoOperador = _fpd.CnpjAgenteTecnico,
+            AgentePromotor = _fpd.AgentePromotor,
+            CnpjAgentePromotor = _fpd.CnpjAgentePromotor,
+            Programa = ProgramaParaInt(_fpd.Programa),
+            UltimoDesembolso = _fpd.UltimoDesembolsoSelecionado,
+            Funcionalidade = SimNaoParaBool(_fpd.Funcionalidade),
+            Concluido = _fpd.Conclusao == "sim" ? _fpd.DataSolicitado : (DateTime?)null,
+            DtEngenharia = _fpd.DataEmissaoEng ?? DateTime.Today,
+            SituacaoObra = SituacaoObraParaInt(_fpd.SituacaoObra),
+            DtSocioAmbiental = _fpd.Nsa ? null : _fpd.DataEmissaoSocioAmb,
+            PercentualObra = _fpd.PercObra ?? 0,
+            TipoDesembolso = _fpd.OpcaoExclusiva == "adiantamento" ? 1 : 0,
+            RetornoParcial = SimNaoParaBool(_fpd.RetornoParcial),
+            PlacaLocal = SimNaoParaBool(_fpd.PlacaLocal),
+            LicensaInstalacao = SimNaoParaBool(_fpd.LicencaInstalacao),
+            LicensaOperacao = SimNaoParaBool(_fpd.LicencaOperacao),
+            SolicitadoVi = _fpd.SolicitadoVi ?? 0,
+            GlossadoVi = _fpd.GlosadoVi ?? 0,
+            AceitoVi = _fpd.AceitoVi ?? 0,
+            ParticipacaoFgts = _fpd.ParticipacaoFgts ?? 0,
+            Contrapartida = _fpd.Contrapartida ?? 0,
+            ValorEmprestimo = _fpd.Ve ?? 0,
+            Desembolsado = _fpd.Desembolsado ?? 0,
+            SaldoADesembolsar = _fpd.SaldoDesembolsar ?? 0,
+            Excepcionalizado = SimNaoParaBool(_fpd.Excepcionalizacao),
+            ContrapartidaAtual = _fpd.CpAtual ?? 0,
+            Integralizado = _fpd.Integralizado ?? 0,
+            SaldoAIntegralizar = _fpd.SaldoIntegralizar ?? 0,
+            ContrapartidaAlterada = SimNaoParaBool(_fpd.CpAlterada),
+            Amortizacao = SimNaoParaBool(_fpd.Amortizacao),
+            Sanepar = _fpd.Sanepar,
+            ValidacoesDesembolsoRequest = MontarComentariosParaEnvio(),
+        };
+    }
+
+    // Em modo edição os comentários já foram salvos em tempo real durante a
+    // sessão (AdicionarComentario/EditarComentario/RemoverComentarioValidacao
+    // chamam a API na hora) — não manda de novo aqui, senão duplicava.
+    // Em modo criação, é aqui que tudo que ficou em staging local
+    // (_comentariosPorValidacao) finalmente vira request — pode ter mais de
+    // um comentário por validação, o servidor já aceita isso.
+    private object[] MontarComentariosParaEnvio()
+    {
+        if (ModoEdicao) return [];
+
+        return _comentariosPorValidacao
+            .SelectMany(kv => kv.Value.Select(c => new
+            {
+                CoValidacao = kv.Key,
+                CoDesembolso = 0, // ignorado pelo servidor — ele resolve o CoDesembolso real por conta própria
+                ValidacaoRegistro = new
+                {
+                    DeRegistro = c.Texto,
+                    TipoRegistro = MapTipoClienteParaServidor(c.Tipo),
+                    MatriculaAutor = ServicoUsuario.Matricula,
+                    NomeAutor = ServicoUsuario.Nome,
+                    UnidadeAutor = ServicoUsuario.UnidadeUsuario,
+                },
+            }))
+            .ToArray();
+    }
+
+    private string? _msgErroEnvio;
+
+    // A API devolve os erros como ProblemDetails ({ title, detail, status })
+    // — nunca mostrar o corpo cru pro usuário (isso incluía stack trace inteiro
+    // quando a exceção não era tratada). Detail é a mensagem de negócio (ex.:
+    // "Erro: ..."); Title é o fallback genérico; texto puro (não-JSON) vira
+    // mensagem genérica, o corpo real só fica no Console.WriteLine acima.
+    private static string ExtrairMensagemDeErro(string corpo, int statusCode)
+    {
+        if (!string.IsNullOrWhiteSpace(corpo))
+        {
+            try
+            {
+                var problema = JsonSerializer.Deserialize<ProblemDetailsDto>(corpo,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                if (!string.IsNullOrWhiteSpace(problema?.Detail))
+                    return problema.Detail;
+                if (!string.IsNullOrWhiteSpace(problema?.Title))
+                    return problema.Title;
+            }
+            catch (JsonException)
+            {
+                // corpo não era JSON — cai no genérico abaixo, não mostra cru.
+            }
+        }
+
+        return $"Falha ao enviar (código {statusCode}). Tente novamente.";
+    }
+
+    private class ProblemDetailsDto
+    {
+        public string? Title { get; set; }
+        public string? Detail { get; set; }
+    }
+
+    // Validação antes de enviar. Cada regra aqui é independente — fácil de
+    // adicionar mais um campo obrigatório ou outro formato depois, só
+    // acrescentando uma verificação nova nessa lista.
+    // ── Validação por campo — cada método valida SÓ o seu campo e guarda a
+    // mensagem em _erroXxx (pra mostrar embaixo do input assim que a pessoa
+    // sai do campo). ValidarCampos() (chamado no envio) roda todos de novo,
+    // pra pegar quem nunca perdeu o foco antes de apertar enviar.
+    private string? _erroAgenteFinanceiro;
+    private string? _erroContratoAf;
+    private string? _erroGigov;
+    private string? _erroGestor;
+
+    private void ValidarAgenteFinanceiro() =>
+        _erroAgenteFinanceiro = string.IsNullOrWhiteSpace(_fpd.AgenteFinanceiro) ? "Campo obrigatório." : null;
+
+    private void ValidarContratoAf()
+    {
+        try
+        {
+            var (_, dv) = SepararContratoDv(_fpd.ContratoAf);
+            _erroContratoAf = dv.Length != 2 ? "O DV precisa ter 2 dígitos." : null;
+        }
+        catch (ArgumentException ex)
+        {
+            _erroContratoAf = ex.Message;
+        }
+    }
+
+    private void ValidarGigov() =>
+        _erroGigov = !string.IsNullOrWhiteSpace(_fpd.Gigov) && (_fpd.Gigov.Length != 4 || !_fpd.Gigov.All(char.IsDigit))
+            ? "GIGOV precisa ter exatamente 4 números." : null;
+
+    private void ValidarGestor() =>
+        _erroGestor = !string.IsNullOrWhiteSpace(_fpd.Gestor) && (!_fpd.Gestor.All(char.IsDigit) || _fpd.Gestor.Length is < 4 or > 6)
+            ? "Só números, entre 4 e 6 dígitos." : null;
+
+    private List<string> ValidarCampos()
+    {
+        ValidarAgenteFinanceiro();
+        ValidarContratoAf();
+        ValidarGigov();
+        ValidarGestor();
+
+        var erros = new List<string>();
+        if (_erroAgenteFinanceiro is not null) erros.Add($"Agente Financeiro: {_erroAgenteFinanceiro}");
+        if (_erroContratoAf is not null) erros.Add($"Contrato AF: {_erroContratoAf}");
+        if (_erroGigov is not null) erros.Add(_erroGigov);
+        if (_erroGestor is not null) erros.Add($"Matrícula do Gestor: {_erroGestor}");
+        return erros;
+    }
+
+    private async Task Enviar()
+    {
+        if (_enviando) return;
+
+        var erros = ValidarCampos();
+        if (erros.Count > 0)
+        {
+            foreach (var erro in erros)
+                Snackbar.Add(erro, Severity.Error);
+            return; // fica na mesma etapa, com os dados intactos, pra corrigir
+        }
+
+        _enviando = true; _msgErroEnvio = null; StateHasChanged();
+        try
+        {
+            var req = MontarPedidoDesembolso();
+            var resposta = ModoEdicao && CoFpd is not null
+                ? await ControleAnaliseDesembolsoService.ReenviarFichaAsync(CoFpd.Value, req)
+                : await ControleAnaliseDesembolsoService.CriarFichaPedidoDesembolsoAsync(req);
+
+            if (!resposta.IsSuccessStatusCode)
+            {
+                var corpo = await resposta.Content.ReadAsStringAsync();
+                Console.WriteLine($"[FPD] Falha ao enviar ({(int)resposta.StatusCode}): {corpo}");
+                _msgErroEnvio = ExtrairMensagemDeErro(corpo, (int)resposta.StatusCode);
+                Snackbar.Add(_msgErroEnvio, Severity.Error);
+                return; // _fpd não é tocado — formulário continua preenchido pra corrigir e reenviar
+            }
+
+            Snackbar.Add(ModoEdicao ? "FPD editada com sucesso!" : "FPD enviada com sucesso!", Severity.Success);
+            await AoSolicitar.InvokeAsync(_fpd);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[FPD] Enviar: {ex.Message}");
+            _msgErroEnvio = "Falha ao enviar. Verifique a conexão e tente novamente.";
+            Snackbar.Add(_msgErroEnvio, Severity.Error);
+        }
+        finally
+        {
+            _enviando = false;
+            StateHasChanged();
+        }
+    }
+
+    #region Métodos Auxiliáres
+    private void PreencherDeContrato(ContratoAFResponse response)
+    {
+        _fpd.ContratoAf = response.CoContratoAF;
+        _fpd.NumeroFpd = response.NuFpd.ToString();
+
+        _fpd.AgenteFinanceiro = response.AgenteFinanceiro;
+        _fpd.Tomador = response.MutuarioFinal;
+        _fpd.AgenteTecnico = response.AgenteTecnicoOperador ?? string.Empty;
+        _fpd.AgentePromotor = response.AgentePromotor;
+
+        _fpd.Programa = response.Programa;
+
+        _fpd.RetornoParcial = response.RetornoParcial ? "sim" : "nao";
+
+        _fpd.Ve = response.ValorEmprestimo;
+        _fpd.Desembolsado = response.Desembolsado;
+
+        _fpd.CpAtual = response.ContrapartidaAtual;
+        _fpd.Integralizado = response.Integralizado;
+    }
+
+    // Se o texto já tem um separador (- ou /) — caso da ficha vinda pronta do
+    // servidor (PreencherParaEdicao monta "1234567-1") ou de quem digita no
+    // formato do placeholder ("0558698-45") — respeita o DV como está, mesmo
+    // que tenha 1 dígito só. Só cai no "últimos 2 dígitos" quando a pessoa
+    // digitou tudo junto, sem separador nenhum (aí não tem como saber onde
+    // o contrato termina e o DV começa a não ser por essa convenção).
+    private static (string coContrato, string coContratoDV) SepararContratoDv(string valor)
+    {
+        if (string.IsNullOrWhiteSpace(valor))
+            return (string.Empty, string.Empty);
+
+        var partes = valor.Split(['-', '/'], 2);
+        if (partes.Length == 2)
+        {
+            var contratoSeparado = new string(partes[0].Where(char.IsDigit).ToArray());
+            var dvSeparado = new string(partes[1].Where(char.IsDigit).ToArray());
+            if (contratoSeparado.Length > 0 && dvSeparado.Length > 0)
+                return (contratoSeparado, dvSeparado);
+        }
+
+        var soDigitos = new string(valor.Where(char.IsDigit).ToArray());
+        if (soDigitos.Length < 3)
+            throw new ArgumentException("Contrato deve possuir ao menos 3 dígitos.");
+
+        return (soDigitos[..^2], soDigitos[^2..]);
+    }
+
+    #endregion
+}
+
+<style>
+.overlay-fpd { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 2000; animation: fadeIn .15s ease; }
+
+.dialog-fpd {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: min(920px, calc(100vw - 32px)); max-height: calc(100vh - 40px);
+    display: flex; flex-direction: column;
+    background: #fff; border: 1px solid var(--ink-100); border-radius: var(--radius-xl);
+    box-shadow: 0 24px 60px rgba(0,0,0,.25); z-index: 2001; overflow: hidden; animation: fpdFade .15s ease;
+}
+@@keyframes fpdFade { from { opacity: 0; } to { opacity: 1; } }
+
+.dialog-fpd-header { display: flex; align-items: center; gap: 12px; padding: 16px 22px 14px; border-bottom: 1px solid var(--ink-100); background: var(--ink-50); flex-shrink: 0; }
+.dialog-fpd-icone { width: 38px; height: 38px; background: var(--brand-50); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--brand-700); font-size: 17px; }
+.dialog-fpd-titulo { font-size: 16px; font-weight: 700; color: var(--ink-900); letter-spacing: .02em; }
+.dialog-fpd-subtitulo { font-size: 11.5px; color: var(--ink-500); margin-top: 1px; }
+.dialog-fpd-fechar { margin-left: auto; color: var(--ink-500); font-size: 16px; padding: 4px; }
+.dialog-fpd-fechar:hover { color: var(--ink-900); }
+
+/* ── Stepper ──────────────────────────────────────────────────────────── */
+.fpd-stepper { display: flex; align-items: center; padding: 14px 24px; background: var(--ink-50); border-bottom: 1px solid var(--ink-100); flex-shrink: 0; }
+.fpd-step {
+    display: flex; align-items: center; gap: 8px; background: transparent; border: none;
+    padding: 4px 6px; border-radius: var(--radius-md); cursor: pointer; font-family: inherit;
+}
+.fpd-step:disabled { cursor: default; }
+.fpd-step-num {
+    width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; background: var(--ink-200); color: var(--ink-600, var(--ink-700));
+    transition: background .15s, color .15s;
+}
+.fpd-step-titulo { font-size: 12.5px; font-weight: 600; color: var(--ink-500); white-space: nowrap; transition: color .15s; }
+.fpd-step.atual .fpd-step-num { background: var(--brand-700); color: #fff; }
+.fpd-step.atual .fpd-step-titulo { color: var(--brand-800); }
+.fpd-step.concluida .fpd-step-num { background: var(--ok-bg); color: var(--ok); }
+.fpd-step.concluida .fpd-step-titulo { color: var(--ink-700); }
+.fpd-step.concluida:hover .fpd-step-titulo { color: var(--brand-700); }
+.fpd-step-linha { flex: 1; height: 2px; background: var(--ink-200); margin: 0 4px; transition: background .2s; }
+.fpd-step-linha.concluida { background: var(--ok); }
+
+.dialog-fpd-corpo { padding: 18px 24px 20px; overflow-y: auto; }
+
+.fpd-grupo-head { display: flex; align-items: center; gap: 8px; margin: 20px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--ink-100); }
+.fpd-grupo-head-topo { margin-top: 0; }
+.fpd-grupo-head i { font-size: 14px; color: var(--brand-700); }
+.fpd-grupo-head span { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--ink-500); }
+.fpd-grupo-hint { margin-left: auto; text-transform: none !important; letter-spacing: 0 !important; font-weight: 500 !important; color: var(--ink-400, var(--ink-300)) !important; }
+
+.fpd-grupo-campos { display: flex; flex-direction: column; gap: 14px; }
+
+.fpd-campo { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.fpd-campo-cheio { grid-column: 1 / -1; }
+.fpd-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-500); }
+.fpd-obrigatorio { color: var(--err); }
+.fpd-input-erro { border-color: var(--err) !important; }
+.fpd-input-erro:focus { box-shadow: 0 0 0 3px var(--err-bg) !important; }
+.fpd-erro-campo { display: block; font-size: 10.5px; color: var(--err); margin-top: 2px; }
+.fpd-input { height: 32px; padding: 0 10px; border: 1px solid var(--ink-200); border-radius: var(--radius-md); font-size: 12.5px; font-family: inherit; color: var(--ink-900); background: #fff; min-width: 0; }
+.fpd-input:focus { outline: none; border-color: var(--brand-500); box-shadow: 0 0 0 3px rgba(45,138,216,.15); }
+.fpd-input[readonly] { background: var(--ink-50); color: var(--ink-700); }
+.fpd-input:disabled { background: var(--ink-50); color: var(--ink-400, var(--ink-300)); }
+.fpd-textarea { min-height: 56px; height: auto; padding: 8px 10px; resize: vertical; }
+.fpd-textarea-sm { min-height: 42px; height: auto; padding: 8px 10px; resize: vertical; }
+
+.fpd-ident { display: grid; grid-template-columns: 2fr 1fr 1.2fr 1.2fr 1fr; gap: 10px; }
+.fpd-af-linha { display: flex; gap: 6px; } .fpd-af-linha .fpd-input { flex: 1; }
+.fpd-btn-buscar { display: inline-flex; align-items: center; gap: 5px; background: var(--brand-700); color: #fff; border-radius: var(--radius-md); padding: 0 12px; font-size: 11.5px; font-weight: 600; flex-shrink: 0; }
+.fpd-btn-buscar:hover:not(:disabled) { background: var(--brand-800); } .fpd-btn-buscar:disabled { opacity: .6; }
+.fpd-msg-busca { font-size: 10.5px; margin-top: 2px; } .fpd-msg-busca.ok { color: var(--ok); } .fpd-msg-busca.falha { color: var(--warn); }
+
+.fpd-agentes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.fpd-agente-linha { display: grid; grid-template-columns: 1.6fr 1fr; gap: 6px; }
+.fpd-cnpj { font-variant-numeric: tabular-nums; }
+.fpd-grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.fpd-grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.fpd-check { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ink-900); cursor: pointer; }
+.fpd-check input { width: 15px; height: 15px; accent-color: var(--brand-700); }
+.fpd-check-inline { white-space: nowrap; }
+
+/* Primeiro / Último / Adiantamento — grupo exclusivo (só um marcado por vez),
+   checkboxes simples, sem cartão/fundo de destaque. */
+.fpd-excl-opcoes { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 4px; }
+
+/* DT Sócio-ambiental + NSA na mesma linha */
+.fpd-data-nsa { display: flex; align-items: center; gap: 8px; }
+.fpd-data-nsa .fpd-input { flex: 1; min-width: 0; }
+.fpd-data-nsa .fpd-input:disabled { background: var(--ink-50); color: var(--ink-400, var(--ink-300)); }
+
+/* ── ÁRVORE (linha lateral + itens numerados) ── */
+.fpd-arvore {
+    position: relative;
+    margin-left: 4px;
+    padding-left: 16px;
+    border-left: 2px solid var(--ink-200);
+    display: flex;
+    flex-direction: column;
+}
+.fpd-tree-item { position: relative; border-bottom: 1px solid var(--ink-100); }
+.fpd-tree-item:last-child { border-bottom: none; }
+.fpd-tree-item::before { content: ''; position: absolute; left: -16px; top: 21px; width: 13px; height: 2px; background: var(--ink-200); }
+.fpd-tree-item.respondido::before { background: var(--brand-500); }
+
+.fpd-tree-head { display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 0; border-radius: var(--radius-md); }
+.fpd-tree-item.aberto > .fpd-tree-head { background: var(--brand-50); }
+
+.fpd-tree-abrir { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; padding: 4px 8px 4px 12px; background: transparent; text-align: left; cursor: pointer; border-radius: var(--radius-md); }
+
+.fpd-tree-num { flex-shrink: 0; padding: 2px 8px; height: 22px; min-width: 36px; border-radius: var(--radius-md); background: var(--ink-100); font-family: monospace; font-size: 11px; font-weight: 700; color: var(--ink-700); display: flex; align-items: center; justify-content: center; }
+.fpd-tree-item.respondido .fpd-tree-num { background: var(--brand-50); color: var(--brand-700); }
+.fpd-tree-titulo { flex: 1; font-size: 13px; font-weight: 500; color: var(--ink-900); line-height: 1.3; }
+.fpd-tree-comm { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 700; color: var(--brand-700); flex-shrink: 0; }
+.fpd-tree-chevron-btn { flex-shrink: 0; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-md); color: var(--ink-500); font-size: 12px; }
+.fpd-tree-chevron-btn:hover { background: var(--ink-100); color: var(--ink-900); }
+
+/* Alinhado à esquerda do texto do título: mesma soma de offsets usada em
+   .fpd-tree-abrir (padding-left 12) + .fpd-tree-num (min-width 36) + gap (12). */
+.fpd-tree-corpo { padding: 4px 0 14px; display: flex; flex-direction: column; gap: 12px; }
+.fpd-subtoggles { display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; }
+.fpd-sn-item { display: flex; flex-direction: column; gap: 4px; }
+
+/* Percentuais */
+.fpd-perc { border: 1px solid var(--brand-100); border-radius: var(--radius-md); background: var(--brand-50); padding: 10px 12px; max-width: 360px; }
+.fpd-perc-titulo { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--brand-700); margin-bottom: 6px; }
+.fpd-perc-linha { display: flex; justify-content: space-between; padding: 3px 0; font-size: 12.5px; color: var(--ink-700); }
+.fpd-perc-linha strong { font-variant-numeric: tabular-nums; color: var(--ink-900); }
+.fpd-perc-linha.global { border-top: 1px solid var(--brand-100); margin-top: 4px; padding-top: 6px; }
+.fpd-perc-linha.global strong { color: var(--brand-800); }
+
+.dialog-fpd-rodape { padding: 12px 22px 14px; background: var(--ink-50); border-top: 1px solid var(--ink-100); flex-shrink: 0; }
+.fpd-erro-envio { display: flex; align-items: center; gap: 8px; color: var(--err); font-size: 12.5px; font-weight: 600; margin-bottom: 10px; }
+.dialog-fpd-acoes { display: flex; align-items: center; gap: 10px; }
+.fpd-rodape-espaco { flex: 1; }
+.btn-fpd-cancelar { border: 1px solid var(--ink-200); border-radius: var(--radius-md); padding: 8px 16px; font-size: 13px; color: var(--ink-500); background: none; }
+.btn-fpd-cancelar:hover:not(:disabled) { background: var(--ink-100); }
+.btn-fpd-etapa-voltar { display: flex; align-items: center; gap: 4px; border: 1px solid var(--ink-200); border-radius: var(--radius-md); padding: 8px 14px; font-size: 12.5px; font-weight: 600; color: var(--ink-700); background: #fff; }
+.btn-fpd-etapa-voltar:hover:not(:disabled) { background: var(--ink-100); }
+.btn-fpd-etapa-proxima { display: flex; align-items: center; gap: 4px; background: var(--brand-700); color: #fff; border: none; border-radius: var(--radius-md); padding: 8px 18px; font-size: 12.5px; font-weight: 600; }
+.btn-fpd-etapa-proxima:hover { background: var(--brand-800); }
+.btn-fpd-solicitar { display: flex; align-items: center; gap: 6px; background: var(--brand-700); color: #fff; border: none; border-radius: var(--radius-md); padding: 8px 18px; font-size: 12.5px; font-weight: 600; }
+.btn-fpd-solicitar:hover:not(:disabled) { background: var(--brand-800); } .btn-fpd-solicitar:disabled { opacity: .6; cursor: wait; }
+.spin { animation: girar .8s linear infinite; display: inline-block; }
+
+@@media (max-width: 820px) {
+    .fpd-ident, .fpd-agentes, .fpd-grid4, .fpd-grid3 { grid-template-columns: 1fr 1fr; }
+    .fpd-step-titulo { display: none; }
+}
+</style>

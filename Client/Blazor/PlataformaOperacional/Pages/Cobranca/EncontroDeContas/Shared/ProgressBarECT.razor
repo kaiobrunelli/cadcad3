@@ -1,0 +1,141 @@
+@inject EncontroDeContasService EncontroDeContas
+
+<div>
+    
+    @if (ExecutandoSP && TotalProcessado !=100)
+    {
+        <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+
+            <div class="progress-head">
+                <div class="progress-title">
+                    <span class="live-dot @(ErroSP ? "live-dot--erro" : "")"></span>
+                    @(ErroSP ? "Erro na execução" : $"Processando: {DrescricaoProcesso}")
+                </div>
+                @if (!ErroSP)
+                {
+                    <div class="progress-meta"> 
+                        <span class="pct">BD</span>
+                    </div>
+                }
+            </div>
+
+            @* Barra: mesma track da barra normal, fill animado *@
+            <div class="progress-track">
+                @if (!ErroSP)
+                {
+                    <div class="sp-fill-indeterminate"></div>
+                }
+                else
+                {
+                    <div class="sp-fill-erro"></div>
+                }
+            </div>
+
+            <div class="progress-caption">
+                @if (!ErroSP)
+                {
+                    <svg class="spin" width="12" height="12" viewBox="0 0 24 24"
+                         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <line x1="12" y1="2" x2="12" y2="6" />
+                        <line x1="12" y1="18" x2="12" y2="22" />
+                        <line x1="4.93" y1="4.93" x2="7.76" y2="7.76" />
+                        <line x1="16.24" y1="16.24" x2="19.07" y2="19.07" />
+                        <line x1="2" y1="12" x2="6" y2="12" />
+                        <line x1="18" y1="12" x2="22" y2="12" />
+                    </svg>
+                    <span>@DescricaoEtapas</span>
+                }
+                else
+                {
+                    <span class="sp-erro-msg">@MensagemErroSP</span>
+                }
+            </div>
+
+        </div>
+    }
+
+    else if (Executando)
+    {
+        <div class="progress" role="progressbar" aria-valuenow="@((int)_pctSeguro)" aria-valuemin="0" aria-valuemax="100">
+            <div class="progress-head">
+                <div class="progress-title">
+                    <span class="live-dot"></span>
+                    Processando: @DrescricaoProcesso
+                </div>
+                <div class="progress-meta">
+                    @if (TotalSteps > 0)
+                    {
+                        <span class="step-count">etapa @CurrentStep/@TotalSteps</span>
+                    }
+                    <span class="sep">·</span>
+                    <span class="pct">@((int)_pctSeguro)%</span>
+                </div>
+            </div>
+            <div style="display:block;width:100%;height:16px;background-color:#e2e8f0;border-radius:999px;overflow:hidden;">
+                <div style="display:block;height:16px;width:@_pctSeguro.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)%;background-color:#005ca9;background-image:linear-gradient(90deg,#0a3d7a,#005ca9,#1a75c2,#4aa3e0);border-radius:999px;transition:width 300ms ease;">&nbsp;</div>
+            </div>
+            @*   <div class="progress-caption">
+                <svg class="spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <line x1="12" y1="2" x2="12" y2="6" />
+                    <line x1="12" y1="18" x2="12" y2="22" />
+                    <line x1="4.93" y1="4.93" x2="7.76" y2="7.76" />
+                    <line x1="16.24" y1="16.24" x2="19.07" y2="19.07" />
+                    <line x1="2" y1="12" x2="6" y2="12" />
+                    <line x1="18" y1="12" x2="22" y2="12" />
+                </svg>
+                @if (EncontroDeContas.IsRunning ||
+                    EncontroDeContas.ObservadorAutomacaoAPI.AlertaSeverity != Severity.Info || 
+                    EncontroDeContas.ObservadorAutomacaoAPI.AlertaSeverity != Severity.Success)
+                {
+                    <div style="width: 100%">
+                        <Alerta_CPT Alertas="@EncontroDeContas.Alertas" OnFechar="Fechar" />
+                    </div>  
+                }
+                else
+                {
+                      <span>@StepLabel</span>
+                }
+             
+            </div> *@
+            <div class="progress-caption">
+                @if (EncontroDeContas.TemAlertaCritico)
+                {
+                    <div style="width:100%; box-sizing:border-box;">
+                        <Alerta_CPT Alertas="@EncontroDeContas.AlertasCriticos.ToList()"
+                                    OnFechar="Fechar" />
+                    </div>
+                }
+                else
+                {
+                    <svg class="spin" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <line x1="12" y1="2" x2="12" y2="6" />
+                        <line x1="12" y1="18" x2="12" y2="22" />
+                        <line x1="4.93" y1="4.93" x2="7.76" y2="7.76" />
+                        <line x1="16.24" y1="16.24" x2="19.07" y2="19.07" />
+                        <line x1="2" y1="12" x2="6" y2="12" />
+                        <line x1="18" y1="12" x2="22" y2="12" />
+                    </svg>
+                    <span>@DescricaoEtapas</span>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public bool Executando { get; set; }
+    [Parameter] public double Pct { get; set; }
+    [Parameter] public string DescricaoEtapas { get; set; } = "";
+    [Parameter] public string DrescricaoProcesso { get; set; } = "";
+    [Parameter] public int CurrentStep { get; set; }
+    [Parameter] public bool ExecutandoSP { get; set; }
+    [Parameter] public bool ErroSP { get; set; }
+    [Parameter] public string MensagemErroSP { get; set; } = "";
+    [Parameter] public int TotalSteps { get; set; }
+    [Parameter] public string? LocationSignalR { get; set; }
+    [Parameter] public int TotalProcessado { get; set; }
+
+    private double _pctSeguro => Math.Clamp(Pct, 0, 100);
+    private void Fechar(string id) => EncontroDeContas.FecharAlerta(id);
+}

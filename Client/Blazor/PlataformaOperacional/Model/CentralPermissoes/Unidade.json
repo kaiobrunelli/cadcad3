@@ -1,0 +1,16 @@
+﻿using System.Text.Json.Serialization;
+
+namespace PlataformaOperacional.Model.CentralPermissoes
+{
+    public class Unidade
+    {
+        [JsonPropertyName("cgc")]
+        public int Cgc { get; set; }
+
+        [JsonPropertyName("unidade")]
+        public string NomeDaUnidade { get; set; } = "";
+
+        [JsonPropertyName("sigla")]
+        public string SiglaDaUnidade { get; set; } = "";
+    }
+}

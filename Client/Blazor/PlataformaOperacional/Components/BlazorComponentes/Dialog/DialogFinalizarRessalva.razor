@@ -1,0 +1,35 @@
+﻿<MudDialog>
+    <DialogContent>
+        <MudTextField T="string" @bind-Value="Resposta" Lines="5" Variant="Variant.Outlined" MaxLength="300"
+                      Validation="@(new Func<string, string>(ValidarResposta))" Immediate="true" Label="Descrever tratamento" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="Cancelar">Cancelar</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Secondary" Disabled="@BotaoConfirmarDesabilitado" OnClick="Confirmar">Confirmar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    private bool BotaoConfirmarDesabilitado = true;
+
+    private string? ValidarResposta(string value)
+    {
+        if (string.IsNullOrEmpty(value) || value.Length < 10)
+        {
+            BotaoConfirmarDesabilitado = true;
+            return "Observação deve conter pelo menos 10 caracteres.";
+        }
+        BotaoConfirmarDesabilitado = false;
+        StateHasChanged();
+        return null;
+    }
+
+    public string Resposta { get; set; } = "";
+
+    private void Confirmar() => MudDialog.Close(DialogResult.Ok(Resposta));
+
+    private void Cancelar() => MudDialog.Cancel();
+}

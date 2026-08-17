@@ -1,0 +1,267 @@
+﻿@page "/saldoresidual"
+@using Microsoft.AspNetCore.Mvc
+@inject ISnackbar Snackbar
+@inject IDialogService DialogServiceInject
+@inject SaldoResidualService SaldoResidualService
+
+<PageTitle>Saldo Residual</PageTitle>
+<div>
+	<MudText Class="ml-4" Style="color:#005ca9" Typo="Typo.h4">Operações - Saldo Residual</MudText>
+	<MudContainer>
+		@if (isProcessing && automacaoIniciada)
+		{
+			<MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-4" />
+		}
+		else
+		{
+			automacaoIniciada = false;
+			isProcessing = false;
+		}
+		<MudGrid>
+			<MudItem xs="12" md="9" lg="9">
+
+				<MudTable Class="ma-0 pa-4" Style="border-radius:2%" Items="@_situacaoContratosTabela" Context="item"
+						  Elevation="25"
+						  AllowUnsorted="false"
+						  Square="true"
+						  Hover="true"
+						  Striped="true">
+				@*  	<ColGroup>
+						<col width="20%" /> 
+						<col width="20%" />
+						<col />						
+						<col width="15%" />
+					</ColGroup>  *@
+					<HeaderContent>
+						@* <MudTh><MudTableSortLabel InitialDirection="SortDirection.Descending" SortBy="new Func<SituacaoContrato, object>(x=>x.CoRegistro)">Registro</MudTableSortLabel></MudTh> *@
+						<MudTh>Operação</MudTh>
+						<MudTh><MudTableSortLabel  SortBy="new Func<SituacaoContrato, object>(x=>x.Situacao)">Situação</MudTableSortLabel></MudTh>				
+						<MudTh>Observação</MudTh>
+						<MudTh></MudTh>
+					</HeaderContent>
+					<RowTemplate>
+						@* <MudTd>@item.CoRegistro</MudTd> *@
+						<MudTd>@item.CoOperacao-@item.CoDvOperacao.ToString("D2")</MudTd>
+						<MudTd>
+							<MudStack Row="true" Justify="Justify.FlexStart" AlignItems="AlignItems.Center">
+								@item.Situacao
+								@* <MudIcon Icon="@GetStatusIcon(item.Situacao)" Style="color:#F39200" Class="align-self-center" Size="Size.Small" /> *@
+							</MudStack>
+						</MudTd>
+						<MudTd>@item.Observacao</MudTd>
+						<MudTd>
+							@if (item.Situacao == "Analisar")
+							{
+								<MudButton Class="btn-caixa-small"
+										   OnClick="@(()=>TratarContratoManual(item.CoOperacao))"
+										   Size="Size.Small"
+										   Variant="Variant.Outlined"
+										   Color="Color.Secondary">
+									Tratar
+								</MudButton>
+							}
+						</MudTd>
+					</RowTemplate>
+					<PagerContent>
+						@if (_situacaoContratosTabela.Count() > 5)
+						{
+							<MudTablePager RowsPerPageString="@_rowsPerPageString" />
+						}
+					</PagerContent>
+					<NoRecordsContent>
+						<MudText Color="Color.Primary" Typo="Typo.h6">
+							Nenhum registro encontrado
+						</MudText>
+					</NoRecordsContent>
+				</MudTable>
+
+			</MudItem>
+			<MudItem xs="12" md="3" lg="3">
+				<MudItem xs="12">
+					<MudPaper Class="pa-4" Style="border-radius:4%" Elevation="25">
+						<MudStack Row="true" Spacing="4" Justify="Justify.SpaceEvenly">
+							<MudButton Variant="Variant.Filled"
+									   Style="width:30%; border-radius:24px; background-color: #005ca9;"
+									   Color="Color.Secondary"
+									   FullWidth="true"
+									   Disabled="!_btnIniciarAutomacaoHabilitado"
+									   OnClick="@(()=>IniciarAutomacao())"
+									   Class="btn-caixa-small flex-grow-1"
+									   Size="Size.Large">
+								Iniciar Automação
+							</MudButton>
+						</MudStack>
+						<MudStack Row="true" Justify="Justify.SpaceBetween" Class="mt-5">
+							<MudStack Row="false" Justify="Justify.Center" AlignItems="AlignItems.Center">
+								<MudIconButton OnClick="() =>FiltrarOperacoes(FiltroSituacao.Analisar)"
+											   Icon="@Icons.Material.Filled.PriorityHigh"
+											   Size="Size.Small"
+											   Variant="Variant.Filled"
+											   Style="border-radius:100%; height:40px; width:40px; color:#005ca9" />
+								<MudText Typo="Typo.caption">Analisar</MudText>
+							</MudStack>
+							<MudStack Row="false" Justify="Justify.Center" AlignItems="AlignItems.Center">
+								<MudIconButton OnClick="() =>FiltrarOperacoes(FiltroSituacao.NaoProcessado)"
+											   Icon="@Icons.Material.Filled.Search"
+											   Size="Size.Small"
+											   Variant="Variant.Filled"
+											   Style="border-radius:100%; height:40px; width:40px; color:#005ca9" />
+								<MudText Typo="Typo.caption">Processar</MudText>
+							</MudStack>
+							<MudStack Row="false" Justify="Justify.Center" AlignItems="AlignItems.Center">
+								<MudIconButton OnClick="() =>FiltrarOperacoes(FiltroSituacao.Todos)"
+											   Icon="@Icons.Material.Filled.FileCopy"
+											   Size="Size.Small"
+											   Variant="Variant.Filled"
+											   Style="border-radius:100%; height:40px; width:40px; color:#005ca9" />
+								<MudText Typo="Typo.caption">Todos</MudText>
+							</MudStack>
+						</MudStack>
+						<MudStack Row="true" Class="mt-3" Justify="Justify.Center" AlignItems="AlignItems.Center">
+							<MudText Typo="Typo.body1">Contratos </MudText>
+						</MudStack>
+						@* Style="color:#142C8E" *@
+
+
+						<MudStack Row="false" Justify="Justify.FlexStart" Class="mt-2">
+							<MudStack Row="true" Spacing="6" Justify="Justify.SpaceBetween">
+								<MudText Typo="Typo.body2">Processar</MudText>
+								<MudText Typo="Typo.body2"><b>@_situacaoContratos.Where(o => o.Situacao == "Não Processado").Count()</b></MudText>
+							</MudStack>
+							<div class="linha-arredondada"></div>
+							<MudStack Row="true" Spacing="6" Justify="Justify.SpaceBetween">
+								<MudText Typo="Typo.body2">Analisar</MudText>
+								<MudText Typo="Typo.body2"><b>@_situacaoContratos.Where(o => o.Situacao == "Analisar").Count()</b></MudText>
+							</MudStack>
+						</MudStack>
+					</MudPaper>
+				</MudItem>
+			</MudItem>
+		</MudGrid>
+	</MudContainer>
+</div>
+
+@code {
+	private bool isProcessing = false;
+	private bool automacaoIniciada = false;
+	private bool _btnIniciarAutomacaoHabilitado = true;
+	private List<SaldoResidualContrato> _contratosNaoProcessados = [];
+	private List<SituacaoContrato> _situacaoContratos = [];
+	private List<SituacaoContrato> _situacaoContratosTabela = [];
+	private List<SituacaoContrato> _situacaoContratosParaAnalise = [];
+	private MudTheme _myCustomTheme = new();
+	private string? _senhaCriptografada { get; set; } = string.Empty;
+	private string _rowsPerPageString = "Linhas por página:";
+
+	private enum FiltroSituacao
+	{
+		Todos, Analisar, NaoProcessado
+	};
+
+	protected override async Task OnInitializedAsync()
+	{
+		_myCustomTheme = new MudTheme()
+			{
+				PaletteLight = new PaletteLight()
+				{
+					Background = "#FAF8F5",
+					Secondary = "#D87B00",
+					Primary = "#005ca9",
+					DrawerIcon = "#ffffff",
+				},
+				Typography = new Typography()
+				{
+				Caption = new CaptionTypography()
+					{
+						FontSize = "14px",
+					}
+				}
+			};
+		await LocalizarSituacaoOperacoes();
+	}
+
+	private async Task LocalizarSituacaoOperacoes()
+	{
+		var response = await SaldoResidualService.LocalizarSituacaoOperacoes();		
+		_situacaoContratos = await HttpResponseHandler.ResponseHandler<List<SituacaoContrato>>(response, Snackbar);	
+		_situacaoContratosTabela = _situacaoContratos;
+	}
+
+	private async Task IniciarAutomacao()
+	{
+		var options = new DialogOptions { CloseOnEscapeKey = true };
+		var parameters = new DialogParameters<BoxSenha>
+		{
+			{ x => x.Title, "Iniciar Saldo Residual." }
+		};
+		var dialog = await DialogServiceInject.ShowAsync<BoxSenha>("", parameters, options);
+		var result = await dialog.Result;
+
+		if (!result!.Canceled)
+		{
+
+			_senhaCriptografada = result.Data.ToString();
+			automacaoIniciada = true;
+			isProcessing = true;
+			_btnIniciarAutomacaoHabilitado = false;
+
+			StateHasChanged();
+			var response = await SaldoResidualService.TaskRealizarOperacaoSaldoResidual(_senhaCriptografada);
+
+			await HttpResponseHandler.ResponseHandler(response, Snackbar);
+
+			isProcessing = false;
+			automacaoIniciada = false;
+			_btnIniciarAutomacaoHabilitado = true;
+			await LocalizarSituacaoOperacoes();
+			await InvokeAsync(StateHasChanged);
+		}
+	}
+
+	private async Task TratarContratoManual(string coOperacao)
+	{
+		var options = new DialogOptions { CloseOnEscapeKey = true };
+
+		var dialogReference = await DialogServiceInject.ShowAsync<DialogTratarContratoManual>("I", options);
+
+		var result = await dialogReference.Result;
+
+		if (!result!.Canceled)
+		{
+			automacaoIniciada = true;
+			isProcessing = true;
+			var observacaoPreenchida = result.Data as string;
+
+			var contratoProcessarManual = new ProcessarContratoManual(coOperacao, observacaoPreenchida!);
+			var response = await SaldoResidualService.ProcessarContratoManual(contratoProcessarManual);
+
+			await HttpResponseHandler.ResponseHandler(response, Snackbar);
+			isProcessing = false;
+			automacaoIniciada = false;
+
+			await LocalizarSituacaoOperacoes();
+			FiltrarOperacoes(FiltroSituacao.Analisar);
+		}
+	}
+
+	private void FiltrarOperacoes(FiltroSituacao filtroSituacao)
+	{
+		IEnumerable<SituacaoContrato> pedidosFiltrados = [];
+		switch (filtroSituacao)
+		{
+			case FiltroSituacao.Analisar:
+				pedidosFiltrados = _situacaoContratos.Where(ope => ope.Situacao == "Analisar");				
+				break;
+			case FiltroSituacao.NaoProcessado:
+				pedidosFiltrados = _situacaoContratos.Where(ope => ope.Situacao == "Não Processado");
+				break;
+			case FiltroSituacao.Todos:
+				pedidosFiltrados = _situacaoContratos;
+				break;
+		}
+
+		_situacaoContratosTabela = pedidosFiltrados
+			.OrderByDescending(ope => ope.CoRegistro).ToList();
+	}
+
+}

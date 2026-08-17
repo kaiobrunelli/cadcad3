@@ -1,0 +1,61 @@
+﻿@using MudBlazor
+@inject MudBlazor.IDialogService DialogService
+@inject MudBlazor.ISnackbar Snackbar
+<style>
+
+
+	.mud-dialog .mud-dialog-title {
+		background-color: #005ca9;
+		color: white;
+	}
+</style>
+<MudDialog Style="min-width: 400px;">
+	<TitleContent>
+		<div class="d-flex align-center">
+			<MudIcon Icon="@Icons.Material.Filled.Assignment" Class="mr-2" />
+			<MudText Typo="Typo.h6">Inserir observação</MudText>
+		</div>
+	</TitleContent>
+	<DialogContent>
+		<MudDivider Class="my-2" />
+		<MudTextField @bind-Value="_observacao"
+					  Placeholder="Adicionar observação"
+					  Lines="4"
+					  Immediate="true"
+					  Variant="Variant.Outlined"
+					  OnBlur="() => _comecouEscrever = true"
+					  Error="@(!_observacaoValida && _comecouEscrever)"
+					  ErrorText="A observação deve conter pelo menos 3 caracteres." />
+	</DialogContent>
+
+	<DialogActions>
+		<MudButton OnClick="Cancel">Cancelar</MudButton>
+		<MudButton Color="Color.Secondary"
+				   Variant="Variant.Filled"
+				   OnClick="Submit"
+				   Disabled="@(!_observacaoValida)">Confirmar</MudButton>
+	</DialogActions>
+
+</MudDialog>
+
+@code {
+	[CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+
+	// [Parameter] public int NumeroContrato { get; set; }
+
+
+	private string _observacao = "";
+	private bool _comecouEscrever = false;
+	private bool _observacaoValida => !string.IsNullOrWhiteSpace(_observacao) && _observacao.Trim().Length >= 3;
+
+
+	void Submit()
+	{
+		MudDialog.Close(DialogResult.Ok(_observacao));
+	}
+
+	void Cancel()
+	{
+		MudDialog.Cancel();
+	}
+}

@@ -1,0 +1,104 @@
+.metric {
+  position: relative;
+  padding: 18px 18px 16px;
+  border-radius: var(--r-md);
+  background: var(--white);
+  border: 1px solid var(--ink-200);
+  overflow: hidden;
+  transition: all 180ms ease;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.metric::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--brand-600);
+}
+.metric.condicional::before { background: #8b5cf6; }
+.metric.drp::before          { background: #0891b2; }
+
+.metric-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.metric-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-500);
+  font-weight: 600;
+}
+
+.metric-count {
+  font-family: var(--font-mono);
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--ink-900);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  margin-top: 6px;
+}
+
+.metric-unit {
+  font-size: 11px;
+  color: var(--ink-500);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+/* ---------- Variante clicável ---------- */
+.metric.is-clickable {
+  cursor: pointer;
+  padding-bottom: 0;
+}
+.metric.is-clickable:hover {
+  border-color: #0891b2;
+  box-shadow: 0 4px 14px rgba(8, 145, 178, 0.14);
+  transform: translateY(-1px);
+}
+.metric.is-clickable:focus-visible {
+  outline: 2px solid #0891b2;
+  outline-offset: 2px;
+}
+
+.metric-badge {
+  width: 20px; height: 20px;
+  border-radius: 999px;
+  background: rgba(8, 145, 178, 0.10);
+  color: #0891b2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 180ms ease, background 180ms ease;
+}
+.metric.is-clickable:hover .metric-badge {
+  background: #0891b2;
+  color: var(--white);
+  transform: translateX(2px);
+}
+
+.metric-action {
+  margin: 12px -18px 0;
+  padding: 10px 18px;
+  border-top: 1px dashed var(--ink-200);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  color: #0891b2;
+  letter-spacing: 0.01em;
+  transition: background 180ms ease;
+}
+.metric.is-clickable:hover .metric-action {
+  background: rgba(8, 145, 178, 0.05);
+}
+.metric-action svg { transition: transform 180ms ease; }
+.metric.is-clickable:hover .metric-action svg { transform: translateX(3px); }

@@ -1,0 +1,91 @@
+﻿@page "/contratacaolistatomador/{CodigoTomador}"
+@inject NavigationManager Navigation
+@inject ContratacaoService ContratacaoServiceInject
+@inject ContratacaoService ContratacaoServiceInject
+@inject IDialogService DialogServiceInject
+@inject ISnackbar Snackbar
+@inject IJSRuntime JsRuntime
+
+<MudContainer>
+    <MudGrid Spacing="10">
+        <MudItem xs="12">
+            @if (!CarregandoListaTabela)
+            {
+                <MudItem Class="d-flex justify-center my-8" lg="12">
+                    <MudProgressCircular Color="Color.Secondary" Size="Size.Large" Indeterminate="true" />
+                </MudItem>
+            }
+            else
+            {
+                <MudIconButton Icon="@Icons.Material.Filled.ArrowBack" 
+                Variant="Variant.Text" Color="Color.Secondary" Class="mt-n6 mb-5" Size="Size.Small" OnClick="VoltarPagina" />
+                <MudCard Elevation="1" Class="rounded-lg pa-4  card-body ">
+                    <MudItem Class="mx-2 mb-2">
+                        <MudText Typo="Typo.h6" Align="Align.Left">Lista  de Contratos - @Tomador.DeTomador (@Tomador.CoTomador) </MudText>
+                        <MudDivider Class="my-2" />
+                    </MudItem>
+                    <MudGrid Class="px-4 pt-2">
+                        <MudItem xs=12 Class="py-4">
+                            <MudTable Items="@ListaContratos"
+                                      AllowUnsorted="false"
+                                      Dense="true" Hover="true"
+                                      Filter="new Func<ContratacaoContrato,bool>(FilterFunc1)"
+                                      Elevation="1"
+                                      Class="pa-2"
+                                      @bind-SelectedItem="selectedItem1">
+                                <ToolBarContent>
+                                    <MudItem Class="d-flex justify-end flex-grow-1">
+                                        <MudSpacer />
+                                        <MudTextField @bind-Value="FiltroBuscarPalavra" Placeholder="Buscar" Style="width:200px" Class="mt-0 flex-none"></MudTextField>
+                                        @* <MudButton Class="btn-caixa-small" Style="color:white" OnClick="ClearFilter">Limpar filtro</MudButton> *@
+                                    </MudItem>
+                                </ToolBarContent>
+                                <HeaderContent>
+                                    <MudTh><MudTableSortLabel InitialDirection="SortDirection.Descending" SortBy="new Func<ContratacaoContrato, object>(x=>x.Contrato)">Número de Contrato</MudTableSortLabel></MudTh>
+                                    <MudTh><MudTableSortLabel InitialDirection="SortDirection.Descending" SortBy="new Func<ContratacaoContrato, object>(x=>x.DataAssinatura)">Data de Contração</MudTableSortLabel></MudTh>
+                                    <MudTh><MudTableSortLabel InitialDirection="SortDirection.Descending" SortBy="new Func<ContratacaoContrato, object>(x=>x.Concluidos ?? 0)">Verificações</MudTableSortLabel></MudTh>
+                                    <MudTh><MudTableSortLabel InitialDirection="SortDirection.Descending" SortBy="new Func<ContratacaoContrato, object>(x=>x.Situacao! )">Situação</MudTableSortLabel></MudTh>
+                                    <MudTh></MudTh>
+                                    <MudTh></MudTh>
+                                </HeaderContent>
+                                <RowTemplate>
+                                    <MudTd>@context.Contrato </MudTd>
+                                    <MudTd>@context.DataAssinatura.ToString("dd/MM/yy")</MudTd>
+                                    <MudTd>@context.Concluidos / @context.TotalVerificacoes </MudTd>
+                                    <MudTd>@context.Situacao </MudTd>
+                                    <MudTd Class="gap-2">
+                                        <MudTooltip Text="Consultar contrato" Delay="400">
+                                            <MudIconButton Icon="@Icons.Material.Filled.Search"
+                                                           OnClick="@(() => ConsultarContratoTomadorParaAtualizar(context.Contrato))"
+                                                           Variant="Variant.Filled"
+                                                           Color="Color.Primary" Size="Size.Small" />
+                                        </MudTooltip>
+                                    </MudTd>
+                                    <MudTd>
+                                        <MudTooltip Text="Necessário concluir todas verificações e ressalvas." Delay="400">
+                                            <MudButton Class="btn-caixa-small ml-4"
+                                                       OnClick="@(()=>DialogoFinalizarContrato(context.Contrato))"
+                                                       Size="Size.Small"
+                                                       Variant="Variant.Outlined"
+                                                       Disabled="@(!context.PodeFinalizar)"
+                                                       Color="Color.Secondary">
+                                                Finalizar
+                                            </MudButton>
+                                        </MudTooltip>
+                                    </MudTd>
+                                </RowTemplate>
+                            </MudTable>
+                        </MudItem>
+                    </MudGrid>
+                </MudCard>
+            }
+        </MudItem>
+    </MudGrid>
+    <MudPaper Elevation="0" Class="pa-6">
+    </MudPaper>
+
+</MudContainer>
+
+@code {
+
+}

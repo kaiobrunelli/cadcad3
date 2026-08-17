@@ -1,0 +1,90 @@
+﻿@page "/SolicitarLoteContabil"
+
+@inject DialogServicePlataformaOperacional DialogServicePlataformaOperacional
+
+<PageTitle>Solicitar Lote</PageTitle>
+
+@code {
+    private string rowsPerPageString = "Linhas por página:";
+
+
+    private List<BreadcrumbItem> _items =
+    [
+        new("Home", href: "/"),
+        new("Contabilidade", href: "/contabilidadeHome"),
+        new("Solicitar Lote", href: null, disabled: true)
+    ];
+}
+
+<MudContainer>
+<MudGrid  Spacing="10">
+    <MudItem xs="12"> 
+        @*<MudCard Class="d-flex flex-column pb-4 mt-2" Elevation="0">
+            <MudCard Class="d-flex flex-row mt-2 gap-1" Elevation="0">
+                <MudIcon Icon="@Icons.Material.Outlined.FileOpen" Size="Size.Large"></MudIcon>
+                <MudText Typo="Typo.h3" Color="Color.Secondary" Style="font-weight:400">Solicitar Lote</MudText>
+            </MudCard>
+             <MudDivider Class="mt-2 flex-grow-1" DividerType="DividerType.FullWidth"></MudDivider> *@
+            @if (!string.IsNullOrEmpty(MensagemDeErro))
+            {
+                <MudAlert Class="mt-4" Severity="Severity.Error">
+                    @MensagemDeErro
+                </MudAlert>
+            }
+
+        @* <MudBreadcrumbs Items="_items"></MudBreadcrumbs> *@
+        <MudPaper Class="card-body" >
+            <MudItem Class="d-flex justify-end gap-6 mb-6">
+                <MudTextField Label="Data Inicial"  @bind-Value="DataInicial" InputType="InputType.Date" FullWidth />
+                <MudTextField Label="Data Final" @bind-Value="DataFinal" InputType="InputType.Date" FullWidth />
+                <MudTextField ShrinkLabel Label="Digite o nº do contrato" @bind-Value="NumeroContrato" FullWidth />
+            </MudItem>
+            <MudItem >
+            <MudPaper Elevation="0" Class="align-center d-flex flex-wrap" Style="min-height:54px;">
+                <MudText Typo="Typo.body1" Color="Color.Secondary" Class="ml-2" >Lista de Contratos:</MudText>
+                @foreach (var contrato in ListaContratos)
+                {
+                    <MudChip T="string" Class="rounded" Variant="Variant.Outlined" Color=" Color.Surface" Icon="@Icons.Material.Filled.Remove" IconColor="Color.Error" OnClick="() => RemoveContract(contrato)">@contrato</MudChip>
+                }              
+            </MudPaper>
+            </MudItem>
+            <MudItem Class="d-flex justify-end gap-4 mt-6">    
+                <MudItem>
+                    <MudFileUpload T="IBrowserFile" FilesChanged="OnFileSelect">
+@*                         <ActivatorContent>
+                            <MudButton Class="btn-caixa-small" Variant="Variant.Filled"
+                                       Color="Color.Primary">
+                                Carregar CSV/EXCEL
+                            </MudButton>
+                        </ActivatorContent> *@
+                      
+                        <SelectedTemplate >
+                            @if (context != null)
+                            {
+                               
+                                <MudText  Typo="Typo.caption">@context.Name</MudText>
+                            }
+                          
+                        </SelectedTemplate>
+                    </MudFileUpload>
+                </MudItem>            
+                <MudItem>
+                    <MudButton Variant="Variant.Filled" Class="btn-caixa-small" Color="Color.Primary" OnClick="GerarLote" FullWidth>Gerar Lote</MudButton>
+                </MudItem>   
+                <MudItem>
+                    <MudButton Variant="Variant.Filled" Class="btn-caixa-small" Color="Color.Secondary" OnClick="AddContract" FullWidth>Adicionar Contrato</MudButton>
+                </MudItem>
+            </MudItem>   
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+
+
+</MudContainer>
+<MudTFootRow Class="container-footer-item align-center pl-4">
+    <MudText Typo="Typo.body2">2025 - CN Ativo do FTGS - CEFGA   <span class="footer-text ">#INTERNO.CONFIDENCIAL</span></MudText>
+</MudTFootRow>
+
+
+

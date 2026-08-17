@@ -1,0 +1,517 @@
+﻿@page "/validacao"
+
+@using System.Net.Http.Headers
+@using System.Net.Http.Json
+@using System.Text.Json
+@using System.Text.Json.Serialization
+@using Microsoft.AspNetCore.Components.Forms
+@using MudBlazor
+
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+@inject DesembolsosService Service
+
+<MudThemeProvider Theme="DSCtheme" />
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="pt-8 pb-12">
+
+    <MudStack Row Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="2" Class="mb-1">
+        <MudText Typo="Typo.h4" Class="page-title">
+            Validação de Arquivos
+        </MudText>
+        <MudIcon Icon="@Icons.Material.Filled.Description" Color="Color.Primary" Size="Size.Large" />
+    </MudStack>
+
+    <br/>
+
+    <MudGrid Class="align-stretch">
+        <MudItem xs="12" md="4">
+            <MudPaper Elevation="0" Class="upload-card pa-7">
+
+                <label class="file-drop-zone">
+                    <InputFile OnChange="OnFileSelected"
+                               accept=".txt,text/plain"
+                               class="file-input" />
+
+                    <div class="file-drop-content">
+                        <MudIcon Icon="@Icons.Material.Filled.Description" Class="file-drop-icon" />
+
+                        @if (_selectedFile is null)
+                        {
+                            <span class="file-drop-title">Selecione um arquivo</span>
+                        }
+                        else
+                        {
+                            <span class="file-drop-title">@_selectedFile.Name</span>
+                            <span class="file-drop-subtitle">@FormatFileSize(_selectedFile.Size)</span>
+                        }
+                    </div>
+                </label>
+
+                <MudButton Variant="Variant.Filled"
+                           FullWidth="true"
+
+                           Disabled="@(_selectedFile is null || _isUploading)"
+                           OnClick="PrimaryButtonClickedAsync"
+                           Class="validate-button"
+                           StartIcon="@(_validationSucceeded
+                                          ? Icons.Material.Filled.UploadFile
+                                          : Icons.Material.Filled.PlayArrow)">
+                    @if (_isUploading)
+                    {
+                        <MudProgressCircular Size="Size.Small"
+                                             Indeterminate="true"
+                                             Class="mr-2" Color="Color.Inherit"/>
+                        <span>Processando...</span>
+                    }
+
+                    else if (_validationSucceeded)
+                    {
+                        <span>Enviar Arquivo</span>
+                    }
+
+                    else
+                    {
+                        <span>Validar</span>
+                    }
+                </MudButton>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" md="8">
+            <MudPaper Elevation="0" Class="grid-card pa-6" Style="min-height: 310px">
+
+                <MudChip T="string" Color="@(_errorRows.Count > 0 ? Color.Error : Color.Info)" Class="mb-4">
+                        @_errorRows.Count @(_errorRows.Count > 1 || _errorRows.Count == 0 ? "erros" : "erro")
+                    </MudChip>
+
+                @if (_isUploading)
+                {
+                    <div class="loading-state">
+                        <MudProgressCircular Indeterminate="true" Size="Size.Large" Style="color: #005CA9" />
+                        <MudText Typo="Typo.body1">Validando...</MudText>
+                    </div>
+                }
+                else if (_relatorio is null)
+                {
+                    <div class="empty-state">
+                        <MudIcon Icon="@Icons.Material.Filled.Rule" Class="empty-icon" />
+                        <MudText Typo="Typo.h6">Sem validações para mostrar</MudText>
+                        <MudText Typo="Typo.body2">
+                            Selecione um arquivo para validar
+                        </MudText>
+                    </div>
+                }
+                else if (!_errorRows.Any())
+                {
+                    <div class="success-state">
+                        <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Class="success-icon"/>
+                        <MudText Typo="Typo.h6">Nenhum erro encontrado</MudText>
+                        <MudText Typo="Typo.body2">
+                            O arquivo foi processado com sucesso.
+                        </MudText>
+                    </div>
+                }
+                else
+                {
+                    <MudDataGrid T="ValidacaoErroGridRow"
+                                 Items="@_errorRows"
+                                 Dense="true"
+                                 Hover="true"
+                                 Striped="false"
+                                 Bordered="false"
+                                 SortMode="SortMode.Multiple"
+                                 Groupable="false"
+                                 RowClassFunc="@ErrorRowClassFunc"
+                                 Class="validation-grid">
+
+
+                        <Columns>
+                            <PropertyColumn Property="x => x.Linha"
+                                            Title="Linha"
+                                            Sortable="true"
+                                            Class="line-column" />
+
+                            <PropertyColumn Property="x => x.Mensagem"
+                                            Title="Mensagem"
+                                            Sortable="true" />
+                        </Columns>
+
+
+                    </MudDataGrid>
+                }
+
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+</MudContainer>
+
+<style>
+
+    .page-title {
+        color: #404b52;
+        font-weight: 600;
+        letter-spacing: .2px;
+    }
+
+    .upload-card,
+    .grid-card {
+        height: 100%;
+        border-radius: 28px;
+        background-color: #FFFFFF;
+        border: 1px solid #D0E0E3;
+        box-shadow: 0 18px 40px #D0E0E3;
+    }
+
+    .file-drop-zone {
+        display: block;
+        position: relative;
+        border: 2px dashed #6DBAFA;
+        background-color: #E5F1FC;
+        border-radius: 24px;
+        padding: 26px;
+        cursor: pointer;
+        transition: border-color 180ms ease, background-color 180ms ease, transform 180ms ease;
+        margin-bottom: 20px;
+    }
+
+        .file-drop-zone:hover {
+            border-color: #005CA9;
+            background-color: #D0F5FF;
+            transform: translateY(-2px);
+        }
+
+    .file-input {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .file-drop-content {
+        min-height: 150px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        text-align: center;
+    }
+
+    .file-drop-icon {
+        font-size: 50px;
+        color: #005CA9;
+    }
+
+    .file-drop-title {
+        color: #002A4D;
+        font-weight: 800;
+        font-size: 1rem;
+        word-break: break-word;
+    }
+
+    .file-drop-subtitle {
+        color: #64747A;
+        font-size: 0.9rem;
+    }
+
+    .validate-button {
+        min-height: 48px;
+        border-radius: 16px;
+        background: var(--mud-palette-primary);
+        color: #FFFFFF !important;
+        font-weight: 800;
+        text-transform: none;
+        box-shadow: 0 12px 28px #A0D2FC;
+    }
+
+        .validate-button:disabled {
+            background: #D0E0E3 !important;
+            color: #64747A !important;
+            box-shadow: none;
+        }
+
+    .error-row strong {
+        color: #B22C2C;
+    }
+
+    .validation-grid .validation-error-row {
+        background-color: #FBEBEB;
+    }
+
+        .validation-grid .validation-error-row td,
+        .validation-grid .validation-error-row .mud-table-cell {
+            background-color: #FBEBEB;
+            color: #661A1A;
+            border-bottom-color: #F0AFAF;
+        }
+
+            .validation-grid .validation-error-row td:first-child,
+            .validation-grid .validation-error-row .mud-table-cell:first-child {
+                border-left: 4px solid #D93636;
+            }
+
+        .validation-grid .validation-error-row:hover td,
+        .validation-grid .validation-error-row:hover .mud-table-cell {
+            background-color: #FFEAE5;
+            color: #661A1A;
+        }
+
+
+    .line-column {
+        color: #005CA9;
+        font-weight: 800;
+        width: 120px;
+    }
+
+    .loading-state,
+    .empty-state,
+    .success-state {
+        min-height: 100px;
+        border-radius: 24px;
+        border: 1px solid #D0E0E3;
+        background-color: #F7FAFA;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        text-align: center;
+        padding: 32px;
+        color: #64747A;
+    }
+
+    .empty-icon {
+        color: #6DBAFA;
+        font-size: 72px;
+    }
+
+    .success-icon {
+        color: #179231;
+        font-size: 72px;
+    }
+
+    .upload-card,
+    .grid-card {
+        border-radius: 22px;
+    }
+        
+</style>
+
+@code {
+    private const long MaxFileSize = 20 * 1024 * 1024;
+
+    private IBrowserFile? _selectedFile;
+    private bool _isUploading;
+    private bool _validationSucceeded;
+
+    private RelatorioDeValidacaoDto? _relatorio;
+    private List<ValidacaoErroGridRow> _errorRows = [];
+
+    private readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        Converters =
+        {
+            new JsonStringEnumConverter()
+        }
+    };
+
+    
+        private string ErrorRowClassFunc(ValidacaoErroGridRow row, int rowNumber)
+        {
+            return "validation-error-row";
+        }
+
+
+    private void OnFileSelected(InputFileChangeEventArgs args)
+    {
+        _selectedFile = args.File;
+        _relatorio = null;
+        _errorRows.Clear();
+        _validationSucceeded = false;
+    }
+
+    private async Task UploadAndValidateAsync()
+    {
+        if (_selectedFile is null)
+            return;
+
+        _isUploading = true;
+        _relatorio = null;
+        _errorRows.Clear();
+
+        try
+        {
+            using var response = await Service.ProcessarValidacaoAsync(_selectedFile);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorText = await response.Content.ReadAsStringAsync();
+
+                Snackbar.Add(
+                    $"A validação falhou: {(int)response.StatusCode}. {errorText}",
+                    Severity.Error);
+
+                return;
+            }
+
+            _relatorio = await response.Content.ReadFromJsonAsync<RelatorioDeValidacaoDto>(_jsonOptions);
+
+            _errorRows = BuildErrorRows(_relatorio);
+            _validationSucceeded = !_errorRows.Any();
+
+            Snackbar.Add(
+                _errorRows.Any()
+                    ? $"Validação processada com {_errorRows.Count} {(_errorRows.Count > 1 ? "erros" : "erro")}."
+                    : "Arquivo validado com sucesso.",
+                _errorRows.Any() ? Severity.Error : Severity.Success);
+        }
+        catch (IOException)
+        {
+            Snackbar.Add(
+                $"Arquivo excede limite de {FormatFileSize(MaxFileSize)}.",
+                Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao validar arquivo: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isUploading = false;
+        }
+    }
+
+
+    private async Task PrimaryButtonClickedAsync()
+    {
+        if (_validationSucceeded)
+            await UploadValidFileAsync();
+        else
+            await UploadAndValidateAsync();
+    }
+
+    private async Task UploadValidFileAsync()
+    {
+        if (_selectedFile is null)
+            return;
+
+        _isUploading = true;
+
+        try
+        {
+            using var response = await Service.UploadArquivoValidadoAsync(_selectedFile);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorText = await response.Content.ReadAsStringAsync();
+
+                Snackbar.Add(
+                    $"Upload falhou. Status: {(int)response.StatusCode}. {errorText}",
+                    Severity.Error);
+
+                return;
+            }
+
+            Snackbar.Add("Arquivo salvo com sucesso.", Severity.Success);
+
+            _selectedFile = null;
+            _relatorio = null;
+            _errorRows.Clear();
+            _validationSucceeded = false;
+        }
+        catch (IOException)
+        {
+            Snackbar.Add(
+                $"Arquivo excede tamanho máximo suportado de {FormatFileSize(MaxFileSize)}.",
+                Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao salvar arquivo: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isUploading = false;
+        }
+    }
+
+
+    private static List<ValidacaoErroGridRow> BuildErrorRows(RelatorioDeValidacaoDto? relatorio)
+    {
+        if (relatorio?.Itens is null)
+            return [];
+
+        return relatorio.Itens
+            .Where(item => item.Ocorrencias is not null)
+            .SelectMany(item => item.Ocorrencias!
+                .Where(ocorrencia => ocorrencia.Gravidade == Gravidade.Erro)
+                .Select(ocorrencia => new ValidacaoErroGridRow
+                {
+                    Linha = item.Linha,
+                    Mensagem = ocorrencia.Mensagem
+                }))
+            .OrderBy(row => row.Linha)
+            .ThenBy(row => row.Mensagem)
+            .ToList();
+    }
+
+    private static string FormatFileSize(long bytes)
+    {
+        if (bytes < 1024)
+            return $"{bytes} B";
+
+        if (bytes < 1024 * 1024)
+            return $"{bytes / 1024d:N1} KB";
+
+        return $"{bytes / 1024d / 1024d:N1} MB";
+    }
+
+    private sealed class ValidacaoErroGridRow
+    {
+        public int Linha { get; set; }
+        public string Mensagem { get; set; } = string.Empty;
+    }
+
+    private sealed class RelatorioDeValidacaoDto
+    {
+        public string? NomeDoArquivo { get; set; }
+        public DateTime? DataLeitura { get; set; }
+        public List<ItemRelatorioDto>? Itens { get; set; }
+    }
+
+    private sealed class ItemRelatorioDto
+    {
+        public int Linha { get; set; }
+        public List<OcorrenciaValidacaoDto>? Ocorrencias { get; set; }
+    }
+
+    private sealed class OcorrenciaValidacaoDto
+    {
+        public string Mensagem { get; set; } = string.Empty;
+        public Gravidade Gravidade { get; set; }
+        public string? FonteOcorrencia { get; set; }
+    }
+
+    public enum Gravidade
+    {
+        Alerta,
+        Erro,
+        Ok
+    }
+
+    public enum TipoCampo
+    {
+        Texto,
+        Numero,
+        Data
+    }
+
+    public enum RegraPreenchimento
+    {
+        Opcional,
+        Obrigatorio
+    }
+}

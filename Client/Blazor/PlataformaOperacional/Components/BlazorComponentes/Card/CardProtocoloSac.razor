@@ -1,0 +1,27 @@
+﻿@page "/cardcomponent"
+
+
+<MudCard Elevation="1" Class="px-4 py-2 my-4" Style="background:#EFF5F6">
+	<MudLink> @Titulo</MudLink>
+	<MudText Typo="Typo.body1"> Id: @Id</MudText>
+	<MudText Typo="Typo.body1"> Enviado: @DataEnvio </MudText>
+	<MudText Typo="Typo.body1"> Status: @Status </MudText>
+	<MudItem  Class="d-flex justify-end">
+		<MudButton Class="btn-caixa-small" Color="Color.Secondary">Reabrir</MudButton>
+		<MudButton Class="btn-caixa-small" Color="Color.Secondary">Avaliar</MudButton>
+	</MudItem>	
+</MudCard>
+
+
+@code {
+	[Parameter]
+	public string Id { get; set; } = "";
+	[Parameter]
+	public DateTime DataEnvio { get; set; } 
+	[Parameter]
+	public string Titulo { get; set; } = "";
+	[Parameter]
+	public string Status { get; set; } = "";
+
+	
+}

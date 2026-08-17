@@ -1,0 +1,555 @@
+﻿@page "/ConsultaCrf"
+@using MudBlazor
+@using System.Collections.Generic
+@using System.Linq
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+@inject CRFService CRFService
+@using MudBlazor.Utilities
+
+<MudThemeProvider Theme="DSCtheme" />
+
+<MudPaper Class="rounded-xl pa-8" Style="background-color:#f7fAfa;">
+    <MudStack Spacing="3">
+        <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+            <MudText Typo="Typo.h5" Style="font-weight:500">CRF - Regularidade FGTS</MudText>
+            <MudTooltip Text="@_textoTooltip"
+                        Delay="0"
+                        Disabled="!_consultaDesabilitada">
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Refresh"
+                           Style="border-radius:12px; padding:10px 28px; font-weight:600;"
+                           Disabled="_consultaDesabilitada"
+                           OnClick="() => IniciarAutomacaoCRF()">
+                    @if (_processando)
+                    {
+                        @("Aguarde")
+                        <MudProgressCircular Class="ml-2" Indeterminate Size="Size.Small" Color="Color.Inherit" />
+                    }
+                    else
+                        @("Atualizar")
+                </MudButton>
+            </MudTooltip>
+
+        </MudStack>
+        <br />
+        <MudGrid>
+            <MudItem xs="12" md="4">
+                <MudCard Style="border-radius:20px; background:#E5F1FC; box-shadow: 0 12px 32px rgba(0, 67, 122,0.2);">
+                    <MudCardContent>
+                        <MudStack Spacing="1">
+                            <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                <MudText Typo="Typo.subtitle2" Color="Color.Primary" Style="font-weight:600; letter-spacing:1.5px;">
+                                    TOTAL
+                                </MudText>
+                                <MudIcon Icon="@Icons.Material.Filled.Domain" Color="Color.Primary" Size="Size.Large" Style="fill: var(--mud-palette-primary) !important" />
+                            </MudStack>
+                            <MudText Typo="Typo.h3" Style="color:#00437A;"><strong>@_totalConsultas</strong></MudText>
+                            <MudText Typo="Typo.body2" Style="color:#00437A;">Total de consultas</MudText>
+                            <MudProgressLinear Value="100" Size="Size.Medium" Color="Color.Primary" Class="mt-3" />
+                        </MudStack>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudCard Style="border-radius:20px; background:#e7f4ea; box-shadow:0 12px 32px rgba(140,35,35,0.2);">
+                    <MudCardContent>
+                        <MudStack Spacing="1">
+                            <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                <MudText Typo="Typo.subtitle2" Color="Color.Success" Style="font-weight:600; letter-spacing:1.5px;">
+                                    REGULAR
+                                </MudText>
+                                <MudIcon Icon="@Icons.Material.Filled.Verified" Color="Color.Success" Size="Size.Large" Style="fill: var(--mud-palette-success) !important" />
+                            </MudStack>
+                            <MudText Typo="Typo.h3" Style="color:#0d581c;">
+                                @if (_consultaPendente)
+                                {
+                                    <MudTooltip Text="Atualize as consultas.">
+                                        <MudIcon Icon="@Icons.Material.Filled.QuestionMark" Style="font-size: 46px" />
+                                    </MudTooltip>
+                                }
+                                else
+                                {
+                                    <strong>@(_totalRegulares + _totalRegularesIJ + _totalRegularesRT)</strong>
+                                }
+                            </MudText>
+                            <MudText Typo="Typo.body2" Style="color:#0d581c;">Tomadores com CRF regular</MudText>
+                            <MudProgressLinear Value="@_porcentagemRegulares" Color="Color.Success" Size="Size.Medium" Class="mt-3" Style="background-color: #e7f4ea;" />
+                        </MudStack>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudCard Style="border-radius:20px; background: #fbebeb; box-shadow:0 12px 32px rgba(229,57,53,0.2);">
+                    <MudCardContent>
+                        <MudStack Spacing="1">
+                            <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                                <MudText Typo="Typo.subtitle2" Color="Color.Error" Style="font-weight:600; letter-spacing:1.5px;">
+                                    IRREGULAR
+                                </MudText>
+                                <MudIcon Icon="@Icons.Material.Filled.Report" Color="Color.Error" Size="Size.Large" Style="fill: var(--mud-palette-error) !important" />
+                            </MudStack>
+                            <MudText Typo="Typo.h3" Style="color:#8c2323;">
+                                @if (_consultaPendente)
+                                {
+                                    <MudTooltip Text="Atualize as consultas.">
+                                        <MudIcon Icon="@Icons.Material.Filled.QuestionMark" Style="font-size: 46px" />
+                                    </MudTooltip>
+                                }
+                                else
+                                {
+                                    <strong>@_totalIrregulares</strong>
+                                }
+                            </MudText>
+                            <MudText Typo="Typo.body2" Style="color:#8c2323;">Tomadores com CRF irregular</MudText>
+                            <MudProgressLinear Value="@_porcentagemIrregulares" Color="Color.Error" Size="Size.Medium" Class="mt-3" Style="background-color: #fbebeb" />
+                        </MudStack>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        </MudGrid>
+
+        <MudPaper Class="rounded-xl pa-8" Elevation="0" Style="background-color:#f7fAfa; box-shadow:0 18px 36px rgba(15,23,42,0.12); border:1px solid rgba(124,124,205,0.2);">
+            <MudStack Spacing="2">
+                <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                    <MudText Style="font-color: white !important" Typo="Typo.h6"><strong>Lista de consultas</strong></MudText>
+                    <MudChip T="String" Color="Color.Info" Variant="Variant.Outlined" Style="font-weight:600;">
+                        Data: @if (_dataConsulta.HasValue) @_dataConsulta.Value.ToString("dd/MM/yyyy")
+                        <MudTooltip Text="Ver consultas anteriores" ShowOnFocus="false">
+                            <MudIconButton OnClick="AlterarDataConsulta"
+                                           Size="Size.Small"
+                                           Color="Color.Info"
+                                           Icon="@Icons.Material.Filled.Edit"
+                                           Class="ml-2" />
+                        </MudTooltip>
+                    </MudChip>
+                </MudStack>
+                <br />
+                <MudDataGrid QuickFilter="_quickFilter"
+                             T="ConsultaCrfLista"
+                             Items="_consultasCrfLista"
+                             Loading="_carregandoDados"
+                             Hover
+                             Dense
+                             Elevation="0"
+                             Style="border-radius:16px; font-weight:600;">
+                    <ToolBarContent>
+                        <MudTextField @bind-Value="_searchString"
+                                      Placeholder="Preencha para filtrar"
+                                      Label="Pesquisar"
+                                      Variant="Variant.Text"
+                                      Adornment="Adornment.Start"
+                                      Immediate="true"
+                                      AdornmentIcon="@Icons.Material.Filled.Search"
+                                      Underline="false"
+                                      AdornmentColor="Color.Primary"
+                                      IconSize="Size.Medium"
+                                      Class="mt-4 mb-4 pb-8"
+                                      Style="border-radius:16px; width: 50%">
+                        </MudTextField>
+                    </ToolBarContent>
+                    <Columns>
+                        <PropertyColumn Property="x => x.CoTomador" Title="Código" Style="font-weight:600;" CellStyle="font-weight:400;" />
+                        <PropertyColumn Property="x => x.NoTomador" Title="Tomador" Style="font-weight:600;" CellStyle="font-weight:400;" />
+                        <TemplateColumn Title="CNPJ">
+                            <CellTemplate>
+                                <MudText Typo="Typo.body2" Style="font-weight:400;">
+                                    @FormatarCNPJ(context.Item.CoCgc)
+                                </MudText>
+                            </CellTemplate>
+                        </TemplateColumn>
+                        <TemplateColumn Title="Vigência">
+                            <CellTemplate>
+                                @if (context?.Item != null)
+                                {
+                                    var regularidade = context.Item.IcRegularidade ?? string.Empty;
+                                    var vigente = context.Item.IcVigencia ?? string.Empty;
+                                    var vigencia = context.Item.DtVigencia;
+
+                                    if (String.IsNullOrEmpty(regularidade))
+                                    {
+                                        <MudChip Color="Color.Default" Variant="Variant.Outlined" Style="font-weight:600; min-width:90px; border-radius:12px;">
+                                            <MudText Typo="Typo.body2" Style="font-weight:600">A verificar</MudText>
+                                        </MudChip>
+                                    }
+                                    else if (vigente.Equals("VIGENTE", _sc))
+                                    {
+                                        <MudChip Color="Color.Success" Variant="Variant.Outlined" Style="font-weight:600; min-width:90px; border-radius:12px;">
+                                            Vigente
+                                        </MudChip>
+                                    }
+                                    else if (vigente.Equals("VENCIDO", _sc))
+                                    {
+                                        <MudChip Color="Color.Error" Variant="Variant.Outlined" Style="font-weight:600; min-width:90px; border-radius:12px;">
+                                            Vencido
+                                        </MudChip>
+                                    }
+                                    else
+                                    {
+                                        <MudChip Color="Color.Default" Variant="Variant.Outlined" Style="font-weight:600; min-width:90px; border-radius:12px;">
+                                            @if (@String.IsNullOrWhiteSpace(vigente))
+                                            {
+                                                @("A Verificar")
+                                            }
+                                            else
+                                                @(char.ToUpper(vigente[0]) + vigente.Substring(1).ToLower())
+                                        </MudChip>
+                                    }
+                                }
+                            </CellTemplate>
+                        </TemplateColumn>
+                        <TemplateColumn Title="Situação" Class="justify-center">
+                            <CellTemplate>
+                                @if (context?.Item != null)
+                                {
+                                    var regularidade = context.Item.IcRegularidade ?? string.Empty;
+                                    var vigencia = context.Item.DtVigencia;
+
+                                    if (regularidade.Equals("REGULAR", _sc))
+                                    {
+                                        string textoToolTip = regularidade;
+
+                                        string textoToolTipFormatado = string.IsNullOrWhiteSpace(textoToolTip)
+                                        ? ""
+                                        : char.ToUpper(textoToolTip[0]) + textoToolTip.Substring(1).ToLower();
+
+                                        <MudStack Row Justify="Justify.Center" AlignItems="AlignItems.Center">
+                                            <MudTooltip Text="@textoToolTipFormatado" Class="justify-center">
+                                                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Class="align-self-center" Style="font-size:26px;" />
+                                            </MudTooltip>
+                                        </MudStack>
+                                    }
+                                    else if (regularidade.Equals("IRREGULAR", _sc))
+                                    {
+                                        string textoToolTip = regularidade;
+
+                                        string textoToolTipFormatado = string.IsNullOrWhiteSpace(textoToolTip)
+                                        ? ""
+                                        : char.ToUpper(textoToolTip[0]) + textoToolTip.Substring(1).ToLower();
+
+                                        <MudStack Row Justify="Justify.Center" AlignItems="AlignItems.Center">
+                                            <MudTooltip Text="@textoToolTipFormatado" Class="justify-center">
+                                                <MudIcon Icon="@Icons.Material.Filled.ReportProblem" Color="Color.Error" Style="font-size:26px;" />
+                                            </MudTooltip>
+                                        </MudStack>
+                                    }
+                                    else if (regularidade.Contains("REGULAR", _sc) && regularidade.Contains("IJ", _sc))
+                                    {
+                                        <MudStack Row Justify="Justify.Center" AlignItems="AlignItems.Center">
+                                            <MudTooltip Text="Regularidade por Instrumento Judicial" Class="justify-center">
+                                                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Info" Style="font-size:26px;" />
+                                            </MudTooltip>
+                                        </MudStack>
+                                    }
+                                    else if (regularidade.Contains("REGULAR", _sc) && regularidade.Contains("RT", _sc))
+                                    {
+                                        <MudStack Row Justify="Justify.Center" AlignItems="AlignItems.Center">
+                                            <MudTooltip Text="Regularidade temporária" Class="justify-center">
+                                                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Info" Style="font-size:26px;" />
+                                            </MudTooltip>
+                                        </MudStack>
+                                    }
+                                    else
+                                    {
+                                        string textoToolTip = regularidade;
+                                        string textoToolTipFormatado = string.IsNullOrWhiteSpace(textoToolTip)
+                                        ? ""
+                                        : char.ToUpper(textoToolTip[0]) + textoToolTip.Substring(1).ToLower();
+                                        <MudStack Row Justify="Justify.Center" AlignItems="AlignItems.Center">
+                                            <MudTooltip Text="@textoToolTipFormatado" Class="justify-center">
+                                                <MudIcon Icon="@Icons.Material.Filled.QuestionMark" Color="Color.Default" Style="font-size:26px;" />
+                                            </MudTooltip>
+                                        </MudStack>
+                                    }
+                                }
+                            </CellTemplate>
+                        </TemplateColumn>
+
+                        <TemplateColumn>
+                            <CellTemplate>
+                                <MudTooltip Text="Consultar">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Search"
+                                                   Color="Color.Primary"
+                                                   OnClick="@(() => ExpandirDetalhes(context.Item))" />
+                                </MudTooltip>
+                            </CellTemplate>
+                        </TemplateColumn>
+                    </Columns>
+                    <NoRecordsContent>
+                        <MudAlert Severity="Severity.Warning">Nenhuma consulta encontrada para a data @_dataConsulta!.Value.ToString("dd/MM/yyyy").</MudAlert>
+                    </NoRecordsContent>
+                </MudDataGrid>
+
+                @if (_alterandoData)
+                {
+                    <MudDatePicker @ref="_mudDatePicker"
+                                   PickerVariant="PickerVariant.Dialog"
+                                   Date="@_dataConsulta"
+                                   DateChanged="@DataAlterada"
+                                   PickerClosed="AlteracaoCancelada"
+                                   IsDateDisabledFunc="@((DateTime dt)=>((int)dt.DayOfWeek == 0 || (int)dt.DayOfWeek == 6) || dt > DateTime.Today)"
+                                   Adornment="Adornment.None"
+                                   ShowToolbar="false">
+                        <PickerActions>
+                            <MudButton OnClick="@(() => _mudDatePicker.CloseAsync(false))">Cancelar</MudButton>
+                            <MudButton Color="Color.Primary" OnClick="@(() => _mudDatePicker.CloseAsync())">Alterar Data</MudButton>
+                        </PickerActions>
+                    </MudDatePicker>
+                }
+            </MudStack>
+        </MudPaper>
+    </MudStack>
+</MudPaper>
+
+<style>
+    .mud-table .mud-table-toolbar {
+        background: white !important;
+        border-top-left-radius: 16px;
+        border-top-right-radius: 16px;
+    }
+</style>
+
+@code {
+
+    private DateTime? _dataConsulta = DateTime.Today;
+    private MudDatePicker _mudDatePicker = new();
+    private bool _alterandoData = false;
+    private int _totalConsultas;
+    private int _totalRegulares;
+    private int _totalRegularesIJ;
+    private int _totalRegularesRT;
+    private int _totalIrregulares;
+    private double _porcentagemRegulares;
+    private double _porcentagemIrregulares;
+    private bool _consultaPendente = true;
+    private string _searchString = string.Empty;
+    private string _senhaCriptografada = "";
+    private bool _processando = false;
+    private bool _carregandoDados = true;
+    private bool _consultaDesabilitada = false;
+    private string _textoTooltip = string.Empty;
+    private StringComparison _sc = StringComparison.OrdinalIgnoreCase;
+    private ConsultaCrf _consultaCrf = new();
+    private List<ConsultaCrfLista> _consultasCrfLista = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _carregandoDados = true;
+        var response = await CRFService.ConsultarCrfAtual();
+        _consultaCrf = await HttpResponseHandler.ResponseHandler<ConsultaCrf>(response, Snackbar) ?? throw new ArgumentNullException("Consulta sem retorno de dados.");
+        _consultasCrfLista = _consultaCrf.ConsultasAtuais.ToList();
+        _carregandoDados = false;
+        _consultaDesabilitada = !_consultaCrf.BotaoExecutar;
+        if (_consultaDesabilitada) { _textoTooltip = "Consulta já realizada."; }
+        if (_consultasCrfLista is not null) AtualizaTotalizadores(_consultaCrf.ConsultasAtuais.Where(c => c is not null).ToList());
+    }
+
+    private async Task ConsultarCrfAnteriores(DateTime? dataConsulta)
+    {
+        _carregandoDados = true;
+        var response = await CRFService.ConsultarCrfAnteriores(dataConsulta);
+        _consultaCrf = await HttpResponseHandler.ResponseHandler<ConsultaCrf>(response, Snackbar) ?? throw new ArgumentNullException("Consulta sem retorno de dados.");
+        _consultasCrfLista = _consultaCrf.ConsultasAtuais.ToList();
+        _carregandoDados = false;
+        _consultaDesabilitada = !_consultaCrf.BotaoExecutar;
+        if (_consultaDesabilitada) { _textoTooltip = "Consulta não permitida para essa data."; }
+        AtualizaTotalizadores(_consultaCrf.ConsultasAtuais.Where(c => c is not null).ToList());
+    }
+
+    private async Task IniciarAutomacaoCRF()
+    {
+        if (_processando) return;
+
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+        var parameters = new DialogParameters<BoxSenha>
+        {
+            { x => x.Title, "Consultar CRF" }
+        };
+        var dialog = await DialogService.ShowAsync<BoxSenha>("", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false })
+        {
+            if(result.Data is null)
+            {
+                _processando = false;
+                throw new ArgumentNullException("Dados inválidos.");
+            }
+
+            _senhaCriptografada = result.Data.ToString() ?? string.Empty;
+
+            _processando = true;
+            StateHasChanged();
+            var response = await CRFService.RealizarOperacaoCrf(new SenhaUsuario(_senhaCriptografada));
+            await HttpResponseHandler.ResponseHandler(response, Snackbar);
+            _processando = false;
+            await OnInitializedAsync();
+        }
+    }
+
+    private void AtualizaTotalizadores(List<ConsultaCrfLista> consultas)
+    {
+        _consultaPendente = true;
+
+        _totalConsultas = consultas.Count();
+
+        _totalRegulares = consultas.Count(c =>
+            !string.IsNullOrWhiteSpace(c.IcRegularidade) &&
+            string.Equals(c.IcRegularidade, "REGULAR", _sc));
+
+        _totalRegularesIJ = consultas.Count(c =>
+            !string.IsNullOrWhiteSpace(c.IcRegularidade) &&
+            c.IcRegularidade.Contains("REGULAR") && c.IcRegularidade.Contains("IJ"));
+
+        _totalRegularesRT = consultas.Count(c =>
+            !string.IsNullOrWhiteSpace(c.IcRegularidade) &&
+            c.IcRegularidade.Contains("REGULAR") && c.IcRegularidade.Contains("RT"));
+
+        _totalIrregulares = consultas.Count(c =>
+            !string.IsNullOrWhiteSpace(c.IcRegularidade) &&
+            string.Equals(c.IcRegularidade, "IRREGULAR", _sc));
+
+        _porcentagemRegulares = _totalConsultas == 0
+            ? 0
+            : Math.Round((double)_totalRegulares / _totalConsultas * 100, 2);
+
+        _porcentagemIrregulares = _totalConsultas == 0
+            ? 0
+            : Math.Round((double)_totalIrregulares / _totalConsultas * 100, 2);
+
+        if (_totalRegulares > 0 || _totalIrregulares > 0 || _totalRegularesIJ > 0)
+        {
+            _consultaPendente = false;
+        }
+    }
+
+    private async void AlterarDataConsulta()
+    {
+        _alterandoData = true;
+        await InvokeAsync(StateHasChanged);
+        await Task.Delay(50);
+        if (_mudDatePicker != null)
+        {
+            await _mudDatePicker.ToggleOpenAsync();
+        }
+    }
+
+    private async Task DataAlterada(DateTime? data)
+    {
+        _dataConsulta = data;
+
+        if (_dataConsulta == DateTime.Today)
+        {
+            await OnInitializedAsync();
+        }
+        else
+        {
+            await ConsultarCrfAnteriores(_dataConsulta);
+        }
+
+        _alterandoData = false;
+        _searchString = string.Empty;
+    }
+
+    private void AlteracaoCancelada() => _alterandoData = false;
+
+    protected Task ExpandirDetalhes(ConsultaCrfLista consulta)
+    {
+        var parameters = new DialogParameters
+            {
+                { nameof(CRFDialog.ConsultaCRF), consulta }
+            };
+
+        var options = new DialogOptions
+            {
+                CloseButton = true,
+                MaxWidth = MaxWidth.Small,
+                FullWidth = true
+            };
+
+        return DialogService.ShowAsync<CRFDialog>("Detalhes Adicionais", parameters, options);
+    }
+
+    protected string FormatarCNPJ(string cnpj)
+    {
+        if (string.IsNullOrWhiteSpace(cnpj))
+        {
+            return cnpj;
+        }
+
+        if (cnpj.Length == 14 && ulong.TryParse(cnpj, out var cnpjNumerico))
+        {
+            return cnpjNumerico.ToString(@"00\.000\.000\/0000\-00");
+        }
+
+        return cnpj;
+    }
+
+    private Func<ConsultaCrfLista, bool> _quickFilter => x =>
+    {
+        if (string.IsNullOrWhiteSpace(_searchString))
+            return true;
+
+        if (x.CoTomador.Contains(_searchString, _sc))
+            return true;
+
+        if (x.CoCgc.Contains(_searchString, _sc))
+            return true;
+
+        if (x.NoTomador.Contains(_searchString, _sc))
+            return true;
+
+        if (x.IcVigencia is not null && x.IcVigencia.Contains(_searchString, _sc))
+            return true;
+
+        if ("Vencendo".Contains(_searchString, _sc))
+            return true;
+
+        return false;
+    };
+
+    public static MudTheme DSCtheme = new MudTheme
+        {
+            PaletteLight = new PaletteLight
+            {
+                //Azul
+                Primary = "#005CA9", //Primary 90
+                PrimaryDarken = "#00437A", //Primary 110
+                PrimaryLighten = "#2D8AD8", //Primary 70
+                //Laranja
+                Secondary = "#d87b00", //Secondary 90
+                SecondaryDarken = "#a65e00", //Secondary 110
+                SecondaryLighten = "#f39200", //Secondary 70
+                //Turquesa
+                Tertiary = "#54bbab", //Tertiary 70
+                TertiaryDarken = "#359485", //Tertiary 90
+                TertiaryLighten = "#81d6c8", //Tertiary 50
+                //Cinza
+                GrayDefault = "#d0e0e3", //50
+                GrayDark = "#9eb2b8", //70
+                GrayDarker = "#64747a", //90
+                GrayLight = "#eBf1f2", //30
+                GrayLighter = "#f7fAfa", //10
+                //Branco
+                White = "#FFFFFF",
+                //Positive
+                Success = "#127527", //90
+                SuccessDarken = "#0d581c", //110
+                SuccessLighten = "#179231", //70
+                //Attention
+                Warning = "#ca9804", //90
+                WarningDarken = "#977203", //110
+                WarningLighten = "#fcbe05", //70
+                //Negative
+                Error = "#b22c2c", //90
+                ErrorDarken = "#8c2323", //110
+                ErrorLighten = "#d93636", //70
+                //Informative
+                Info = "#038299", //90
+                InfoDarken = "#026173", //110
+                InfoLighten = "#04a2bf", //70
+            },
+        };
+}

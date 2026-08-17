@@ -1,0 +1,70 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Components\BlazorComponentes\Table\**" />
+    <Content Remove="Components\BlazorComponentes\Table\**" />
+    <EmbeddedResource Remove="Components\BlazorComponentes\Table\**" />
+    <None Remove="Components\BlazorComponentes\Table\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Remove="Model\CentralPermissoes\Unidade.json" />
+    <Content Remove="Pages\Cobranca\ControleDataComponente.razor" />
+    <Content Remove="Pages\SAC\BackLogPage.razor" />
+    <Content Remove="Pages\SAC\EmptyLayout.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Model\CentralPermissoes\Unidade.json" />
+  </ItemGroup>
+
+	<PropertyGroup>
+		<NullabilityInfoContextSupport>true</NullabilityInfoContextSupport>
+	</PropertyGroup>
+
+	<ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authorization" Version="9.0.3" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Authorization" Version="8.0.14" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="8.0.3" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="8.0.3" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.3.0" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.9" />
+    <PackageReference Include="MudBlazor" Version="9.4.0" />
+    <PackageReference Include="Flunt" Version="2.0.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Pages\Cobranca\Amortizacao\AmortizacaoCaixaCardComponent.razor" />
+    <None Include="Pages\SAC\BackLogPage.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <UpToDateCheckInput Remove="Pages\SAC\EmptyLayout.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="Pages\SAC\BackLogPage.razor" />
+    <_ContentIncludedByDefault Remove="Pages\SAC\EmptyLayout.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <UpToDateCheckInput Remove="Pages\SAC\BackLogPage.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Caminhos ajustados: no CAD, Modulos.Client e Plataforma.UI.Shared ficam
+         direto na raiz (não dentro de uma pasta "Api" como no Julho26 original). -->
+    <ProjectReference Include="..\..\..\Modulos.Client\PlataformaNotificacao.UI\PlataformaNotificacao.UI.csproj" />
+    <ProjectReference Include="..\..\..\Modulos.Client\ControleAnaliseDesembolso\ControleAnaliseDesembolso.csproj" />
+    <ProjectReference Include="..\..\..\Plataforma.UI.Shared\Plataforma.UI.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

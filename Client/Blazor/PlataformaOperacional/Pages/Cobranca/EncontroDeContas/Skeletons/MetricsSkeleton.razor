@@ -1,0 +1,76 @@
+@*
+    MetricsSkeleton
+    ---------------------------------------------------------------
+    Placeholder visual do MetricsPanel enquanto o Controle está
+    em estado Idle/Loading/Failure-sem-lastGood.
+
+    Uso:
+        <MetricsSkeleton />
+        <MetricsSkeleton CardCount="4" />
+*@
+
+<div class="mt-skel" role="status" aria-busy="true" aria-label="Carregando métricas">
+
+    @for (int i = 0; i < CardCount; i++)
+    {
+        <div class="mt-skel__card">
+            <div class="mt-skel__header">
+                <div class="mt-skel__icon shimmer"></div>
+                <div class="mt-skel__label shimmer"></div>
+            </div>
+            <div class="mt-skel__value shimmer"></div>
+            <div class="mt-skel__footer shimmer"></div>
+        </div>
+    }
+
+</div>
+
+<style>
+    .mt-skel {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+        margin: 12px 0;
+    }
+
+    .mt-skel__card {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 16px;
+        background: var(--mud-palette-surface, #fff);
+        border: 1px solid var(--mud-palette-lines-default, #e0e0e0);
+        border-radius: 8px;
+        min-height: 120px;
+    }
+
+    .mt-skel__header { display: flex; align-items: center; gap: 10px; }
+
+    .mt-skel__icon  { width: 28px; height: 28px; border-radius: 6px; flex-shrink: 0; }
+    .mt-skel__label { height: 12px; flex: 1; max-width: 140px; border-radius: 4px; }
+    .mt-skel__value { height: 32px; width: 72%; border-radius: 6px; }
+    .mt-skel__footer{ height: 10px; width: 45%; border-radius: 4px; }
+
+    .mt-skel .shimmer {
+        background: linear-gradient(
+            90deg,
+            rgba(0,0,0,0.06) 0%,
+            rgba(0,0,0,0.12) 50%,
+            rgba(0,0,0,0.06) 100%);
+        background-size: 200% 100%;
+        animation: mt-skel-shimmer 1.4s ease-in-out infinite;
+    }
+
+    @@keyframes mt-skel-shimmer {
+        0%   { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+</style>
+
+@code {
+    /// <summary>
+    /// Quantos cards de métrica simular. Default 3
+    /// (alinhado com Reaberturas, Condicionais, DRP).
+    /// </summary>
+    [Parameter] public int CardCount { get; set; } = 3;
+}

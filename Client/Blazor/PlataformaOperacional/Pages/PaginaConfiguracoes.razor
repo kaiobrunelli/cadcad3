@@ -1,0 +1,16 @@
+﻿@page "/Config"
+@inject PlataformaService PlataformaService
+@inject SignalRService SignalRService
+<h3>Configurações Plataforma</h3>
+
+<MudPaper Class="pa-6 m-8" Elevation="25">
+	@foreach (var item in PlataformaService.ConsultarBaseAddres())
+	{
+		<MudText><b>@item.Key</b> : @item.Value</MudText>
+	}
+	<MudText>Base Adress SignalR : @SignalRService._baseAdress</MudText>
+</MudPaper>
+
+@code {
+
+}

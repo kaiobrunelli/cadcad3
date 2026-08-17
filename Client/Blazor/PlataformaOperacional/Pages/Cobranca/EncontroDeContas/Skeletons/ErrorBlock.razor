@@ -1,0 +1,74 @@
+@*
+    ErrorBlock
+    ---------------------------------------------------------------
+    Fallback visual para quando uma carga falha e NÃO há valor
+    anterior para mostrar (primeira carga falhada).
+
+    Apresenta mensagem + botão de retry.
+
+    Uso:
+        <ErrorBlock Message="@ex.Message" OnRetry="ReloadControle" />
+*@
+
+<div class="err-block" role="alert">
+    <div class="err-block__icon">!</div>
+    <div class="err-block__body">
+        <div class="err-block__title">@Title</div>
+        <div class="err-block__message">@Message</div>
+    </div>
+    @if (OnRetry.HasDelegate)
+    {
+        <button type="button" class="err-block__retry" @onclick="OnRetry">
+            Tentar novamente
+        </button>
+    }
+</div>
+
+<style>
+    .err-block {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        border-radius: 8px;
+        border: 1px solid var(--mud-palette-error, #d32f2f);
+        background: var(--mud-palette-error-lighten, rgba(211, 47, 47, 0.08));
+        margin: 12px 0;
+    }
+
+    .err-block__icon {
+        width: 32px; height: 32px;
+        border-radius: 50%;
+        background: var(--mud-palette-error, #d32f2f);
+        color: #fff;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: bold;
+        flex-shrink: 0;
+    }
+
+    .err-block__body    { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+    .err-block__title   { font-weight: 600; color: var(--mud-palette-error, #d32f2f); }
+    .err-block__message { font-size: 0.875rem; color: var(--mud-palette-text-primary, #333); }
+
+    .err-block__retry {
+        padding: 8px 16px;
+        border-radius: 6px;
+        border: 1px solid var(--mud-palette-error, #d32f2f);
+        background: transparent;
+        color: var(--mud-palette-error, #d32f2f);
+        cursor: pointer;
+        font-weight: 500;
+        transition: background 0.15s;
+    }
+
+    .err-block__retry:hover {
+        background: var(--mud-palette-error, #d32f2f);
+        color: #fff;
+    }
+</style>
+
+@code {
+    [Parameter] public string Title   { get; set; } = "Falha ao carregar";
+    [Parameter] public string Message { get; set; } = "Ocorreu um erro inesperado.";
+    [Parameter] public EventCallback OnRetry { get; set; }
+}

@@ -1,0 +1,21 @@
+﻿<MudDialog>
+    <TitleContent>
+        <MudStack Row="true">
+            <MudText>Atenção<MudIcon Icon="@Icons.Material.Filled.PriorityHigh" Class="align-self-center" Size="Size.Small" Color="Color.Error"></MudIcon></MudText>
+        </MudStack>
+        A finalização do contrato será revertida. Confirma?
+    </TitleContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancelar</MudButton>
+        <MudButton Color="Color.Secondary" OnClick="Submit">Confirmar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(true));
+
+    private void Cancel() => MudDialog.Cancel();
+}

@@ -1,0 +1,289 @@
+﻿@using PlataformaOperacional.Model.DesembososModel
+@inject DesembolsosService Service
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="2">
+            <MudText Typo="Typo.h6" Style="font-weight:700; color:#22292e;">
+                @("Contrato " + Desembolso.NuContrato + '-' + Desembolso.NuContratoDv)
+
+                @if (Desembolso != null)
+                {
+                    string situacao = Desembolso.Situacao 
+                        ?? throw new NullReferenceException("Não foi possível identificar a situação do desembolso.");
+
+                    if (situacao.Contains("Pendente", _sc))
+                    {
+                        <MudChip Color="Color.Info" T="string" Variant="Variant.Filled" Style="font-weight:600;">
+                            Pendente
+                        </MudChip>
+                    }
+                    else if (situacao.Contains("Lancado", _sc))
+                    {
+                        <MudChip Color="Color.Info" T="string" Variant="Variant.Filled" Style="font-weight:600;">
+                            Lançada
+                        </MudChip>
+                    }
+                    else if (situacao.Contains("DrpBaixada", _sc))
+                    {
+                        <MudChip T="string" Color="Color.Success" Variant="Variant.Filled" Style="font-weight:600;">
+                            Finalizada
+                        </MudChip>
+                    }
+                    else if (situacao.Contains("Erro", _sc))
+                    {
+                        <MudChip T="string" Color="Color.Error" Variant="Variant.Filled" Style="font-weight:600;">
+                            Erro
+                        </MudChip>
+                    }
+                    else if (situacao.Contains("Expurgard", _sc))
+                    {
+                        <MudChip T="string" Color="Color.Error" Variant="Variant.Filled" Style="font-weight:600;">
+                            Expurgado
+                        </MudChip>
+                    }
+                    else if (situacao.Contains("Resetad"))
+                    {
+                        <MudChip T="string" Color="Color.Warning" Variant="Variant.Filled" Style="font-weight:600;">
+                            Resetado
+                        </MudChip>
+                    }
+                    else if (situacao.Contains("Tratad", _sc))
+                    {
+                        <MudChip T="string" Color="Color.Warning" Variant="Variant.Filled" Style="font-weight:600;">
+                            Tratado
+                        </MudChip>
+                    }
+                    else
+                    {
+                        Snackbar.Add("Não foi possível identificar a situação do desembolso: " + Desembolso.Situacao, Severity.Error);
+                        throw new InvalidOperationException("Não foi possível identificar a situação do desembolso: " + Desembolso.Situacao);
+                    }
+                }
+            </MudText>
+            <MudPaper Elevation="0" Style="padding:16px; border-radius:12px; background-color:#f8fafc;">
+                <MudStack Spacing="1">
+                    <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                        <MudText Typo="Typo.subtitle2" Style="color:#64747a;">Código Tomador</MudText>
+                        <MudText Typo="Typo.body2" Style="font-weight:400; color:#22292e;">@Desembolso.Tomador</MudText>
+                    </MudStack>
+
+                    <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                        <MudText Typo="Typo.subtitle2" Style="color:#64747a;">FID</MudText>
+                        <MudText Typo="Typo.body2" Style="font-weight:400; color:#22292e;">@Desembolso.Fid</MudText>
+                    </MudStack>
+
+                    <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                        <MudText Typo="Typo.subtitle2" Style="color:#64747a;">Ações</MudText>
+
+                        <MudStack Row AlignItems="AlignItems.Center" Style="gap:8px;">
+                            <MudTooltip Text="Reprocessar desembolso">
+                                <MudIconButton Icon="@Icons.Material.Filled.Replay" Variant="Variant.Filled" Size="Size.Small"
+                                               Disabled="Disabled"
+                                               Style="background-color:#a0d2fc; color:#002a4d; border-radius:8px;"
+                                               OnClick="() => ConfirmacaoDialogo(DesembolsosDialogConfirmacao.UserAction.Reprocessar, Desembolso)" />
+                            </MudTooltip>
+
+                            <MudTooltip Text="Tratamento manual">
+                                <MudIconButton Icon="@Icons.Material.Filled.EditNote" Variant="Variant.Filled" Size="Size.Small"
+                                               Disabled="Disabled"
+                                               Style="background-color:#a0d2fc; color:#002a4d; border-radius:8px;"
+                                               OnClick="() => ConfirmacaoDialogo(DesembolsosDialogConfirmacao.UserAction.Tratar, Desembolso)" />
+                            </MudTooltip>
+
+                            <MudTooltip Text="Expurgar desembolso">
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Variant="Variant.Filled" Size="Size.Small"
+                                               Disabled="@(Desembolso.Tomador is not null && Desembolso.Tomador.Equals("53000", _sc))"
+                                               Style="background-color:#fcbdb0; color:#801905; border-radius:8px;"
+                                               OnClick="() => ConfirmacaoDialogo(DesembolsosDialogConfirmacao.UserAction.Expurgar, Desembolso)" />
+                            </MudTooltip>
+                        </MudStack>
+                    </MudStack>
+
+                </MudStack>
+            </MudPaper>
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mr-6" OnClick="CloseDialog"><MudText>Fechar</MudText></MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code
+{
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Inject]
+    private ISnackbar Snackbar { get; set; } = default!;
+
+    [Inject]
+    private IDialogService DialogService { get; set; } = default!;
+
+    [Parameter]
+    public Desembolso Desembolso { get; set; } = default!;
+
+    private bool Disabled = false;
+
+    private StringComparison _sc = StringComparison.OrdinalIgnoreCase;
+
+    private void CloseDialog()
+    {
+        MudDialog?.Close();
+    }
+
+    protected override Task OnInitializedAsync()
+    {
+        string situacao = Desembolso.Situacao 
+            ?? throw new InvalidOperationException("Não foi possível identificar a situação do desembolso: " + Desembolso.Situacao); ;
+
+        Disabled = !Desembolso.Situacao.Contains("Pendente", _sc);
+        return base.OnInitializedAsync();
+    }
+
+    private async Task ConfirmacaoDialogo(
+        DesembolsosDialogConfirmacao.UserAction userAction,
+        Desembolso desembolso)
+    {
+        var options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            CloseButton = true,
+            NoHeader = true,
+
+        };
+
+        var parameters = new DialogParameters<DesembolsosDialogConfirmacao>
+    {
+        { x => x.Action, userAction },
+        { x => x.Desembolso, desembolso },
+    };
+
+        var dialogInstance = await DialogService.ShowAsync<DesembolsosDialogConfirmacao>(
+            userAction.ToString() + " desembolso",
+            parameters,
+            options);
+
+        var dialogResult = await dialogInstance.Result;
+
+        if (dialogResult is null || dialogResult.Canceled)
+            return;
+
+        if (dialogResult.Data is DesembolsosDialogConfirmacaoResult data)
+        {
+            var justificativa = data.Justificativa;
+            var nmg = data.Nmg;
+            var nmgDv = data.NmgDv;
+            var drp = data.Drp;
+            var drpDv = data.DrpDv;
+            var drpSenha = data.DrpSenha;
+            var action = data.Action;
+
+            if (action == DesembolsosDialogConfirmacao.UserAction.Expurgar)
+            {
+                if (string.IsNullOrWhiteSpace(desembolso.Fid?.ToString()))
+                {
+                    Snackbar.Add("FID não informado para o desembolso.", Severity.Error);
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(justificativa))
+                {
+                    Snackbar.Add("Justificativa não informada para o expurgo.", Severity.Error);
+                    return;
+                }
+
+                var request = new ExpurgarDesembolsoRequest
+                {
+                    Fid = desembolso.Fid.ToString()!,
+                    DeObservacao = justificativa
+                };
+
+                var response = await Service.ExpurgarDesembolso(request);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    Snackbar.Add(
+                        $"Expurgo confirmado. Justificativa: {justificativa}",
+                        Severity.Success);
+
+                    await OnInitializedAsync();
+                }
+                else
+                {
+                    var erro = await response.Content.ReadAsStringAsync();
+
+                    Snackbar.Add(
+                        $"Erro ao expurgar desembolso: {erro}",
+                        Severity.Error);
+
+                    return;
+                }
+            }
+            else if (action == DesembolsosDialogConfirmacao.UserAction.Tratar)
+            {
+
+                TratarDesembolso dados = new(
+                    desembolso.NuContrato ?? throw new InvalidOperationException("Contrato não pode ser nulo"), 
+                    desembolso.Fid ?? throw new InvalidOperationException("Fid não pode ser nulo"),
+                    nmg ?? throw new InvalidOperationException("Nmg não pode ser nulo"),
+                    nmgDv ?? throw new InvalidOperationException("NmgDv não pode ser nulo"),
+                    drp ?? throw new InvalidOperationException("Drp não pode ser nulo"),
+                    drpDv ?? throw new InvalidOperationException("DrpDv não pode ser nulo"),
+                    drpSenha ?? throw new InvalidOperationException("Drp não pode ser nulo")
+                );
+
+                var response = await Service.TratarDesembolso(dados);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    Snackbar.Add(
+                        $"Contrato {dados.NuContrato} FID {dados.Fid} tratado com sucesso.",
+                        Severity.Success);
+
+                    await OnInitializedAsync();
+                }
+                else
+                {
+                    var erro = await response.Content.ReadAsStringAsync();
+
+                    Snackbar.Add(
+                        $"Erro ao tratar contrato: {erro}",
+                        Severity.Error);
+
+                    return;
+                }
+            }
+            else if (action == DesembolsosDialogConfirmacao.UserAction.Reprocessar)
+            {
+                if (string.IsNullOrWhiteSpace(desembolso.Fid?.ToString()))
+                {
+                    Snackbar.Add("FID não informado para o desembolso.", Severity.Error);
+                    return;
+                }
+
+                var fid = desembolso.Fid.ToString()!;
+
+                var response = await Service.ResetarDesembolso(fid);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    Snackbar.Add("Reprocessamento confirmado.", Severity.Success);
+                }
+                else
+                {
+                    var erro = await response.Content.ReadAsStringAsync();
+
+                    Snackbar.Add(
+                        $"Erro ao reprocessar desembolso: {erro}",
+                        Severity.Error);
+
+                    return;
+                }
+            }
+
+            StateHasChanged();
+            await OnInitializedAsync();
+        }
+    }
+}

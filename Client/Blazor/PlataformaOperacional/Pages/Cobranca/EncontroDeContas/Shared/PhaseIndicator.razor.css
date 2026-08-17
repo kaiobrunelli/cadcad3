@@ -1,0 +1,95 @@
+.phases {
+  background: var(--white);
+  border: 1px solid var(--ink-200);
+  border-radius: var(--r-lg);
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-top: 14px;
+  box-shadow: var(--shadow-xs);
+  overflow: hidden;
+}
+.phase-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-500);
+  margin-right: 18px;
+  font-weight: 600;
+}
+.phase-list {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex: 1;
+  min-width: 0;
+}
+.phase-item {
+  display: flex; align-items: center; gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+.phase-dot {
+  width: 26px; height: 26px; border-radius: 999px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--ink-100);
+  color: var(--ink-400);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  flex-shrink: 0;
+  border: 1.5px solid var(--ink-200);
+  transition: all 200ms ease;
+}
+.phase-body { min-width: 0; flex: 1; }
+.phase-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-500);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.phase-sub {
+  font-size: 11px; color: var(--ink-400);
+  font-family: var(--font-mono);
+}
+.phase-connector {
+  flex: 0 0 40px;
+  height: 2px;
+  background: var(--ink-200);
+  margin: 0 4px;
+  border-radius: 2px;
+  position: relative;
+  overflow: hidden;
+}
+.phase-connector .fill {
+  position: absolute; inset: 0;
+  background: var(--brand-600);
+  transform-origin: left center;
+  transform: scaleX(0);
+  transition: transform 400ms ease;
+}
+.phase-item.done .phase-dot {
+  background: var(--brand-600); color: white; border-color: var(--brand-600);
+}
+.phase-item.done .phase-name { color: var(--ink-900); }
+.phase-item.active .phase-dot {
+  background: var(--brand-100); color: var(--brand-700); border-color: var(--brand-600);
+  box-shadow: 0 0 0 4px rgba(0,92,169,0.1);
+}
+.phase-item.active .phase-name { color: var(--brand-700); font-weight: 600; }
+.phase-item.active .phase-sub { color: var(--brand-600); }
+.phase-connector.filled .fill { transform: scaleX(1); }
+.phase-item.active .phase-dot .pulse {
+  width: 8px; height: 8px; border-radius: 999px; background: var(--brand-600);
+  animation: pulse 1.2s infinite ease-in-out;
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.5; }
+}
+@media (max-width: 720px) {
+  .phases { flex-direction: column; align-items: flex-start; }
+  .phase-list { flex-direction: column; align-items: flex-start; width: 100%; }
+  .phase-connector { width: 2px; height: 20px; margin: 0 0 0 12px; flex: 0 0 20px; }
+}

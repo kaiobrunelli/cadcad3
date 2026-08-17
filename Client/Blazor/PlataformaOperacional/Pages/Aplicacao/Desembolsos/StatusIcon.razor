@@ -1,0 +1,146 @@
+﻿@using MudBlazor
+@using Model.DesembososModel
+
+<MudStack Row="true"
+          Justify="Justify.Center"
+          AlignItems="AlignItems.Center">
+
+    <MudTooltip Text="@(Status.Tooltip)" Class="justify-center">
+        <MudIcon Icon="@Status.Icon"
+                 Color="@Status.Color"
+                 Class="align-self-center status-icon" />
+    </MudTooltip>
+
+</MudStack>
+
+<style>
+    .status-icon {
+        font-size: 26px;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public string? Situacao { get; set; }
+
+    [Parameter]
+    public string? Mensagem { get; set; }
+
+    [Parameter]
+    public PerfilUsuario Perfil { get; set; } = PerfilUsuario.Desconhecido;
+
+    [Parameter]
+    public bool AguardandoOutroEmpregado { get; set; }
+
+    private static readonly StringComparison IgnoreCase =
+        StringComparison.OrdinalIgnoreCase;
+
+    private StatusInfo Status =>
+        GetStatusInfo(Situacao, Mensagem, Perfil, AguardandoOutroEmpregado);
+
+    private static StatusInfo GetStatusInfo(
+        string? situacao,
+        string? mensagem,
+        PerfilUsuario perfil,
+        bool aguardandoOutroEmpregado)
+    {
+        if (aguardandoOutroEmpregado)
+        {
+            return new StatusInfo(
+                Icons.Material.Filled.LockClock,
+                Color.Info,
+                "Aguardando baixa de DRPs e finalização por outro empregado.");
+        }
+
+        if (string.IsNullOrWhiteSpace(situacao))
+        {
+            return new StatusInfo(
+                Icons.Material.Filled.Pending,
+                Color.Dark,
+                "Situação não identificada");
+        }
+
+        if (Contains(situacao, "Erro"))
+        {
+            return new StatusInfo(
+                Icons.Material.Filled.Error,
+                Color.Error,
+                string.IsNullOrWhiteSpace(mensagem) ? "Erro" : mensagem);
+        }
+
+        if (Contains(situacao, "Acao") || Contains(situacao, "Ação"))
+        {
+            return new StatusInfo(
+                Icons.Material.Filled.Warning,
+                Color.Warning,
+                "Ação necessária");
+        }
+
+        if (Contains(situacao, "Baixad") && Contains(situacao, "SIAPF"))
+        {
+            return new StatusInfo(
+                Icons.Material.Filled.Warning,
+                Color.Success,
+                "Baixada no SIAPF, pendente finalização.");
+        }
+
+        if (Contains(situacao, "Baixad"))
+        {
+            return new StatusInfo(
+                Icons.Material.Filled.Done,
+                Color.Success,
+                "Baixada");
+        }
+
+        if (Contains(situacao, "Lancad") || Contains(situacao, "Lançad"))
+        {
+            return new StatusInfo(
+                Icons.Material.Filled.Done,
+                Color.Success,
+                "Lançado");
+        }
+
+        if (Contains(situacao, "Emitida"))
+        {
+            return new StatusInfo(
+                perfil == PerfilUsuario.Baixa
+                    ? Icons.Material.Filled.Pending
+                    : Icons.Material.Filled.Done,
+                perfil == PerfilUsuario.Baixa
+                    ? Color.Info
+                    : Color.Success,
+                "Emitida");
+        }
+
+        if (Contains(situacao, "Sucesso"))
+        {
+            return new StatusInfo(
+                Icons.Material.Filled.Done,
+                Color.Success,
+                "Sucesso");
+        }
+
+        if (Contains(situacao, "Pendente"))
+        {
+            return new StatusInfo(
+                Icons.Material.Filled.AccessTime,
+                Color.Info,
+                "Pendente");
+        }
+
+        return new StatusInfo(
+            Icons.Material.Filled.Pending,
+            Color.Dark,
+            "Situação não identificada");
+    }
+
+    private static bool Contains(string? source, string value)
+    {
+        return source?.Contains(value, IgnoreCase) == true;
+    }
+
+    private sealed record StatusInfo(
+        string Icon,
+        Color Color,
+        string Tooltip);
+}

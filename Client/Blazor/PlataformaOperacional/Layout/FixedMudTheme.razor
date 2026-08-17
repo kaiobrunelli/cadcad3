@@ -1,0 +1,21 @@
+﻿
+<MudThemeProvider Theme="@Theme">
+    @ChildContent
+</MudThemeProvider>
+
+@code {
+    [Parameter] public MudTheme Theme { get; set; } = new();
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private bool _hasRendered = false;
+
+    protected override bool ShouldRender()
+    {
+        // Só renderiza uma vez
+        if (_hasRendered)
+            return false;
+
+        _hasRendered = true;
+        return true;
+    }
+}

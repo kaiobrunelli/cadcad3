@@ -1,0 +1,660 @@
+@using System.Globalization
+@using ControleAnaliseDesembolso.Modelos
+@using ControleAnaliseDesembolso.Service
+@inject ControleAnaliseDesembolsoService Service
+
+@*
+   DIALOG RESUMO DRP — modal centrado, em etapas (mesmo padrão de
+   PainelPreencherFpdEtapas), 100% somente-leitura: é a checagem final
+   antes/depois da baixa.
+
+   3 etapas — optei por 3 em vez de 2 porque Validações (lista com
+   comentários) e Histórico (timeline) são conteúdos longos o bastante pra
+   não caberem bem numa etapa só sem rolagem excessiva:
+   1. Cabeçalho    — dados do desembolso/contrato/valores, sem nada pra rolar.
+   2. Validações   — checklist em acordeão (expande por item, não em coluna
+      fixa) pra caber sem ocupar muito espaço; aviso quando algum item tem
+      comentário registrado.
+   3. Histórico    — timeline de toda a atividade do desembolso.
+
+   Ao contrário do PainelPreencherFpdEtapas, aqui todas as etapas são
+   clicáveis livremente (sem bloqueio de "avançar só depois de validar") —
+   é revisão, não preenchimento.
+*@
+
+<div class="overlay-dfp" @onclick="FecharDialog">
+    <div class="dfp" @onclick:stopPropagation role="dialog" aria-modal="true">
+
+        @{
+            // Cabeçalho (contrato/valores) ainda vem do mock — fora do escopo deste
+            // ajuste. Validações (etapa 2) e histórico (etapa 3) já vêm do backend
+            // real (ver MontarChecklistReal), com o histórico completo de respostas.
+            var detalhe   = ServicoMock.ObterDetalheContrato(Desembolso);
+            var fin       = detalhe.Financiamento;
+            var checklist = MontarChecklistReal();
+        }
+
+        <!-- ── TOP BAR ── -->
+        <div class="dfp-topbar">
+            <div class="dfp-id">
+                <i class="bi bi-file-text"></i>
+                <span class="dfp-id-label">Desembolso ID</span>
+                <span class="dfp-id-num">@Desembolso.NumId</span>
+            </div>
+            <div class="dfp-topbar-right">
+                <div class="nav-pill-group">
+                    <button class="btn-nav" @onclick="Anterior" disabled="@(!TemAnterior)" title="Anterior">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+                    <span class="nav-pos">@(IndiceAtual + 1)/@Todos.Count</span>
+                    <button class="btn-nav" @onclick="Proximo" disabled="@(!TemProximo)" title="Próximo">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+                <button class="btn-fechar" @onclick="FecharDialog" title="Fechar (Esc)">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- ═══ STEPPER ═══ -->
+        <div class="fpd-stepper">
+            @StepHeader(1, "bi-file-earmark-text", "Cabeçalho")
+            <div class="fpd-step-linha @(_etapaAtual > 1 ? "concluida" : "")"></div>
+            @StepHeader(2, "bi-check2-square", "Validações")
+            <div class="fpd-step-linha @(_etapaAtual > 2 ? "concluida" : "")"></div>
+            @StepHeader(3, "bi-clock-history", "Histórico")
+        </div>
+
+        <!-- ── Corpo ── -->
+        @if (_etapaAtual == 1)
+        {
+            <!-- ═══ ETAPA 1 — CABEÇALHO ═══ -->
+            <div class="dfp-header dfp-header-etapa">
+
+                <div class="dfp-titulo-row">
+                    <div class="dfp-titulo-left">
+                        <div class="dfp-name-row">
+                            <h2 class="dfp-mutuario">@Desembolso.Mutuario</h2>
+                            <span class="dfp-dsb-id">@Desembolso.Id</span>
+                            @if (!string.IsNullOrEmpty(Desembolso.Gigov))
+                            {
+                                <span class="dfp-gigov">@Desembolso.Gigov</span>
+                            }
+                        </div>
+                        <div class="dfp-meta-row">
+                            <PilulhaStatus Status="@Desembolso.Status" Tamanho="sm" />
+                            <span class="dfp-prazo-chip">
+                                <i class="bi bi-calendar3"></i>
+                                Prazo:&nbsp;<strong>@Desembolso.PrazoFinal.ToString("dd MMM", new CultureInfo("pt-BR"))</strong>
+                            </span>
+                            @if (detalhe.PrimeiroDesembolso)
+                            {
+                                <span class="dfp-badge-destaque"><i class="bi bi-flag-fill"></i> Primeiro desembolso</span>
+                            }
+                            @* "Normal" só faz sentido quando nenhuma flag acima está marcada — ver
+                               mesmo ajuste em DialogDesembolsoFpd. *@
+                            @if (detalhe.TipoDesembolso == "adiantamento" || !detalhe.PrimeiroDesembolso)
+                            {
+                                <span class="dfp-badge-tipo @(detalhe.TipoDesembolso == "adiantamento" ? "adiantamento" : "")">
+                                    @(detalhe.TipoDesembolso == "adiantamento" ? "Adiantamento" : "Normal")
+                                </span>
+                            }
+                            @if (Analista is not null)
+                            {
+                                <div class="analista-mini" style="background: @Analista.Cor">@Analista.Iniciais</div>
+                                <span class="dfp-analista-nome">@Analista.Nome</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dados do contrato (AF, agentes, programa) -->
+                <div class="dfp-dados-grid">
+                    <div class="dfp-coluna">
+                        <div class="dfp-secao-titulo">Contrato AF</div>
+                        <div class="dfp-linha">
+                            <span class="dfp-rotulo">Contrato</span>
+                            <span class="dfp-valor dfp-mono">@Desembolso.Contrato</span>
+                        </div>
+                        <div class="dfp-linha">
+                            <span class="dfp-rotulo">Agente Financeiro</span>
+                            <span class="dfp-valor">@detalhe.AgenteFinanceiro</span>
+                        </div>
+                        <div class="dfp-linha">
+                            <span class="dfp-rotulo">Agente Promotor</span>
+                            <span class="dfp-valor">@detalhe.AgentePromotor</span>
+                        </div>
+                        <div class="dfp-linha dfp-linha-last">
+                            <span class="dfp-rotulo">Programa</span>
+                            <span class="dfp-valor">@fin.Programa</span>
+                        </div>
+                    </div>
+
+                    <div class="dfp-divisor-v"></div>
+
+                    <div class="dfp-coluna">
+                        <div class="dfp-secao-titulo">Financiamento</div>
+                        <div class="dfp-linha">
+                            <span class="dfp-rotulo">Fase</span>
+                            <span class="dfp-valor">@fin.Fase</span>
+                        </div>
+                        <div class="dfp-linha">
+                            <span class="dfp-rotulo">Nº Desembolso</span>
+                            <span class="dfp-valor">@fin.NumeroDesembolso</span>
+                        </div>
+                        <div class="dfp-linha dfp-linha-last">
+                            <span class="dfp-rotulo">% Obra concluída (BM)</span>
+                            <div class="dfp-obra-wrap">
+                                <div class="obra-track">
+                                    <div class="obra-fill" style="width: @fin.PercentualObra%"></div>
+                                </div>
+                                <span class="dfp-valor dfp-mono">@fin.PercentualObra%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Valores -->
+                <div class="dfp-valores">
+                    <div class="dfp-secao-titulo">Valores</div>
+                    <div class="dfp-linha dfp-linha-destaque">
+                        <span class="dfp-rotulo">Valor solicitado (parcela)</span>
+                        <span class="dfp-valor dfp-mono dfp-valor-destaque">@ServicoMock.FormatarBRL(Desembolso.Valor)</span>
+                    </div>
+                    <div class="dfp-linha">
+                        <span class="dfp-rotulo">VE (Valor Empréstimo)</span>
+                        <span class="dfp-valor dfp-mono">@ServicoMock.FormatarBRL(fin.Ve)</span>
+                    </div>
+                    <div class="dfp-linha">
+                        <span class="dfp-rotulo">Participação FGTS</span>
+                        <span class="dfp-valor dfp-mono">@ServicoMock.FormatarBRL(fin.ParticipacaoFgts)</span>
+                    </div>
+                    <div class="dfp-linha">
+                        <span class="dfp-rotulo">Contrapartida</span>
+                        <span class="dfp-valor dfp-mono">@ServicoMock.FormatarBRL(fin.Contrapartida)</span>
+                    </div>
+                    @if (fin.PercGlobal is not null)
+                    {
+                        <div class="dfp-linha dfp-linha-last">
+                            <span class="dfp-rotulo">% Global (FGTS + contrapartida / VE)</span>
+                            <span class="dfp-valor dfp-mono">@(fin.PercGlobal.Value.ToString("0.0", new CultureInfo("pt-BR")))%</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+        else if (_etapaAtual == 2)
+        {
+            <!-- ═══ ETAPA 2 — VALIDAÇÕES (acordeão) ═══
+                 Desembolso na DRP já passou pela aprovação — não existe "inválida" nem
+                 "a analisar" aqui, então é só a lista, sem agrupar por status. ═══ -->
+            <div class="dfp-etapa-validacoes">
+                @if (_carregandoReal)
+                {
+                    <p class="dfp-acc-detalhe"><i class="bi bi-arrow-repeat spin"></i> Carregando histórico de validações…</p>
+                }
+                else
+                {
+                    <div class="dfp-etapa-validacoes-topo">
+                        <span class="dfp-etapa-validacoes-contagem ok">
+                            <i class="bi bi-check-circle-fill"></i> @checklist.Count(v => v.Status == "valido") validações aprovadas
+                        </span>
+                        @if (TotalComComentario > 0)
+                        {
+                            <div class="dfp-resumo-aviso">
+                                <i class="bi bi-chat-text-fill"></i>
+                                <span><strong>@TotalComComentario</strong> com histórico de respostas</span>
+                            </div>
+                        }
+                    </div>
+
+                    @if (!checklist.Any())
+                    {
+                        <p class="dfp-acc-detalhe">Nenhuma validação carregada pra este desembolso.</p>
+                    }
+
+                    @foreach (var v in checklist)
+                    {
+                        var chave = $"v{v.CoValidacao}";
+                        var aberta = _validacoesAbertas.Contains(chave);
+
+                        <div class="dfp-acc @(aberta ? "aberta" : "")">
+                            <button class="dfp-acc-header" @onclick="() => AlternarValidacao(chave)">
+                                <span class="dfp-acc-num">@v.CoValidacao.ToString().PadLeft(2, '0')</span>
+                                <span class="dfp-acc-titulo">@v.Titulo</span>
+                                @{ var temResposta = TemRespostaFicha(v.Titulo, out var resposta); }
+                                @if (temResposta)
+                                {
+                                    <span class="dfp-ficha-pill @(resposta switch { true => "sim", false => "nao", _ => "pendente" })">
+                                        @(resposta switch { true => "Sim", false => "Não", _ => "Não respondido" })
+                                    </span>
+                                }
+                                @if (v.Comentarios.Any())
+                                {
+                                    <i class="bi bi-chat-text-fill dfp-acc-comm">@v.Comentarios.Count</i>
+                                }
+                                <PilulhaStatus Status="@v.Status" Tamanho="sm" />
+                                <i class="bi bi-chevron-down dfp-acc-chevron"></i>
+                            </button>
+                            <div class="dfp-acc-body">
+                                <div class="dfp-acc-inner">
+                                    <div class="dfp-acc-corpo">
+                                        @* Histórico completo — não é só o status, é toda resposta/justificativa
+                                           que foi registrada pra essa validação (analista e/ou GIGOV). *@
+                                        <FioComentario Comentarios="@v.Comentarios" ApenasLeitura="true" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        }
+        else
+        {
+            <!-- ═══ ETAPA 3 — HISTÓRICO ═══ -->
+            <div class="dfp-corpo">
+                <div class="dfp-timeline">
+                    @foreach (var evento in MontarTimeline())
+                    {
+                        <div class="dfp-evento @evento.Tipo">
+                            <div class="dfp-evento-ponto"><i class="bi @evento.Icone"></i></div>
+                            <div class="dfp-evento-corpo">
+                                <div class="dfp-evento-texto">@((MarkupString)evento.Texto)</div>
+                                <div class="dfp-evento-quando">@evento.Quando</div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- ── Rodapé ── -->
+        <div class="dfp-rodape">
+            <div class="dfp-rodape-status">
+                <i class="bi bi-clipboard-check ok"></i>
+                <span>Checagem final — somente visualização</span>
+            </div>
+
+            @if (_etapaAtual > 1)
+            {
+                <button class="btn-fpd-etapa-voltar" @onclick="EtapaAnterior">
+                    <i class="bi bi-chevron-left"></i> <span>Etapa anterior</span>
+                </button>
+            }
+            @if (_etapaAtual < 3)
+            {
+                <button class="btn-fpd-etapa-proxima" @onclick="ProximaEtapa">
+                    <span>Próxima etapa</span> <i class="bi bi-chevron-right"></i>
+                </button>
+            }
+            <button class="btn-recusar-cancelar" @onclick="FecharDialog">Fechar</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public DesembolsoCAD       Desembolso { get; set; } = null!;
+    [Parameter, EditorRequired] public List<DesembolsoCAD> Todos      { get; set; } = [];
+    [Parameter] public Funcionario?  Analista  { get; set; }
+    [Parameter] public EventCallback AoFechar  { get; set; }
+    [Parameter] public EventCallback<string> AoNavegar { get; set; }
+
+    private int _etapaAtual = 1;
+    private readonly HashSet<string> _validacoesAbertas = [];
+
+    private DesembolsoDetalheDto? _detalheReal;
+    private string? _idCarregado;
+    private bool _carregandoReal = true;
+
+    // Sem @key no <DialogResumoDrp> do lado do PaginaAnalise/TabelaBaixaDrp — o
+    // Anterior/Próximo troca só o parâmetro Desembolso, não remonta o componente.
+    // OnParametersSetAsync recarrega sempre que o Id muda (OnInitializedAsync não seria chamado de novo).
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_idCarregado == Desembolso.Id) return;
+        _carregandoReal = true;
+        try
+        {
+            _detalheReal = await Service.ObterDetalheDesembolsoAsync(Desembolso.Id);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ResumoDrp] Falha ao carregar validações reais: {ex.Message}");
+            _detalheReal = null;
+        }
+        finally
+        {
+            _idCarregado = Desembolso.Id;
+            _carregandoReal = false;
+        }
+    }
+
+    private int IndiceAtual  => Todos.FindIndex(d => d.Id == Desembolso.Id);
+    private bool TemAnterior => IndiceAtual > 0;
+    private bool TemProximo  => IndiceAtual < Todos.Count - 1;
+
+    private async Task Anterior() { if (TemAnterior) await AoNavegar.InvokeAsync(Todos[IndiceAtual - 1].Id); }
+    private async Task Proximo()  { if (TemProximo)  await AoNavegar.InvokeAsync(Todos[IndiceAtual + 1].Id); }
+    private async Task FecharDialog() => await AoFechar.InvokeAsync();
+
+    // ── Stepper — livre em qualquer direção (é revisão, não preenchimento) ──
+    private RenderFragment StepHeader(int numero, string icone, string titulo) =>
+        @<button type="button" class="fpd-step @(EstadoEtapa(numero))" @onclick="() => _etapaAtual = numero">
+            <span class="fpd-step-num">
+                @if (numero < _etapaAtual) { <i class="bi bi-check-lg"></i> } else { @numero }
+            </span>
+            <span class="fpd-step-titulo">@titulo</span>
+        </button>;
+
+    private string EstadoEtapa(int numero) =>
+        numero == _etapaAtual ? "atual" : numero < _etapaAtual ? "concluida" : "";
+
+    private void ProximaEtapa()  { if (_etapaAtual < 3) _etapaAtual++; }
+    private void EtapaAnterior() { if (_etapaAtual > 1) _etapaAtual--; }
+
+    private int TotalComComentario => MontarChecklistReal().Count(v => v.Comentarios.Any());
+
+    private void AlternarValidacao(string chave)
+    {
+        if (!_validacoesAbertas.Add(chave))
+            _validacoesAbertas.Remove(chave);
+    }
+
+    private sealed class ItemChecklistReal
+    {
+        public int CoValidacao { get; set; }
+        public string Titulo { get; set; } = "";
+        public string Status { get; set; } = "";
+        public List<Comentario> Comentarios { get; set; } = [];
+    }
+
+    // Situacao do servidor (TipoSituacaoValidacao): 0 Analisar, 1 Aprovado, 2 Negado.
+    private static string MapSituacao(int situacao) => situacao switch
+    {
+        1 => "valido",
+        2 => "invalido",
+        _ => "pendente",
+    };
+
+    // TipoRegistro do servidor <-> Tipo do client (Comentario.cs usa
+    // positivo/informativo/negativo; o servidor usa
+    // justificativa/informativo/parecer/observacao/rejeicao).
+    private static string MapTipoServidorParaCliente(string tipoRegistro) => tipoRegistro switch
+    {
+        "justificativa" => "positivo",
+        "parecer" => "negativo",
+        _ => "informativo",
+    };
+
+    // Resposta que foi de fato preenchida no formulário da FPD pra esse item
+    // (Sim/Não) — mesmo mapeamento título→campo usado em DialogDesembolsoFpd
+    // (TemCampoFicha). Só os 7 itens do checklist que têm campo booleano
+    // correspondente na ficha; os demais (Tomador/Promotor adimplente,
+    // Valores da FPD) não têm resposta de formulário, só o status da análise.
+    // Nenhuma validação hoje é do tipo "valor" (ex.: percentual) — se um dia
+    // existir, o mesmo padrão dá pra estender aqui.
+    private bool TemRespostaFicha(string? titulo, out bool? resposta)
+    {
+        resposta = titulo switch
+        {
+            "Licença de operação" => _detalheReal?.LicensaOperacao,
+            "Licença de instalação" => _detalheReal?.LicensaInstalacao,
+            "Amortização" => _detalheReal?.Amortizacao,
+            "Retorno parcial" => _detalheReal?.RetornoParcial,
+            "Placa local" => _detalheReal?.PlacaLocal,
+            "Excepcionalização" => _detalheReal?.Excepcionalizado,
+            "CP alterada" => _detalheReal?.ContrapartidaAlterada,
+            _ => null,
+        };
+        return titulo is "Licença de operação" or "Licença de instalação" or "Amortização"
+            or "Retorno parcial" or "Placa local" or "Excepcionalização" or "CP alterada";
+    }
+
+    // Checklist com o histórico real de respostas (não só o status) — vem de
+    // ObterDetalheAsync, o mesmo endpoint usado no dialog de análise do desembolso.
+    // "Valores da FPD" não é uma validação sim/não, então usa status neutro (ver
+    // mesmo ajuste em DialogDesembolsoFpd).
+    private List<ItemChecklistReal> MontarChecklistReal()
+    {
+        if (_detalheReal is null) return [];
+        return _detalheReal.Checklist
+            .OrderBy(v => v.CoValidacao)
+            .Select(v => new ItemChecklistReal
+            {
+                CoValidacao = v.CoValidacao,
+                Titulo = v.DeValidacao ?? "",
+                Status = v.DeValidacao == "Valores da FPD" ? "neutro" : MapSituacao(v.Situacao),
+                Comentarios = v.Comentarios
+                    .OrderBy(c => c.DtCriacao)
+                    .Select(c => new Comentario
+                    {
+                        Id = c.CoRegistroValidacao,
+                        Tipo = MapTipoServidorParaCliente(c.TipoRegistro),
+                        Texto = c.Texto ?? "",
+                        Autor = c.NomeAutor ?? c.MatriculaAutor ?? "",
+                        MatriculaAutor = c.MatriculaAutor ?? "",
+                        UnidadeAutor = c.UnidadeAutor,
+                        Timestamp = c.DtCriacao,
+                    }).ToList(),
+            }).ToList();
+    }
+
+    // ── Histórico: timeline com todos os comentários de todas as validações ──
+    private record EventoTimeline(string Icone, string Texto, string Quando, string Tipo);
+
+    private List<EventoTimeline> MontarTimeline()
+    {
+        var cultura = new CultureInfo("pt-BR");
+        var criacao = Desembolso.PrazoFinal.AddDays(-21);
+        var eventos = new List<EventoTimeline>
+        {
+            new("bi-inbox", $"Desembolso <strong>{Desembolso.Id}</strong> recebido para análise",
+                criacao.ToString("dd MMM yyyy", cultura), "neutro"),
+        };
+
+        if (Analista is not null)
+            eventos.Add(new("bi-person-check", $"Atribuído a <strong>{Analista.Nome}</strong>",
+                criacao.AddDays(1).ToString("dd MMM yyyy", cultura), "info"));
+
+        foreach (var v in MontarChecklistReal())
+            foreach (var c in v.Comentarios)
+                eventos.Add(new(
+                    c.Tipo == "positivo" ? "bi-check-circle" : c.Tipo == "negativo" ? "bi-x-circle" : "bi-chat-text",
+                    $"<strong>{c.Autor}</strong> comentou em <strong>{v.Titulo}</strong>: “{c.Texto}”",
+                    ServicoMock.FormatarTempo(c.Timestamp),
+                    c.Tipo == "negativo" ? "falha" : c.Tipo == "positivo" ? "ok" : "info"));
+
+        eventos.Add(Desembolso.Status switch
+        {
+            "aprovado" => new("bi-patch-check", "Desembolso <strong>aprovado</strong>",
+                DateTime.Today.ToString("dd MMM yyyy", cultura), "ok"),
+            "pendencia" => new("bi-exclamation-triangle", "Pendências identificadas — <strong>aguardando tratativa</strong>",
+                "agora", "falha"),
+            _ => new("bi-hourglass-split", "Em análise — <strong>aguardando decisão</strong>", "agora", "neutro")
+        });
+
+        return eventos;
+    }
+}
+
+<style>
+.overlay-dfp {
+    position: fixed; inset: 0;
+    background: rgba(34,41,46,.45);
+    /* MudAppBar (cabeçalho) usa z-index:1300 — precisa ficar acima disso. */
+    z-index: 2000;
+    display: flex; align-items: flex-start; justify-content: center;
+    padding: 16px; overflow-y: auto;
+    animation: fadeIn .18s ease;
+}
+
+.dfp {
+    position: relative;
+    width: 100%; max-width: 960px;
+    background: #fff;
+    border-radius: var(--radius-xl, 10px);
+    box-shadow: var(--shadow-pop);
+    display: flex; flex-direction: column;
+    animation: popIn .22s ease;
+    max-height: calc(100vh - 32px);
+    overflow: hidden;
+    margin: auto;
+}
+
+/* ── Top bar ── */
+.dfp-topbar { display: flex; align-items: center; gap: 8px; padding: 9px 20px; border-bottom: 1px solid var(--ink-100); flex-shrink: 0; background: #fff; }
+.dfp-id { display: flex; align-items: center; gap: 5px; flex: 1; }
+.dfp-id i { font-size: 11px; color: #9EB2BB; }
+.dfp-id-label { font-size: 11.5px; font-weight: 600; color: var(--ink-600); }
+.dfp-id-num { font-family: monospace; font-size: 11.5px; font-weight: 600; color: var(--ink-700); }
+.dfp-topbar-right { display: flex; align-items: center; gap: 6px; }
+
+.nav-pill-group { display: inline-flex; align-items: center; gap: 0; border: 1px solid var(--ink-100); border-radius: var(--radius-md); background: #FAFBFD; padding: 2px; }
+.btn-nav { width: 24px; height: 24px; border-radius: 5px; background: transparent; border: none; color: #64747A; font-size: 11px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background .12s; }
+.btn-nav:hover:not(:disabled) { background: #fff; }
+.btn-nav:disabled { opacity: .3; cursor: not-allowed; }
+.nav-pos { padding: 0 6px; font-size: 10.5px; font-weight: 700; color: var(--ink-600); font-variant-numeric: tabular-nums; }
+
+.btn-fechar { width: 28px; height: 28px; border-radius: var(--radius-md); border: 1px solid var(--ink-100); color: #64747A; font-size: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background .12s; }
+.btn-fechar:hover { background: var(--ink-50); }
+
+/* ── Stepper (mesmo padrão do PainelPreencherFpdEtapas) ── */
+.fpd-stepper { display: flex; align-items: center; padding: 14px 24px; background: var(--ink-50); border-bottom: 1px solid var(--ink-100); flex-shrink: 0; }
+.fpd-step {
+    display: flex; align-items: center; gap: 8px; background: transparent; border: none;
+    padding: 4px 6px; border-radius: var(--radius-md); cursor: pointer; font-family: inherit;
+}
+.fpd-step-num {
+    width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; background: var(--ink-200); color: var(--ink-600, var(--ink-700));
+    transition: background .15s, color .15s;
+}
+.fpd-step-titulo { font-size: 12.5px; font-weight: 600; color: var(--ink-500); white-space: nowrap; transition: color .15s; }
+.fpd-step.atual .fpd-step-num { background: var(--brand-700); color: #fff; }
+.fpd-step.atual .fpd-step-titulo { color: var(--brand-800); }
+.fpd-step.concluida .fpd-step-num { background: var(--ok-bg); color: var(--ok); }
+.fpd-step.concluida .fpd-step-titulo { color: var(--ink-700); }
+.fpd-step.concluida:hover .fpd-step-titulo { color: var(--brand-700); }
+.fpd-step-linha { flex: 1; height: 2px; background: var(--ink-200); margin: 0 4px; transition: background .2s; }
+.fpd-step-linha.concluida { background: var(--ok); }
+
+/* ── Cabeçalho (etapa 1) ── */
+.dfp-header { background: #F8FAFC; flex-shrink: 0; overflow-y: auto; }
+.dfp-header-etapa { flex: 1; }
+
+.dfp-titulo-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 14px 24px 12px; border-bottom: 1px solid var(--ink-100); }
+.dfp-titulo-left { flex: 1; min-width: 0; }
+.dfp-name-row { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+.dfp-mutuario { font-size: 20px; font-weight: 800; line-height: 1.2; letter-spacing: -.02em; color: var(--ink-900); margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dfp-dsb-id { font-family: monospace; font-size: 11px; font-weight: 700; color: var(--ink-400); flex-shrink: 0; }
+.dfp-gigov { display: inline-flex; align-items: center; border: 1px solid var(--ink-100); background: var(--ink-50); border-radius: 6px; padding: 1px 6px; font-family: monospace; font-size: 10px; font-weight: 700; color: var(--ink-600); flex-shrink: 0; }
+
+.dfp-meta-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.dfp-prazo-chip { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--brand-200); background: var(--brand-50); border-radius: var(--radius-full); padding: 4px 10px; font-size: 10.5px; font-weight: 600; color: var(--brand-800, #004F93); }
+.dfp-prazo-chip i { font-size: 10px; color: #005CA9; }
+.dfp-prazo-chip strong { font-weight: 700; }
+
+.dfp-badge-destaque { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--brand-200); background: var(--brand-700); border-radius: var(--radius-full); padding: 4px 10px; font-size: 10.5px; font-weight: 700; color: #fff; }
+
+.dfp-badge-tipo { display: inline-flex; align-items: center; border: 1px solid var(--ink-200); background: #fff; border-radius: var(--radius-full); padding: 4px 10px; font-size: 10.5px; font-weight: 700; color: var(--ink-700); }
+.dfp-badge-tipo.adiantamento { border-color: #F5D0A0; background: var(--warn-bg, #FFEFD6); color: #9A5B00; }
+
+.analista-mini { width: 20px; height: 20px; border-radius: 50%; color: #fff; font-size: 8.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.dfp-analista-nome { font-size: 12px; font-weight: 500; color: var(--ink-600); }
+
+/* Dados do contrato — grid 2 colunas */
+.dfp-dados-grid { display: flex; border-bottom: 1px solid var(--ink-100); }
+.dfp-coluna { flex: 1; padding: 10px 24px; min-width: 0; }
+.dfp-divisor-v { width: 1px; background: var(--ink-100); align-self: stretch; flex-shrink: 0; }
+.dfp-secao-titulo { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .18em; color: var(--ink-400); margin-bottom: 4px; }
+.dfp-linha { display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid #EDF0F2; padding: 6px 0; }
+.dfp-linha-last { border-bottom: none; }
+.dfp-rotulo { flex-shrink: 0; font-size: 10.5px; color: var(--ink-400); }
+.dfp-valor { font-size: 11px; font-weight: 600; color: var(--ink-900); text-align: right; }
+.dfp-mono { font-family: monospace; font-variant-numeric: tabular-nums; }
+
+.dfp-obra-wrap { display: flex; align-items: center; gap: 8px; }
+.obra-track { width: 64px; height: 6px; background: var(--ink-200); border-radius: var(--radius-full); overflow: hidden; flex-shrink: 0; }
+.obra-fill { height: 100%; background: var(--brand-700, #005CA9); border-radius: var(--radius-full); }
+
+.dfp-valores { padding: 10px 24px 14px; }
+.dfp-linha-destaque { background: var(--brand-50); margin: 0 -8px; padding: 7px 8px; border-radius: var(--radius-md); border-bottom-color: transparent; }
+.dfp-linha-destaque .dfp-rotulo { color: var(--brand-700); font-weight: 600; }
+.dfp-valor-destaque { color: var(--brand-800); font-weight: 700; font-size: 12.5px; }
+
+/* ── Etapa 2 — Validações em acordeão ── */
+.dfp-etapa-validacoes { flex: 1; overflow-y: auto; padding: 16px 24px; background: #fff; }
+.dfp-etapa-validacoes-topo { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.dfp-etapa-validacoes-contagem { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; color: var(--ok); }
+
+.dfp-resumo-aviso { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid var(--brand-200); background: var(--brand-50); border-radius: var(--radius-md); font-size: 11px; color: var(--brand-800); }
+.dfp-resumo-aviso i { color: var(--brand-700); }
+
+.dfp-acc {
+    background: #fff;
+    border: 1px solid var(--ink-100);
+    border-left: 3px solid var(--ok);
+    border-radius: var(--radius-lg);
+    margin-bottom: 6px;
+    overflow: hidden;
+    box-shadow: var(--shadow-card);
+}
+
+.dfp-acc-header { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 14px; text-align: left; transition: background .12s; }
+.dfp-acc-header:hover { background: var(--ink-50); }
+.dfp-acc-num { font-size: 10px; font-weight: 800; color: var(--ink-400, var(--ink-300)); font-variant-numeric: tabular-nums; }
+.dfp-acc-titulo { flex: 1; font-size: 12.5px; font-weight: 600; color: var(--ink-900); }
+
+/* Pílula Sim/Não — resposta que foi preenchida no formulário da FPD pra esse
+   item (mesmo padrão visual de DialogDesembolsoFpd/.dfp-ficha-pill). */
+.dfp-ficha-pill { flex-shrink: 0; padding: 3px 10px; border-radius: var(--radius-full); font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
+.dfp-ficha-pill.sim { background: var(--ok-bg); color: var(--ok); }
+.dfp-ficha-pill.nao { background: var(--err-bg); color: var(--err); }
+.dfp-ficha-pill.pendente { background: var(--warn-bg, #FFEFD6); color: #9A5B00; }
+.dfp-acc-comm { font-size: 11px; color: var(--brand-500); }
+.dfp-acc-chevron { font-size: 11px; color: var(--ink-400, var(--ink-300)); transition: transform .2s; }
+.dfp-acc.aberta .dfp-acc-chevron { transform: rotate(180deg); }
+
+/* Acordeão animado por max-height (grid-template-rows 0fr→1fr colapsa pra 0
+   aqui: o tamanho mínimo automático do item vira zero com overflow:hidden e
+   conteúdo sem altura explícita — max-height evita essa armadilha). */
+.dfp-acc-body { max-height: 0; overflow: hidden; transition: max-height .25s ease; }
+.dfp-acc.aberta .dfp-acc-body { max-height: 600px; }
+.dfp-acc-corpo { padding: 0 14px 14px; }
+.dfp-acc-detalhe { font-size: 12px; color: var(--ink-700); line-height: 1.55; margin: 0 0 10px; padding: 10px 12px; background: var(--ink-50); border-radius: var(--radius-md); }
+
+/* ── Etapa 3 — Histórico ── */
+.dfp-corpo { flex: 1; overflow-y: auto; padding: 16px 24px; min-height: 220px; background: #fff; }
+
+.dfp-timeline { position: relative; padding-left: 6px; }
+.dfp-evento { display: flex; gap: 12px; padding-bottom: 18px; position: relative; }
+.dfp-evento::before { content: ""; position: absolute; left: 13px; top: 28px; bottom: 0; width: 2px; background: var(--ink-100); }
+.dfp-evento:last-child::before { display: none; }
+.dfp-evento-ponto { width: 28px; height: 28px; border-radius: 50%; background: #fff; border: 1px solid var(--ink-200); display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--ink-500); flex-shrink: 0; z-index: 1; }
+.dfp-evento.ok    .dfp-evento-ponto { border-color: var(--ok);  color: var(--ok);  background: var(--ok-bg); }
+.dfp-evento.falha .dfp-evento-ponto { border-color: var(--err); color: var(--err); background: var(--err-bg); }
+.dfp-evento.info  .dfp-evento-ponto { border-color: var(--brand-300); color: var(--brand-700); background: var(--brand-50); }
+.dfp-evento-corpo { flex: 1; padding-top: 3px; }
+.dfp-evento-texto { font-size: 12.5px; color: var(--ink-700); line-height: 1.5; }
+.dfp-evento-quando { font-size: 10.5px; color: var(--ink-400, var(--ink-300)); margin-top: 3px; }
+
+/* ── Rodapé ── */
+.dfp-rodape { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-top: 1px solid var(--ink-200); flex-shrink: 0; background: var(--ink-50); }
+.dfp-rodape-status { flex: 1; display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ink-500); min-width: 0; }
+.dfp-rodape-status .ok { color: var(--ok); }
+.btn-recusar-cancelar { display: flex; align-items: center; height: 32px; padding: 0 14px; border-radius: var(--radius-md); font-size: 12px; font-weight: 600; color: var(--ink-500); background: #fff; border: 1px solid var(--ink-200); transition: background .15s; }
+.btn-recusar-cancelar:hover { background: var(--ink-50); }
+
+.btn-fpd-etapa-voltar { display: flex; align-items: center; gap: 4px; height: 32px; border: 1px solid var(--ink-200); border-radius: var(--radius-md); padding: 0 14px; font-size: 12px; font-weight: 600; color: var(--ink-700); background: #fff; }
+.btn-fpd-etapa-voltar:hover { background: var(--ink-100); }
+.btn-fpd-etapa-proxima { display: flex; align-items: center; gap: 4px; height: 32px; background: var(--brand-700); color: #fff; border: none; border-radius: var(--radius-md); padding: 0 16px; font-size: 12px; font-weight: 600; }
+.btn-fpd-etapa-proxima:hover { background: var(--brand-800); }
+
+@@media (max-width: 720px) {
+    .dfp-dados-grid { flex-direction: column; }
+    .dfp-divisor-v { display: none; }
+}
+</style>

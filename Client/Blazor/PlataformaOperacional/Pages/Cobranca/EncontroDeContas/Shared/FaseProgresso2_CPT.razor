@@ -1,0 +1,379 @@
+﻿@namespace Plataforma.Components.Shared
+
+<style>
+    .fpl-phases {
+        width: 100%;
+        box-sizing: border-box;
+        background: var(--white, #fff);
+        border: 1px solid var(--ink-200, #e2e8f0);
+        border-radius: var(--r-lg, 14px);
+        padding: 16px 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0;
+        margin-top: 14px;
+        box-shadow: var(--shadow-xs, 0 1px 2px rgba(15,23,42,0.04));
+        overflow: hidden;
+        font-family: 'CAIXA Std', 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+
+    .fpl-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 11px;
+        margin-bottom: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--ink-500, #64748b);
+        margin-right: 18px;
+        padding-top: 4px;
+        font-weight: 600;
+        flex-shrink: 0;
+    }
+
+    .fpl-counter {
+        padding: 2px 9px;
+        border-radius: 999px;
+        background: var(--ink-100, #f1f5f9);
+        color: var(--ink-700, #334155);
+        font-size: 11px;
+        font-weight: 600;
+        font-family: var(--font-mono, ui-monospace, Consolas, monospace);
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 0;
+        text-transform: none;
+    }
+
+    .fpl-demand {
+        padding: 2px 10px;
+        border-radius: 999px;
+        background: rgba(0, 92, 169, 0.08);
+        color: var(--brand-700, #0a3d7a);
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        text-transform: none;
+    }
+
+    .fpl-demand b {
+        color: var(--brand-600, #005ca9);
+        font-family: var(--font-mono, ui-monospace, Consolas, monospace);
+        font-weight: 700;
+    }
+
+    .fpl-list {
+        --fpl-per-row: 4;
+        --fpl-connector-slot: 40px;
+        --fpl-item-width: calc((100% - (var(--fpl-per-row) - 1) * var(--fpl-connector-slot)) / var(--fpl-per-row));
+
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+        flex: 1;
+        min-width: 0;
+        width: 100%;
+        margin-top:8px;
+    }
+
+    .fpl-row {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .fpl-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: 0 0 var(--fpl-item-width);
+        min-width: 0;
+    }
+
+    .fpl-dot {
+        width: 28px;
+        height: 28px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--ink-100, #f1f5f9);
+        color: var(--ink-400, #94a3b8);
+        font-family: var(--font-mono, ui-monospace, Consolas, monospace);
+        font-size: 11px;
+        font-weight: 600;
+        flex-shrink: 0;
+        border: 1.5px solid var(--ink-200, #e2e8f0);
+        transition: all 240ms cubic-bezier(0.22, 0.61, 0.36, 1);
+    }
+
+    .fpl-body {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .fpl-name {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--ink-500, #64748b);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        transition: color 240ms ease, font-weight 240ms ease;
+    }
+
+    .fpl-sub {
+        font-size: 11px;
+        color: var(--ink-400, #94a3b8);
+        font-family: var(--font-mono, ui-monospace, Consolas, monospace);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        transition: color 240ms ease;
+    }
+
+    /* Conector ─── (entre fases) */
+    .fpl-connector {
+        flex: 0 0 24px;
+        height: 2px;
+        background: var(--ink-200, #e2e8f0);
+        margin: 0 8px;
+        border-radius: 2px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .fpl-connector .fpl-fill {
+        position: absolute;
+        inset: 0;
+        background: var(--brand-600, #005ca9);
+        transform-origin: left center;
+        transform: scaleX(0);
+        transition: transform 420ms cubic-bezier(0.22, 0.61, 0.36, 1),
+                    background 240ms ease;
+    }
+
+    .fpl-connector.fpl-filled .fpl-fill {
+        transform: scaleX(1);
+    }
+
+    .fpl-connector.fpl-link-waiting .fpl-fill {
+        background: #f39200;
+    }
+
+    /* Concluída */
+    .fpl-item.fpl-done .fpl-dot {
+        background: var(--brand-600, #005ca9);
+        color: #fff;
+        border-color: var(--brand-600, #005ca9);
+    }
+    .fpl-item.fpl-done .fpl-name {
+        color: var(--ink-900, #0f172a);
+    }
+
+    /* Em execução */
+    .fpl-item.fpl-active .fpl-dot {
+        background: var(--brand-100, #dbeafe);
+        color: var(--brand-700, #0a3d7a);
+        border-color: var(--brand-600, #005ca9);
+        box-shadow: 0 0 0 4px rgba(0, 92, 169, 0.10);
+    }
+    .fpl-item.fpl-active .fpl-name {
+        color: var(--brand-700, #0a3d7a);
+        font-weight: 700;
+    }
+    .fpl-item.fpl-active .fpl-sub {
+        color: var(--brand-600, #005ca9);
+    }
+
+    .fpl-pulse {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--brand-600, #005ca9);
+        animation: fpl-pulse 1.4s infinite ease-in-out;
+    }
+
+    @@keyframes fpl-pulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50%      { transform: scale(1.45); opacity: 0.5; }
+    }
+
+    /* Aguardando início */
+    .fpl-item.fpl-waiting .fpl-dot {
+        background: rgba(245, 158, 11, 0.10);
+        color: #f39200;
+        border-color: #f39200;
+        box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.10);
+    }
+    .fpl-item.fpl-waiting .fpl-name {
+        color: #d87b00;
+        font-weight: 700;
+    }
+    .fpl-item.fpl-waiting .fpl-sub {
+        color: #f39200;
+    }
+
+    /* Responsivo */
+    @@media (max-width: 720px) {
+        .fpl-phases {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        .fpl-label {
+            margin-right: 0;
+            padding-top: 0;
+        }
+        .fpl-list {
+            width: 100%;
+            gap: 10px;
+        }
+        .fpl-row {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+        }
+        .fpl-item {
+            flex: 0 0 auto;
+            width: 100%;
+        }
+        .fpl-connector {
+            width: 2px;
+            height: 18px;
+            margin: 0 0 0 14px;
+            flex: 0 0 18px;
+        }
+    }
+</style>
+@if (PaginaCarregada)
+{
+    <div class="fpl-phases" aria-label="Fase do processo">
+    <span class="fpl-label">
+        Fase atual
+        @if (Fases.Count > 0)
+        {
+            <span class="fpl-counter">@FaseAtualLimitada / @Fases.Count</span>
+        @if (Fases.Count == 0)
+        {
+             <span class="fpl-demand">Aguardando inicialização</span>
+        }
+        }
+        @if (IdDemanda is not null and > 0)
+        {
+            <span class="fpl-demand">Demanda <b>#@_idDemanda</b></span>
+        }
+       
+    </span>
+
+    <div class="fpl-list" style="--fpl-per-row: @FasesPorLinha;">
+        @foreach (var linha in AgruparEmLinhas())
+        {
+            <div class="fpl-row">
+                @for (int j = 0; j < linha.Count; j++)
+                {
+                    var f = linha[j];
+                    var status = StatusDe(f.Numero);
+                    var classeStatus = status switch
+                    {
+                        StatusFase.Concluida        => "fpl-done",
+                        StatusFase.EmExecucao       => "fpl-active",
+                        StatusFase.AguardandoInicio => "fpl-waiting",
+                        _                            => ""
+                    };
+                    var conectorAtivo = status == StatusFase.Concluida;
+                    var ehUltimoNaLinha = j == linha.Count - 1;
+
+                    <div class="fpl-item @classeStatus">
+                        <span class="fpl-dot">
+                            @switch (status)
+                            {
+                                case StatusFase.Concluida:
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                    break;
+                                case StatusFase.EmExecucao:
+                                    <span class="fpl-pulse"></span>
+                                    break;
+                                case StatusFase.AguardandoInicio:
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M8 5v14l11-7z" />
+                                    </svg>
+                                    break;
+                                default:
+                                    @f.Numero.ToString("00")
+                                    break;
+                            }
+                        </span>
+                        <div class="fpl-body">
+                            <div class="fpl-name">@f.Titulo</div>
+                            <div class="fpl-sub">@f.Subtitulo</div>
+                        </div>
+                    </div>
+
+                    @if (!ehUltimoNaLinha)
+                    {
+                        var statusProximo = StatusDe(linha[j + 1].Numero);
+                        var classeConector = statusProximo == StatusFase.AguardandoInicio
+                            ? "fpl-filled fpl-link-waiting"
+                            : conectorAtivo ? "fpl-filled" : "";
+
+                        <div class="fpl-connector @classeConector">
+                            <div class="fpl-fill"></div>
+                        </div>
+                    }
+                }
+            </div>
+        }
+    </div>
+
+    @* debug — pode remover *@
+@*     <h5>Executando Status: @Executando</h5>
+    <h5>FaseAtual Status: @FaseAtual</h5> *@
+</div>
+    
+}
+else
+{
+    <div style="margin-top:12px;">
+        <ToolbarSkeleton />
+    </div>
+}
+
+
+@code {
+    public enum StatusFase { Pendente, EmExecucao, Concluida, AguardandoInicio }
+
+    [Parameter] public int FaseAtual { get; set; }
+    [Parameter] public int? IdDemanda { get; set; }
+    private int _idDemanda => IdDemanda ?? 0;
+    [Parameter] public bool Executando { get; set; }
+    [Parameter] public bool PaginaCarregada { get; set; }
+    [Parameter] public List<FaseEtapas> Fases { get; set; } = new();
+    [Parameter] public int FasesPorLinha { get; set; } = 4;
+
+    private int FaseAtualLimitada => Math.Clamp(FaseAtual, 0, Fases.Count);
+
+    private StatusFase StatusDe(int numero) =>
+        numero < FaseAtual  ? StatusFase.Concluida
+      : numero > FaseAtual  ? StatusFase.Pendente
+      : Executando          ? StatusFase.EmExecucao
+                            : StatusFase.AguardandoInicio;
+
+    private List<List<FaseEtapas>> AgruparEmLinhas()
+    {
+        var grupos = new List<List<FaseEtapas>>();
+        var tamanho = Math.Max(1, FasesPorLinha);
+        for (int i = 0; i < Fases.Count; i += tamanho)
+        {
+            grupos.Add(Fases.Skip(i).Take(tamanho).ToList());
+        }
+        return grupos;
+    }
+
+    
+}

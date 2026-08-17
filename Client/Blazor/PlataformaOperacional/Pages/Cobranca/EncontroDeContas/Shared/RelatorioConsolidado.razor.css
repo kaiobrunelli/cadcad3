@@ -1,0 +1,238 @@
+.card {
+    background: var(--white);
+    border: 1px solid var(--ink-200);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-xs);
+    overflow: hidden;
+    margin-top: 12px;
+}
+
+.card-head {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--ink-150);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+/* Quando o card está colapsado, o header não deve ter linha embaixo
+   — assim ele vira o próprio "rodapé" visual do card. */
+.card.is-collapsed .card-head {
+    border-bottom: none;
+}
+
+.card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink-900);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+    .card-title .icon {
+        color: var(--brand-600);
+    }
+
+.meta-label {
+    font-size: 11px;
+    color: var(--ink-500);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+/* --------- Botão de collapse no header --------- */
+.card-toggle {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--ink-100);
+    color: var(--ink-700);
+    border: 1px solid var(--ink-200);
+    border-radius: var(--r-sm);
+    cursor: pointer;
+    transition: background 160ms ease, color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+    .card-toggle:hover {
+        background: rgba(0, 92, 169, 0.10);
+        color: #005ca9;
+        border-color: rgba(0, 92, 169, 0.28);
+    }
+
+    .card-toggle:focus-visible {
+        outline: 2px solid #005ca9;
+        outline-offset: 2px;
+    }
+
+    .card-toggle svg {
+        transition: transform 220ms ease;
+    }
+
+    .card-toggle.is-open svg {
+        transform: rotate(180deg);
+    }
+
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    padding: 16px 20px;
+}
+
+@media (max-width: 820px) {
+    .metrics-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* --------- Tile base --------- */
+.tile {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background: var(--white);
+    border: 1px solid var(--ink-200);
+    border-radius: var(--r-md);
+    overflow: hidden;
+    transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+    .tile::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+    }
+
+    .tile.kind-reabert::before,
+    .tile.kind-cond::before,
+    .tile.kind-drp::before {
+        background: #005ca9;
+    }
+
+.tile-body {
+    padding: 16px 18px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+}
+
+.tile-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.tile-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: var(--r-sm);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--ink-100);
+    color: var(--ink-700);
+}
+
+.tile.kind-reabert .tile-icon,
+.tile.kind-cond .tile-icon,
+.tile.kind-drp .tile-icon {
+    background: rgba(0, 92, 169, 0.10);
+    color: #005ca9;
+}
+
+.tile-label {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--ink-800);
+}
+
+.tile-count {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    line-height: 1;
+}
+
+    .tile-count .num {
+        font-family: var(--font-mono);
+        font-size: 32px;
+        font-weight: 600;
+        color: var(--ink-900);
+        letter-spacing: -0.02em;
+    }
+
+    .tile-count .unit {
+        font-size: 12px;
+        color: var(--ink-500);
+    }
+
+.tile-desc {
+    font-size: 11.5px;
+    color: var(--ink-500);
+    margin-top: auto;
+}
+
+/* --------- Chip "Ver detalhes" no tile DRP --------- */
+.chip-cta {
+    align-self: flex-end;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 12px 6px 10px;
+    margin-top: 4px;
+    background: rgba(0, 92, 169, 0.10);
+    color: #005ca9;
+    border: 1px solid rgba(0, 92, 169, 0.28);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    transition: all 160ms ease;
+}
+
+    .chip-cta .chip-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 999px;
+        background: #005ca9;
+        box-shadow: 0 0 0 3px rgba(0, 92, 169, 0.16);
+        transition: box-shadow 160ms ease, background 160ms ease;
+    }
+
+    .chip-cta svg {
+        transition: transform 160ms ease;
+    }
+
+    .chip-cta:hover {
+        background: #005ca9;
+        color: var(--white);
+        border-color: #005ca9;
+        box-shadow: 0 3px 10px rgba(0, 92, 169, 0.28);
+    }
+
+        .chip-cta:hover .chip-dot {
+            background: var(--white);
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.25);
+        }
+
+        .chip-cta:hover svg {
+            transform: translateX(3px);
+        }
+
+    .chip-cta:focus-visible {
+        outline: 2px solid #005ca9;
+        outline-offset: 2px;
+    }

@@ -1,0 +1,393 @@
+﻿@* ================================================================
+   ConfirmacaoEmailDialog.razor  —  MudBlazor Dialog Component
+   
+   DEPENDÊNCIAS no .csproj:
+     <PackageReference Include="MudBlazor" Version="6.*" />
+   
+   No Program.cs:
+     builder.Services.AddMudServices();
+   
+   No MainLayout.razor ou App.razor:
+     <MudDialogProvider />
+     <MudSnackbarProvider />
+     <MudThemeProvider />
+   
+   USO na página:
+     @inject IDialogService DialogService
+     
+     private async Task AbrirDialog()
+     {
+         var parametros = new DialogParameters
+         {
+             ["Email"]        = "kaio@empresa.com",
+             ["Destinatario"] = "Kaio Brunelli"
+         };
+         
+         var opcoes = new DialogOptions
+         {
+             CloseOnEscapeKey = true,
+             BackdropClick    = false,
+             MaxWidth         = MaxWidth.Small,
+             FullWidth        = true,
+             Position         = DialogPosition.Center,
+             NoHeader         = true
+         };
+         
+         var dialog    = await DialogService.ShowAsync<ConfirmacaoEmailDialog>(
+                             string.Empty, parametros, opcoes);
+         var resultado = await dialog.Result;
+         
+         if (!resultado.Canceled)
+         {
+             await EnviarEmail();
+         }
+     }
+================================================================ *@
+
+@using MudBlazor
+
+<style>
+    .cd-dialog .mud-dialog {
+        border-radius: 16px !important;
+        box-shadow: 0 24px 64px rgba(15, 23, 42, 0.18),
+                    0 0 0 1px rgba(148, 163, 184, 0.12) !important;
+        overflow: hidden;
+    }
+
+    .cd-header {
+        background: linear-gradient(135deg, #1e40af 0%, #1d4ed8 50%, #2563eb 100%);
+        padding: 1.75rem 1.75rem 1.5rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .cd-header::before {
+        content: '';
+        position: absolute;
+        top: -40px;
+        right: -40px;
+        width: 130px;
+        height: 130px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.06);
+    }
+
+    .cd-header::after {
+        content: '';
+        position: absolute;
+        bottom: -20px;
+        right: 60px;
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.04);
+    }
+
+    .cd-header-icon-wrap {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(8px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .cd-header-title {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: #ffffff;
+        margin: 0 0 0.25rem;
+        letter-spacing: -0.02em;
+        position: relative;
+        z-index: 1;
+    }
+
+    .cd-header-sub {
+        font-size: 0.8125rem;
+        color: rgba(255, 255, 255, 0.72);
+        margin: 0;
+        position: relative;
+        z-index: 1;
+    }
+
+    .cd-body {
+        padding: 1.5rem 1.75rem;
+        background: #ffffff;
+    }
+
+    .cd-alert {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        background: #f0f7ff;
+        border: 1px solid #bfdbfe;
+        border-left: 3px solid #2563eb;
+        border-radius: 10px;
+        padding: 1rem 1.125rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .cd-alert-icon {
+        color: #2563eb;
+        flex-shrink: 0;
+        margin-top: 1px;
+    }
+
+    .cd-alert-text {
+        font-size: 0.875rem;
+        color: #1e3a5f;
+        line-height: 1.6;
+        margin: 0;
+    }
+
+    .cd-alert-text strong {
+        color: #1d4ed8;
+        font-weight: 600;
+    }
+
+    .cd-recipient {
+        display: flex;
+        align-items: center;
+        gap: 0.875rem;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 0.875rem 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .cd-recipient-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 0.875rem;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+
+    .cd-recipient-info { flex: 1; min-width: 0; }
+
+    .cd-recipient-name {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #0f172a;
+        margin: 0 0 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .cd-recipient-email {
+        font-size: 0.78rem;
+        color: #64748b;
+        margin: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-family: 'Courier New', monospace;
+    }
+
+    .cd-recipient-badge {
+        font-size: 0.68rem;
+        font-weight: 600;
+        color: #16a34a;
+        background: #dcfce7;
+        border: 1px solid #bbf7d0;
+        border-radius: 999px;
+        padding: 2px 8px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .cd-warning {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.78rem;
+        color: #78716c;
+        padding: 0 0.25rem;
+    }
+
+    .cd-warning-dot {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: #f59e0b;
+        flex-shrink: 0;
+    }
+
+    .cd-footer {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.625rem;
+        padding: 1.125rem 1.75rem;
+        background: #f8fafc;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .cd-btn-cancel {
+        height: 38px !important;
+        padding: 0 1.125rem !important;
+        border-radius: 8px !important;
+        font-size: 0.875rem !important;
+        font-weight: 500 !important;
+        color: #475569 !important;
+        background: #ffffff !important;
+        border: 1.5px solid #cbd5e1 !important;
+        box-shadow: none !important;
+        letter-spacing: 0 !important;
+        text-transform: none !important;
+        transition: all 0.15s !important;
+    }
+
+    .cd-btn-cancel:hover {
+        background: #f1f5f9 !important;
+        border-color: #94a3b8 !important;
+        color: #1e293b !important;
+    }
+
+    .cd-btn-confirm {
+        height: 38px !important;
+        padding: 0 1.25rem !important;
+        border-radius: 8px !important;
+        font-size: 0.875rem !important;
+        font-weight: 600 !important;
+        background: linear-gradient(135deg, #1d4ed8, #2563eb) !important;
+        color: #ffffff !important;
+        box-shadow: 0 2px 8px rgba(29, 78, 216, 0.35) !important;
+        letter-spacing: 0 !important;
+        text-transform: none !important;
+        border: none !important;
+        transition: all 0.15s !important;
+    }
+
+    .cd-btn-confirm:hover {
+        background: linear-gradient(135deg, #1e3a8a, #1d4ed8) !important;
+        box-shadow: 0 4px 12px rgba(29, 78, 216, 0.45) !important;
+        transform: translateY(-1px) !important;
+    }
+
+    .cd-btn-confirm:disabled {
+        opacity: 0.65 !important;
+        transform: none !important;
+        cursor: not-allowed !important;
+    }
+
+    .cd-btn-confirm .cd-spinner {
+        width: 14px;
+        height: 14px;
+        border: 2px solid rgba(255,255,255,0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: cd-spin 0.7s linear infinite;
+        display: inline-block;
+        margin-right: 6px;
+        vertical-align: middle;
+    }
+
+    @@keyframes cd-spin {
+        to { transform: rotate(360deg); }
+    }
+</style>
+
+<MudDialog Class="cd-dialog">
+
+    <TitleContent>
+        <div class="cd-header">
+            <div class="cd-header-icon-wrap">
+                <MudIcon Icon="@Icons.Material.Outlined.MarkEmailUnread"
+                         Style="color: white; font-size: 22px;" />
+            </div>
+            <h2 class="cd-header-title">Confirmar Envio de E-mail</h2>
+            <p class="cd-header-sub">Revise as informações antes de confirmar</p>
+        </div>
+    </TitleContent>
+
+    <DialogContent>
+        <div class="cd-body">
+
+            <div class="cd-alert">
+                <MudIcon Icon="@Icons.Material.Outlined.Info"
+                         Class="cd-alert-icon"
+                         Style="font-size: 18px;" />
+                <p class="cd-alert-text">
+                    O e-mail de previsão do dia será enviado a GEAVO e GESFI. Gostaria de confirmar o envio?
+                </p>
+            </div>
+
+        
+
+            <div class="cd-warning">
+                <span class="cd-warning-dot"></span>
+                O envio ocorrerá em segundo plano. Você receberá uma notificação de confirmação.
+            </div>
+
+        </div>
+    </DialogContent>
+
+    <DialogActions>
+        <div class="cd-footer" style="width: 100%;">
+            <MudButton Class="cd-btn-cancel"
+                       OnClick="Cancelar"
+                       Disabled="_enviando">
+                Cancelar
+            </MudButton>
+
+            <MudButton Class="cd-btn-confirm"
+                       OnClick="Confirmar"
+                       Disabled="_enviando">
+                @if (_enviando)
+                {
+                    <span class="cd-spinner"></span>
+                    <span>Enviando...</span>
+                }
+                else
+                {
+                    <MudIcon Icon="@Icons.Material.Outlined.Send"
+                             Style="font-size:16px; margin-right:6px; vertical-align:middle;" />
+                    <span>Confirmar Envio</span>
+                }
+            </MudButton>
+        </div>
+    </DialogActions>
+
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance? MudDialog { get; set; } = default!;
+
+    private bool _enviando = false;
+
+
+
+    private void Cancelar() => MudDialog.Cancel();
+
+    private async Task Confirmar()
+    {
+        _enviando = true;
+        StateHasChanged();
+
+        try
+        {
+            // substitua pelo seu serviço real
+            await Task.Delay(1500);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Erro ao enviar e-mail: {ex.Message}");
+            _enviando = false;
+            StateHasChanged();
+        }
+    }
+}

@@ -1,0 +1,97 @@
+﻿@inject ISnackbar Snackbar
+@inject CobrancaService CobrancaService
+<style>
+	.mud-dialog .mud-dialog-title .mud-button-close {
+		color: white;
+	}
+
+	.mud-dialog .mud-dialog-title {
+		background-color: #005ca9;
+		color: white;
+	}
+
+	.mud-select .mud-select-input .mud-input-slot {
+		color: #4D4D4D !important;
+	}
+</style>
+<MudThemeProvider Theme="_myCustomTheme"></MudThemeProvider>
+<MudDialog>
+	<TitleContent>
+		<MudStack Row="true" Spacing="2" Justify="Justify.FlexStart" AlignItems="AlignItems.Center">
+			<MudIcon Icon="@Icons.Material.Filled.FileOpen" Class="mr-2" />
+			<MudText Typo="Typo.h6">Consulta</MudText>
+		</MudStack>
+	</TitleContent>
+	<DialogContent>
+		<MudGrid Class="pt-4">
+			<MudItem xs="12" md="12" Style="width:100%; min-width:280px;">
+				<MudStack Row="false" Spacing="2">
+					<MudStack Row="true" Justify="Justify.SpaceBetween">
+						<MudText Typo="Typo.body2"><b>Nº Contrato:</b></MudText>
+						<MudText Typo="Typo.body2">@ContratoMovimentacaoGeral.NuContrato - @ContratoMovimentacaoGeral.NuContratoDv </MudText>
+					</MudStack>
+					<MudDivider Style="height:1px;" Class="my-1"></MudDivider>
+					<MudStack Row="true" Justify="Justify.SpaceBetween">
+						<MudText Typo="Typo.body2"><b>Codigo Apontamento:</b> </MudText>
+						<MudText Typo="Typo.body2">@ContratoMovimentacaoGeral.CoApontamento </MudText>
+					</MudStack>
+					<MudDivider Style="height:1px;" Class="my-1"></MudDivider>
+					<MudStack Row="true" Justify="Justify.SpaceBetween">
+						<MudText Typo="Typo.body2"><b>Tipo Movimento:</b> </MudText>
+						<MudText Typo="Typo.body2">@ContratoMovimentacaoGeral.TipoMovimentacao </MudText>
+					</MudStack>									
+					<MudDivider Style="height:1px;" Class="my-1"></MudDivider>
+					<MudStack Row="true" Justify="Justify.SpaceBetween">
+						<MudText Typo="Typo.body2"><b>Data Crédito</b></MudText>
+						<MudText Typo="Typo.body2">@ConverterData(ContratoMovimentacaoGeral.DtCredito)</MudText>
+					</MudStack>			
+					<MudDivider Style="height:1px;" Class="my-1"></MudDivider>
+					<MudStack Row="true" Justify="Justify.SpaceBetween">
+						<MudText Typo="Typo.body2"><b>Valor: R$</b></MudText>
+						<MudText Typo="Typo.body2">@ContratoMovimentacaoGeral.VrTotal?.ToString("N2") </MudText>
+					</MudStack>
+				</MudStack>		
+			</MudItem>		
+		</MudGrid>
+	</DialogContent>
+	<DialogActions>
+		<div class="mb-1 mr-1">
+			<MudButton OnClick="Cancel" Variant="Variant.Filled" Size="Size.Small" Color="Color.Inherit">Fechar</MudButton>
+		</div>
+	</DialogActions>
+</MudDialog>
+
+@code {
+	[CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+
+	[Parameter] public MovimentacaoGeral ContratoMovimentacaoGeral { get; set; }
+
+	private void Cancel() => MudDialog.Cancel();
+
+	private string ConverterData(DateTime? data)
+	{
+		if (data.HasValue)
+		{
+			return data.Value.ToString("dd/MM/yy");
+		}
+		return string.Empty;
+	}
+	private MudTheme _myCustomTheme = new MudTheme()
+		{
+			PaletteLight = new PaletteLight()
+			{
+				Background = "#FAF8F5",
+				Primary = "#005ca9",
+				Secondary = "#D87B00",
+				Success = "#00A645",
+				// Success = "#1ABD55",
+				DrawerIcon = "#ffffff",
+			},
+		};
+
+
+
+
+
+
+}

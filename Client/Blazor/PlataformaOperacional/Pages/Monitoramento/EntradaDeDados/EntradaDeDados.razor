@@ -1,0 +1,379 @@
+﻿@page "/EntradaDados"
+@using Flunt.Notifications
+@using PlataformaOperacional.Service.Monitoramento.EntradaDeDadosService
+@using PlataformaOperacional.Model.MonitoramentoModel;
+@inject ISnackbar Snackbar;
+@inject EntradaDeDadosService Service;
+
+<PageTitle>Entrada de Dados</PageTitle>
+
+<MudThemeProvider Theme="DSCtheme" />
+
+<MudPaper MinHeight="100vh"
+          Class="d-flex justify-center align-start pa-8 rounded-xl"
+          Style="background: linear-gradient(#005CA9 0%, #54BBAB 100%)">
+    <MudPaper Elevation="0"
+              Width="100%"
+              MaxWidth="1160px"
+              Class="upload-card pa-7 rounded-xl"
+              Style="background: linear-gradient(#FFF 0%, #D0E0E3 100%); box-shadow: 0 22px 50px rgba(0, 90, 169, 0.22);">
+        <MudStack Spacing="3">
+            <MudText Typo="Typo.h5" GutterBottom Style="font-weight: 600">Entrada de Dados</MudText>
+
+            <MudStack Row Spacing="2" Class="d-flex align-center">
+
+                <MudFileUpload T="IReadOnlyList<IBrowserFile>"
+                               @ref="_fileUpload"
+                               Files="files"
+                               Accept=".csv"
+                               AppendMultipleFiles="true"
+                               FilesChanged="OnFilesChanged">
+                    <CustomContent>
+                        <MudButton Class="py-3 px-5"
+                                   StartIcon="@Icons.Material.Filled.FolderOpen"
+                                   Color="Color.Info"
+                                   Variant="Variant.Filled"
+                                   OnClick="@context.OpenFilePickerAsync"
+                                   Style="border-radius: 12px;">
+                            <MudText Style="font-weight: 600">Carregar arquivo</MudText>
+                        </MudButton>
+                    </CustomContent>
+                    <SelectedTemplate></SelectedTemplate>
+                </MudFileUpload>
+
+                <MudSpacer />
+                <MudChip Icon="@Icons.Material.Filled.DateRange" T="string" Variant="Variant.Text" Color="@(ultimaAtualizacao == DateTime.Today ? Color.Success : Color.Warning)">Última Atualização: @ultimaAtualizacao.ToString("dd/MM/yyyy")</MudChip>
+                <MudSpacer />
+                <MudButton Class="py-3 px-5"
+                           StartIcon="@Icons.Material.Filled.CloudUpload"
+                           Color="Color.Primary"
+                           Variant="Variant.Filled"
+                           Disabled="@exportarDesabilitado"
+                           Style="border-radius: 12px;"
+                           OnClick="() => EnviarDados(dados)">
+                    @if (processando)
+                    {
+                        @("Aguarde")
+                        <MudProgressCircular Class="ml-2" Indeterminate Size="Size.Small" Color="Color.Inherit" />
+                    }
+                    else
+                    @("Exportar dados")
+                    
+                </MudButton>
+            </MudStack>
+
+            <div style="height: 4px; background-color: #005CA9; border-radius: 4px; margin-top: 10px"></div>
+            <MudPaper Elevation="0" Class="overflow-hidden" Style="border-radius: 12px;">
+
+
+                <MudAlert Variant="Variant.Filled"
+                          Icon="@Icons.Material.Filled.DateRange"
+                          NoIcon
+                          Style="background-color: #d0e0e3; font-weight:600; color:inherit; min-height: 55px"
+                          ContentAlignment="HorizontalAlignment.Center">
+                </MudAlert>
+
+
+                <MudDataGrid T="Entrada" Items="dados" Loading="dataGridLoading" Hover Dense>
+                    <Columns>
+                        <TemplateColumn Title="Conta">
+                            <CellTemplate>
+                                <MudChip Class="cell-chip" Color="@(context.Item.Conta == 669 ? Color.Secondary : Color.Success)" Variant="Variant.Outlined">
+                                    @context.Item.Conta
+                                </MudChip>
+                            </CellTemplate>
+                        </TemplateColumn>
+                        <TemplateColumn Title="Data">
+                            <CellTemplate>
+                                <MudText Typo="Typo.body2">@context.Item.DataEfetiva</MudText>
+                            </CellTemplate>
+                        </TemplateColumn>
+                        <TemplateColumn Title="Histórico">
+                            <CellTemplate>
+                                <MudText Typo="Typo.body2">@(context.Item.CodigoHistorico + " - " + context.Item.Historico)</MudText>
+                            </CellTemplate>
+                        </TemplateColumn>
+                        <TemplateColumn Title="Valor">
+                            <CellTemplate>
+                                <MudText Typo="Typo.body2" Class="@(context.Item.Valor >= 0 ? "valor-positivo d-flex" : "valor-negativo d-flex")">@context.Item.Valor.ToString("N2")</MudText>
+                            </CellTemplate>
+                        </TemplateColumn>
+                        @*                         <TemplateColumn Title="Origem" CellClass="d-flex justify-start">
+                            <CellTemplate>
+                                <MudChip Class="cell-chip" Color="Color.Info" Variant="Variant.Outlined">
+                                    @context.Item.Origem
+                                </MudChip>
+                            </CellTemplate>
+                        </TemplateColumn> *@
+                    </Columns>
+                    <NoRecordsContent>
+                        @if (hasError)
+                        {
+                            <MudAlert Severity="Severity.Error" Dense>@statusMessage</MudAlert>
+
+                            <MudList T="string" Dense="true">
+                                @foreach (var notification in notifications)
+                                {
+                                    <MudListItem>@notification.Key: @notification.Message</MudListItem>
+                                }
+                            </MudList>
+                        }
+                        else
+                        {
+                            <MudAlert Severity="Severity.Warning">Utilize a opção Carregar arquivo para iniciar exportação.</MudAlert>
+                        }
+                    </NoRecordsContent>
+                </MudDataGrid>
+            </MudPaper>
+            <MudPaper Elevation="0" Style="margin-top: 12px; border-radius: 10px; padding: 10px 14px;">
+                <MudStack Row AlignItems="AlignItems.Center" Spacing="3">
+                    <MudText Typo="Typo.body2" Style="color: #404b52; font-weight: 600;">Linhas: @dados.Count</MudText>
+                    <MudText Typo="Typo.body2"
+                             Class="@(TotalValue >= 0 ? "valor-positivo  rounded-b-lg" : "valor-negativo rounded-b-lg")"
+                             Style="font-weight: 600; background: #d0e0e3; padding: 6px 12px;">
+                        Valor total: @TotalValue.ToString("N2")
+                    </MudText>
+                </MudStack>
+            </MudPaper>
+        </MudStack>
+    </MudPaper>
+</MudPaper>
+
+<style>
+    .valor-positivo {
+        color: #005CA9;
+        font-weight: 500;
+        text-align: end !important;
+        align-content: end !important;
+    }
+
+    .valor-negativo {
+        color: #b22c2c;
+        font-weight: 500;
+    }
+
+    .cell-chip {
+        border-color: #54bbab;
+        color: #03453b;
+        font-weight: 600;
+        padding: 2px 12px;
+    }
+</style>
+
+@code {
+
+    private MudFileUpload<IReadOnlyList<IBrowserFile>>? _fileUpload;
+    private IReadOnlyList<IBrowserFile> files = Array.Empty<IBrowserFile>();
+    private bool _limpando;
+
+    private List<Entrada> dados = new();
+    private List<Entrada> dadosTemporarios = new();
+    private HashSet<int> contasInseridas = new();
+    private bool exportarDesabilitado = true;
+    private bool dataGridLoading = false;
+    private bool processando = false;
+    private ResultadoFlunt? _resultado = new();
+    private string _mensagemErro = string.Empty;
+
+    private decimal TotalValue => dados.Sum(e => e.Valor);
+    private decimal AverageValue => dados.Any() ? TotalValue / dados.Count : 0m;
+
+    private bool hasError;
+    private string? statusMessage;
+    private List<Flunt.Notifications.Notification> notifications = [];
+
+    private DateTime ultimaAtualizacao;
+
+    // protected override async Task OnInitializedAsync()
+    // {
+    //     await CarregarUltimaAtualizacaoAsync();
+    // }
+
+
+    private async Task CarregarUltimaAtualizacaoAsync()
+    {
+        var response = await Service.ConsultarUltimoControle();
+        ultimaAtualizacao = await HttpResponseHandler.ResponseHandler<DateTime>(response, Snackbar);
+    }
+
+
+    private async Task OnFilesChanged(IReadOnlyList<IBrowserFile>? selectedFiles)
+    {
+        if (_limpando)
+        {
+            _limpando = false;
+            files = Array.Empty<IBrowserFile>();
+            return;
+        }
+
+        if (selectedFiles is null || selectedFiles.Count == 0)
+        {
+            files = Array.Empty<IBrowserFile>();
+            return;
+        }
+
+        files = selectedFiles;
+
+        if (files.Count != 2)
+        {
+            Snackbar.Add("Selecione os dois arquivos para prosseguir (contas 63 e 669).", Severity.Error);
+            await ResetUploaderAsync();
+            return;
+        }
+
+        await UploadFile(files);
+        await ResetUploaderAsync();
+    }
+
+    private async Task ResetUploaderAsync()
+    {
+        files = Array.Empty<IBrowserFile>();
+
+        if (_fileUpload is not null)
+        {
+            _limpando = true;
+            await _fileUpload.ClearAsync();
+        }
+    }
+
+    private async Task UploadFile(IReadOnlyList<IBrowserFile> uploadedFiles)
+    {
+        dados = [];
+        dadosTemporarios = [];
+        contasInseridas = [];
+        dataGridLoading = true;
+        statusMessage = null;
+        hasError = false;
+        notifications = [];
+
+        if (uploadedFiles.Count != 2)
+        {
+            hasError = true;
+            statusMessage = "Devem ser inseridos dois arquivos (Contas 63 e 669).";
+            dataGridLoading = false;
+            return;
+        }
+
+        foreach (var file in uploadedFiles)
+        {
+            var result = await LerArquivoAsync(file);
+
+            notifications.AddRange(result.Notifications);
+
+            if (!result.IsValid)
+            {
+                hasError = true;
+                statusMessage = $"O arquivo {file.Name} for processado com as seguintes inconsistências:";
+                dataGridLoading = false;
+                return;
+            }
+
+            dadosTemporarios.AddRange(result.Entradas);
+            contasInseridas.Add(result.Conta);
+        }
+
+        if (!contasInseridas.SetEquals(new[] { 63, 669 }))
+        {
+            hasError = true;
+            statusMessage = $"Deve ser inserido um arquivo para a conta 63 e outro para a conta 669.";
+            dataGridLoading = false;
+            return;
+        }
+
+        dados = dadosTemporarios;
+        statusMessage = hasError
+            ? $"Arquivos processados com {notifications.Count} inconsistência(s):"
+            : $"Arquivos processados com sucesso. Registros importados: {dados.Count}.";
+
+        exportarDesabilitado = hasError || !dados.Any();
+
+        dataGridLoading = false;
+    }
+
+    private async Task EnviarDados(List<Entrada> entradas)
+    {
+        if (processando) return;
+        processando = true;
+        StateHasChanged();
+        var response = await Service.IncluirDados(entradas);
+
+        if(response.IsSuccessStatusCode)
+        {
+            Snackbar.Add("Dados incluídos com sucesso.", Severity.Success);
+        }
+        else
+        {
+            try
+            {
+                _resultado = await response.Content.ReadFromJsonAsync<ResultadoFlunt>();
+                _mensagemErro = _resultado?.Notifications?.FirstOrDefault()?.Message ?? "Erro desconhecido.";
+            } 
+            catch(Exception ex)
+            {
+                _mensagemErro = await response.Content.ReadAsStringAsync();
+                if (string.IsNullOrWhiteSpace(_mensagemErro)) _mensagemErro = ex.Message;
+            }
+
+            Snackbar.Add("Falha ao enviar dados: " + _mensagemErro, Severity.Error);
+            processando = false;
+            await OnInitializedAsync();
+        }
+
+        processando = false;
+        exportarDesabilitado = true;
+        await OnInitializedAsync();
+    }
+
+    public static MudTheme DSCtheme = new MudTheme
+    {
+        PaletteLight = new PaletteLight
+        {
+            //Azul
+            Primary = "#005CA9", //Primary 90
+            PrimaryDarken = "#00437A", //Primary 110
+            PrimaryLighten = "#2D8AD8", //Primary 70
+                                        //Laranja
+            Secondary = "#d87b00", //Secondary 90
+            SecondaryDarken = "#a65e00", //Secondary 110
+            SecondaryLighten = "#f39200", //Secondary 70
+                                          //Turquesa
+            Tertiary = "#54bbab", //Tertiary 70
+            TertiaryDarken = "#359485", //Tertiary 90
+            TertiaryLighten = "#81d6c8", //Tertiary 50
+                                         //Cinza
+            GrayDefault = "#d0e0e3", //50
+            GrayDark = "#9eb2b8", //70
+            GrayDarker = "#64747a", //90
+            GrayLight = "#eBf1f2", //30
+            GrayLighter = "#f7fAfa", //10
+                                     //Branco
+            White = "#FFFFFF",
+            //Positive
+            Success = "#127527", //90
+            SuccessDarken = "#0d581c", //110
+            SuccessLighten = "#179231", //70
+                                        //Attention
+            Warning = "#ca9804", //90
+            WarningDarken = "#977203", //110
+            WarningLighten = "#fcbe05", //70
+                                        //Negative
+            Error = "#b22c2c", //90
+            ErrorDarken = "#8c2323", //110
+            ErrorLighten = "#d93636", //70
+                                      //Informative
+            Info = "#038299", //90
+            InfoDarken = "#026173", //110
+            InfoLighten = "#04a2bf", //70
+        },
+    };
+        
+    public class EntradaDeDadosImportResult : Notifiable<Notification>
+    {
+        public List<Entrada> Entradas { get; } = [];
+        public int Conta;
+    }
+}
+
+
+
+

@@ -1,0 +1,70 @@
+﻿@page "/cardcard"
+@using MudBlazor
+
+<MudThemeProvider Theme="_customTheme" />
+
+<MudItem lg="2" md="2" xs="6">
+<MudCard Elevation="0">
+   
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.body2" Class="">DATAS PENDENTES</MudText>
+        </CardHeaderContent>
+    </MudCardHeader>
+    <MudCardContent>
+            <MudList T="string" ReadOnly="true" Class="pa-0">
+      
+            @foreach (var item in ControlePendentes)
+            {
+                    <MudListItem Class="pa-0">
+                 
+                    <div class="d-flex justify-content-between align-center">
+
+                        <MudChip Text="purple" Variant="Variant.Outlined" Color="Color.Primary">@item.DtReferencia.ToString("dd/MM/yyyy")</MudChip>
+                        @* Ícone com cor condicional *@
+                        <MudIcon Icon="Icons.Material.Filled.CheckCircle"
+                                 Color="Color.Success"
+                                 Size="Size.Small" />
+                      @*   <MudIcon Icon="@(item.IsLoaded ? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.AccessTime)"
+                                 Color="@(item.IsLoaded ? Color.Success : Color.Error)"
+                                 Size="Size.Small" /> *@
+                    </div>
+                </MudListItem>
+                @if (item != ControlePendentes.Last())
+                {
+                    <MudDivider DividerType="DividerType.Middle" /> @* Separador leve entre as datas *@
+                }
+            }
+        </MudList>
+    </MudCardContent>
+</MudCard>
+</MudItem>
+
+@code {
+    [Parameter]
+    public List<ControlePendente> ControlePendentes { get; set; } = [];
+    private class PendingDate
+    {
+        public DateTime Date { get; set; }
+        public bool IsLoaded { get; set; }
+    }
+
+    // Lista de dados de exemplo para o card
+    private List<PendingDate> Datasx = new List<PendingDate>
+    {
+        new PendingDate { Date = new DateTime(2025, 10, 1), IsLoaded = true },     // Verde (Carregado)
+        new PendingDate { Date = new DateTime(2025, 10, 8), IsLoaded = false },    // Vermelho (Aguardando)
+        new PendingDate { Date = new DateTime(2025, 10, 15), IsLoaded = false }   // Vermelho (Aguardando)
+    };
+    private MudTheme _customTheme = new()
+        {
+            PaletteLight = new()
+            {
+                Primary = "#005ca9",
+                Secondary = "#D87B00",
+                Tertiary = "#FF0000",
+                // Background = "#FAF8F5" // cor cinza mais claro
+                Background = "#EDF2FF"
+            }
+        };
+}

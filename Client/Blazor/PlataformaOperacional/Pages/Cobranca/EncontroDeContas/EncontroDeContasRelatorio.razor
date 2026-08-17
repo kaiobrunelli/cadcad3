@@ -1,0 +1,234 @@
+﻿@page "/Relatorio"
+
+@using Plataforma.Components.Shared
+@using PlataformaOperacional.Pages.Cobranca.Amortizacao
+
+@inject EncontroDeContasService EncontroDeContas
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<MudThemeProvider Theme="_customTheme" />
+
+<style>
+
+    .filtro-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 8px 4px;
+    }
+
+    /* Inputs de data — underline simples sobre fundo claro
+           (mesmo formato/borda do MudTextField Variant.Text) */
+    .filtro-input {
+        background-color: transparent;
+        border: 0;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.42);
+        color: rgba(0, 0, 0, 0.87);
+        padding: 6px 4px;
+        height: 32px;
+        width: 200px;
+        font-size: 14px;
+        font-family: inherit;
+        outline: none;
+        transition: border-bottom-color .15s ease-in-out, border-bottom-width .15s ease-in-out;
+        flex: 0 0 auto;
+    }
+
+        .filtro-input::placeholder {
+            color: rgba(0, 0, 0, 0.5);
+        }
+
+        .filtro-input:hover {
+            border-bottom-color: rgba(0, 0, 0, 0.87);
+        }
+
+        .filtro-input:focus {
+            border-bottom-color: #005ca9;
+            border-bottom-width: 2px;
+            padding-bottom: 5px;
+        }
+
+    /* =====================================================
+           Total de registros (rótulo discreto à direita do título)
+           ===================================================== */
+    .total-registros {
+        color: #4b5563;
+        font-size: 14px;
+        line-height: 1.4;
+    }
+
+        .total-registros b {
+            color: #005ca9;
+            font-weight: 600;
+        }
+.app {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.page {
+    flex: 1;
+    padding: 24px 28px 48px;
+    max-width: 1440px;
+    width: 100%;
+    margin: 0 auto;
+}
+</style>
+
+
+<MudThemeProvider Theme="_customTheme" />
+<div class="app">
+    <main class="page">
+
+        <MudPaper Elevation="0"
+                  Class="pa-4 mb-3"
+                  Style="border-radius: 10px; box-shadow: 0 1px 2px rgba(15, 23, 41, 0.04);">
+            <MudItem xs="12" lg="12" md="12" Class="d-flex justify-space-between mb-3">
+                <MudText Typo="Typo.h5" Style="color: #64748B;">Relatório</MudText>
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Primary"
+                           Size="Size.Small"
+                           Style="border-radius:8px;"
+                           OnClick="VoltarPagina"
+                           StartIcon="@Icons.Material.Filled.ArrowBack">
+                    Voltar
+                </MudButton>
+            </MudItem>
+           @*  <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-3">
+                <MudIconButton Icon="@Icons.Material.Filled.ArrowBack"
+                               Color="Color.Primary"
+                               OnClick="VoltarPagina"
+                               aria-label="Voltar para a página anterior" />
+                <MudText Typo="Typo.h5"
+                         Style="color:#005ca9; font-weight:600; letter-spacing:0.2px;">
+                    Relatório
+                </MudText>
+                <MudSpacer />
+                <MudText Class="total-registros">
+                    Total de registros encontrados: <b>@_movimentacoes.Count</b>
+                </MudText>
+            </MudStack> *@
+
+            <div class="filtro-toolbar">
+                <p style="color: #64748B;">Data Inicial</p>
+                <input type="date"
+                       class="filtro-input"
+                       @bind="_dataInicio"
+                       aria-label="Data inicial" />
+
+                <p style="color: #64748B;">Data Final</p>
+                <input type="date"
+                       class="filtro-input"
+                       @bind="_dataFim"
+                       aria-label="Data final" />
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           OnClick="BuscarAsync"
+                           Disabled="@_isLoading"
+                           
+                           Style="background-color:#005ca9; color:white; border-radius:8px">
+                    Buscar
+                </MudButton>
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           OnClick="LimparFiltrosAsync"
+                           Disabled="@_isLoading"
+                           Style="background-color:#005ca9; color:white; border-radius:8px">
+                    Limpar 
+                </MudButton>
+            </div>
+        </MudPaper>
+     
+        <TabelaDRPNova Items="@_movimentacoes"
+                       Loading="@_isLoading" />
+
+    </main>
+</div>
+
+@code {
+
+
+    private DateTime? _dataInicio = DateTime.Today.AddMonths(-1);
+    private DateTime? _dataFim = DateTime.Today;
+
+    private bool _isLoading;
+  
+    private List<MovimentacaoDrp> _movimentacoes = new();
+ 
+    private readonly MudTheme _customTheme = new()
+    {
+        PaletteLight = new PaletteLight()
+        {
+            Primary = "#005ca9",
+            Secondary = "#f39200",
+            Background = "#EDF2FF",
+        }
+    };
+
+    protected override async Task OnInitializedAsync()
+        => await CarregarDadosAsync();
+
+    private async Task BuscarAsync() => await CarregarDadosAsync();
+
+    private async Task LimparFiltrosAsync()
+    {
+        _dataInicio = null;
+        _dataFim = null;
+        await CarregarDadosAsync();
+    }
+
+
+    private async Task CarregarDadosAsync()
+    {
+        if (!ValidarPeriodo()) return;
+
+        _isLoading = true;
+        try
+        {           
+        
+            //  var response = await EncontroDeContas
+            //      .ObterRelatorioMovimentacoesAsync(_dataInicio, _dataFim);
+            //
+            //  _movimentacoes = await HttpResponseHandler
+            //      .ResponseHandler<List<MovimentacaoDrp>>(response, Snackbar)
+            //      ?? new();
+            // -----------------------------------------------------------
+
+            _movimentacoes ??= new();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao carregar relatório: {ex.Message}", Severity.Error);
+            _movimentacoes = new();
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private bool ValidarPeriodo()
+    {
+        if (_dataInicio.HasValue && _dataFim.HasValue && _dataInicio > _dataFim)
+        {
+            Snackbar.Add("A data inicial não pode ser maior que a data final.",
+                         Severity.Warning);
+            return false;
+        }
+        return true;
+    }
+
+
+    private async Task VoltarPagina()
+    {
+        await JS.InvokeVoidAsync("history.back");
+
+    }
+}

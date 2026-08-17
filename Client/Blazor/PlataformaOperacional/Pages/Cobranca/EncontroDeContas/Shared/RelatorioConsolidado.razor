@@ -1,0 +1,109 @@
+@using Plataforma.Components.Shared
+
+<section class="card @(isExpanded ? "is-expanded" : "is-collapsed")" aria-label="Resumo consolidado">
+    <div class="card-head">
+        <div class="card-title">
+            <span class="icon">📊</span>
+            Relatório
+        </div>
+
+        <button type="button"
+                class="card-toggle @(isExpanded ? "is-open" : "")"
+                @onclick="ToggleExpanded"
+                aria-expanded="@isExpanded.ToString().ToLower()"
+                aria-controls="relatorio-metrics-grid"
+                aria-label="@(isExpanded ? "Recolher relatório" : "Expandir relatório")">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.4"
+                 stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9" />
+            </svg>
+        </button>
+    </div>
+
+    @if (isExpanded)
+    {
+        <div id="relatorio-metrics-grid" class="metrics-grid">
+
+            <div class="tile kind-reabert">
+                <div class="tile-body">
+                    <div class="tile-top">
+                        <span class="tile-icon">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="1 4 1 10 7 10" />
+                                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                            </svg>
+                        </span>
+                        <span class="tile-label">Reaberturas</span>
+                    </div>
+                    <div class="tile-count">
+                        <span class="num">@DadosRelatorio.Reaberturas</span>
+                        <span class="unit">@(DadosRelatorio.Reaberturas == 1 ? "registro" : "registros")</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tile kind-cond">
+                <div class="tile-body">
+                    <div class="tile-top">
+                        <span class="tile-icon">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="9" />
+                                <line x1="12" y1="8" x2="12" y2="13" />
+                                <line x1="12" y1="16" x2="12" y2="16.01" />
+                            </svg>
+                        </span>
+                        <span class="tile-label">Condicionais</span>
+                    </div>
+                    <div class="tile-count">
+                        <span class="num">@DadosRelatorio.Condicionais</span>
+                        <span class="unit">@(DadosRelatorio.Condicionais == 1 ? "registro" : "registros")</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tile kind-drp">
+                <div class="tile-body">
+                    <div class="tile-top">
+                        <span class="tile-icon">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                <polyline points="14 2 14 8 20 8" />
+                                <line x1="8" y1="13" x2="16" y2="13" />
+                                <line x1="8" y1="17" x2="13" y2="17" />
+                            </svg>
+                        </span>
+                        <span class="tile-label">DRP</span>
+                    </div>
+                    <div class="tile-count">
+                        <span class="num">@DadosRelatorio.Drp</span>
+                        <span class="unit">@(DadosRelatorio.Drp == 1 ? "registro" : "registros")</span>
+                    </div>
+                    <button type="button" class="chip-cta" @onclick="HandleDrpClick" aria-label="Ver detalhes dos DRPs">
+                        <span class="chip-dot"></span>
+                        Ver detalhes
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12" />
+                            <polyline points="12 5 19 12 12 19" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    }
+</section>
+
+@code {
+    [Parameter] public DadosRelatorioTabela DadosRelatorio { get; set; } = new();
+    [Parameter] public bool MetricasCarregadas { get; set; } = new();
+    [Parameter] public EventCallback OnDrpClick { get; set; }
+
+    private bool isExpanded = false;
+
+    private void ToggleExpanded() => isExpanded = !isExpanded;
+
+    private Task HandleDrpClick() => OnDrpClick.HasDelegate
+        ? OnDrpClick.InvokeAsync()
+        : Task.CompletedTask;
+}

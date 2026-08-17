@@ -1,0 +1,96 @@
+@if (PaginaCarregada)
+{    
+    <section class="toolbar-card" role="toolbar" aria-label="Ações do processo">
+    <button class="btn btn-primary"
+            @onclick="OnExecute"
+            disabled="@ExecuteDisabled"
+            title="@Hint">
+        @if (Running)
+        {
+           
+          <svg class="spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <line x1="12" y1="2" x2="12" y2="6" />
+                <line x1="12" y1="18" x2="12" y2="22" />
+                <line x1="4.93" y1="4.93" x2="7.76" y2="7.76" />
+                <line x1="16.24" y1="16.24" x2="19.07" y2="19.07" />
+                <line x1="2" y1="12" x2="6" y2="12" />
+                <line x1="18" y1="12" x2="22" y2="12" />
+                <line x1="4.93" y1="19.07" x2="7.76" y2="16.24" />
+                <line x1="16.24" y1="7.76" x2="19.07" y2="4.93" />
+            </svg>
+            <span>Executando…</span>
+        }
+        else
+        {
+            <MudIcon Icon="@Icons.Material.Filled.PlayArrow"></MudIcon>
+            @* <svg width="12" height="12" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3" fill="currentColor" /></svg> *@
+            <span>@ExecuteLabel</span>
+        }
+    </button>
+
+  @*   <div class="list-toggle" title="Ative para montar uma fila. Desative para execução direta.">
+        <span class="list-toggle-title">Execução Por Contrato</span>
+        <button class="switch @(EffectiveUseList ? "on" : "")"
+                @onclick="HandleToggle"
+                disabled="@Running"
+                role="switch"
+                aria-checked="@EffectiveUseList"
+                aria-label="Executar pela lista"></button>
+    </div> *@
+
+    <button class="btn btn-secondary" @onclick="OnConfig">
+        <MudIcon Icon="@Icons.Material.Filled.Settings"/> CONFIGURAÇÃO</button>
+        <button class="btn btn-secondary" @onclick="OnRelatorioPage">
+        <MudIcon Icon="@Icons.Material.Filled.ContentPasteSearch" /> RELATÓRIO  
+    </button> 
+    <button class="btn btn-danger" @onclick="OnCancel">     
+        <MudIcon Icon="@Icons.Material.Filled.Clear" /> @CancelLabel
+    </button>
+</section>
+}
+
+else
+{
+<ToolbarSkeleton />
+}
+
+
+@code {
+    [Parameter] public bool CanExecute { get; set; }
+    [Parameter] public bool PaginaCarregada { get; set; }
+    [Parameter] public bool Running { get; set; }
+    [Parameter] public bool UseList { get; set; }
+    [Parameter] public int? ContagemDeContratos { get; set; }
+    [Parameter] public ReadEncontroDeContasControleDto? Controle { get; set; } = new();
+    [Parameter] public EventCallback OnExecute { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+    [Parameter] public EventCallback OnConfig { get; set; }
+    [Parameter] public EventCallback OnRelatorioPage { get; set; }
+    [Parameter] public EventCallback<bool> OnToggleUseList { get; set; }
+
+     private bool EffectiveUseList =>
+         Controle?.PainelControle?.Botoes.Executar ?? UseList;
+
+    // private Task HandleToggle()
+    //     => Running ? Task.CompletedTask : OnToggleUseList.InvokeAsync(!EffectiveUseList);
+
+    private bool ExecuteDisabled => !(Controle?.PainelControle?.Botoes.Executar ?? CanExecute) || Running;   
+
+    private string ExecuteLabel =>
+        string.IsNullOrWhiteSpace(Controle?.PainelControle?.Botoes.DescExecutar)
+            ? "Executar"
+            : Controle?.PainelControle?.Botoes.DescExecutar!;
+
+    private bool CancelDisabled => !(Controle?.PainelControle?.Botoes.Cancelar ?? Running);
+
+    private string CancelLabel =>
+        string.IsNullOrWhiteSpace(Controle?.PainelControle?.Botoes.DescCancelar)
+            ? "Cancelar"
+            : Controle!.PainelControle.Botoes.DescCancelar;
+
+    private bool ConfigDisabled =>(!Controle?.PainelControle?.Botoes.Configurar ?? true);
+
+    private string Hint => !CanExecute
+        ? (EffectiveUseList ? "Adicione ao menos um contrato à lista" : "Execução direta pronta")
+        : (EffectiveUseList ? $"Executar {ContagemDeContratos} contrato(s) da lista" : "Executar macro direto (sem lista)");
+}

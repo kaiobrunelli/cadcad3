@@ -1,0 +1,32 @@
+﻿
+@inject NavigationManager Navigation
+
+<MudDialog>
+    <TitleContent>
+        Lote gerado com sucesso!
+    </TitleContent>
+    <DialogContent>
+        Acompanhe pela página Consultar.
+    </DialogContent>
+    <DialogActions>
+        <MudButton Class="btn-caixa-small" Variant="Variant.Filled" Color="Color.Secondary" OnClick="Consultar">Consultar</MudButton>
+        <MudButton Class="btn-caixa-small" Variant="Variant.Outlined" OnClick="Fechar">Fechar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    private void Fechar()
+    {
+        MudDialog.Close(DialogResult.Ok(true));
+        Navigation.NavigateTo(Navigation.Uri, forceLoad: true);
+    }
+
+    private void Consultar()
+    {
+        Navigation.NavigateTo("/plataforma-operacional/contabilidadeConsultar/");
+        MudDialog.Close();
+    }
+}

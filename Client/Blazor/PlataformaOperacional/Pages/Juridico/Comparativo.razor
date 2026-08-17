@@ -1,0 +1,469 @@
+﻿@page "/comparativo"
+@using System.Globalization;
+
+<style>
+    /* Estilos MudBlazor base (Ajustados para minimalismo) */
+    .mud-card {
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        margin-bottom: 24px;
+        background-color: var(--mud-palette-surface);
+        position: relative;
+        overflow: hidden;
+        width: 100%;
+    }
+
+    /* EFEITO DE BORDA LATERAL (AZUL 00437a) */
+    .card-border-left-novo::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 5px;
+        background-color: #005ca9;
+        border-top-left-radius: 12px;
+        border-bottom-left-radius: 12px;
+        z-index: 1;
+    }
+
+    /* Ajuste do Padding Esquerdo para compensar a borda de 4px */
+    .card-header-clean {
+        padding: 16px 24px 8px 24px;
+        padding-left: 28px;
+    }
+
+    .card-content-padding {
+        padding: 8px 24px 24px 24px;
+        padding-left: 28px;
+    }
+
+    /* Linha Divisória com Padding Lateral (Não encosta nas bordas) */
+    .card-title-separator-container {
+        padding: 0 24px;
+    }
+
+    .card-title-separator {
+        border-bottom: 1px solid;
+        margin-bottom: 16px;
+        color: #005ca9;
+    }
+
+    /* Tipografia e Layout Horizontal (Row) - Linha que contém Label e Valor Original */
+    .value-info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 4px; /* Espaço entre o rótulo/valor original e o TextField */
+        padding-right: 8px;
+    }
+
+    .valor-label {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--mud-palette-text-secondary);
+        white-space: nowrap;
+    }
+
+    .valor-original {
+        font-weight: 600;
+        color: var(--mud-palette-text-primary);
+        font-size: 0.9rem;
+        white-space: nowrap;
+    }
+
+    /* Estilo para o Card Resumo ocupar a altura total (Simulação) */
+    .card-resumo-full-height {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .resumo-content-wrapper {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    /* Ajuste para o espaçamento do botão de ação */
+    .action-button-stack {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+    }
+
+    .status-area {
+        min-width: 60%;
+    }
+</style>
+
+<MudThemeProvider Theme="_customTheme"></MudThemeProvider>
+<MudContainer MaxWidth="MaxWidth.Large" Class="ma-0 ml-4 mb-8">
+    <MudStack Row="true" Spacing="2" Justify="Justify.FlexStart" AlignItems="AlignItems.Center" Class="mb-4">
+        <MudIcon Icon="@Icons.Material.Filled.PlaylistAddCheck" Color="Color.Primary" Size="Size.Large"></MudIcon>
+        <MudText Typo="Typo.h4" Style="color:#005ca9" GutterBottom="true" Class="mb-0">Preditor de Desembolso</MudText>
+    </MudStack>
+    @* #64748B;"  *@
+    <MudGrid Spacing="1">
+
+        @* CARD 1: Habitação - Mantém xs=12 e lg=10 para a estrutura de coluna *@
+        <MudItem xs="12" lg="12">
+            <MudCard Elevation="4" Class="card-border-left-novo">
+                <div class="card-header-clean">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="@Icons.Material.Filled.Home" Color="Color.Primary"></MudIcon>
+                        <MudText Typo="Typo.h5" Color="Color.Primary">Habitação</MudText>
+                    </MudStack>
+                </div>
+                <div class="card-title-separator-container">
+                    <div class="card-title-separator"></div>
+                </div>
+
+                <MudCardContent Class="card-content-padding">
+                    <MudGrid Spacing="3">
+
+                        @* Linha 1: Principal, Desconto, Taxa ADM (3 colunas em telas médias/grandes) *@
+                        <MudItem xs="12" sm="4">
+                            <div class="value-info-row">
+                                <MudText Typo="Typo.body2" Class="valor-label">Principal</MudText>
+                                <MudText Typo="Typo.body2" Class="valor-original">R$ @_habitacaoData.Principal.ValorOriginal.ToString("N2", _cultura)</MudText>
+                            </div>
+                            <MudTextField @bind-Value="_habitacaoData.Principal.ValorEditavel" T="decimal" Variant="Variant.Outlined" Immediate="true" Margin="Margin.Dense" Adornment="Adornment.Start" AdornmentText="R$" Culture="_cultura" Class="valor-editavel-input" />
+                        </MudItem>
+                        <MudItem xs="12" sm="4">
+                            <div class="value-info-row">
+                                <MudText Typo="Typo.body2" Class="valor-label">Desconto</MudText>
+                                <MudText Typo="Typo.body2" Class="valor-original">R$ @_habitacaoData.Desconto.ValorOriginal.ToString("N2", _cultura)</MudText>
+                            </div>
+                            <MudTextField @bind-Value="_habitacaoData.Desconto.ValorEditavel" T="decimal" Variant="Variant.Outlined" Immediate="true" Margin="Margin.Dense" Adornment="Adornment.Start" AdornmentText="R$" Culture="_cultura" Class="valor-editavel-input" />
+                        </MudItem>
+                        <MudItem xs="12" sm="4">
+                            <div class="value-info-row">
+                                <MudText Typo="Typo.body2" Class="valor-label">Taxa ADM</MudText>
+                                <MudText Typo="Typo.body2" Class="valor-original">R$ @_habitacaoData.TaxaADM.ValorOriginal.ToString("N2", _cultura)</MudText>
+                            </div>
+                            <MudTextField @bind-Value="_habitacaoData.TaxaADM.ValorEditavel" T="decimal" Variant="Variant.Outlined" Immediate="true" Margin="Margin.Dense" Adornment="Adornment.Start" AdornmentText="R$" Culture="_cultura" Class="valor-editavel-input" />
+                        </MudItem>
+
+                        @* Linha 2: DIF JUROS, OGU DESC, OGU TA *@
+                        <MudItem xs="12" sm="4">
+                            <div class="value-info-row">
+                                <MudText Typo="Typo.body2" Class="valor-label">DIF JUROS</MudText>
+                                <MudText Typo="Typo.body2" Class="valor-original">R$ @_habitacaoData.DifJuros.ValorOriginal.ToString("N2", _cultura)</MudText>
+                            </div>
+                            <MudTextField @bind-Value="_habitacaoData.DifJuros.ValorEditavel" T="decimal" Variant="Variant.Outlined" Immediate="true" Margin="Margin.Dense" Adornment="Adornment.Start" AdornmentText="R$" Culture="_cultura" Class="valor-editavel-input" />
+                        </MudItem>
+                        <MudItem xs="12" sm="4">
+                            <div class="value-info-row">
+                                <MudText Typo="Typo.body2" Class="valor-label">OGU DESC</MudText>
+                                <MudText Typo="Typo.body2" Class="valor-original">R$ @_habitacaoData.OGUDesc.ValorOriginal.ToString("N2", _cultura)</MudText>
+                            </div>
+                            <MudTextField @bind-Value="_habitacaoData.OGUDesc.ValorEditavel" T="decimal" Variant="Variant.Outlined" Immediate="true" Margin="Margin.Dense" Adornment="Adornment.Start" AdornmentText="R$" Culture="_cultura" Class="valor-editavel-input" />
+                        </MudItem>
+                        <MudItem xs="12" sm="4">
+                            <div class="value-info-row">
+                                <MudText Typo="Typo.body2" Class="valor-label">OGU TA</MudText>
+                                <MudText Typo="Typo.body2" Class="valor-original">R$ @_habitacaoData.OGUTa.ValorOriginal.ToString("N2", _cultura)</MudText>
+                            </div>
+                            <MudTextField @bind-Value="_habitacaoData.OGUTa.ValorEditavel" T="decimal" Variant="Variant.Outlined" Immediate="true" Margin="Margin.Dense" Adornment="Adornment.Start" AdornmentText="R$" Culture="_cultura" Class="valor-editavel-input" />
+                        </MudItem>
+
+                        @* Linha 3: OGU DJ, Pró-Cotista, TOTAL GERAL *@
+                        <MudItem xs="12" sm="4">
+                            <div class="value-info-row">
+                                <MudText Typo="Typo.body2" Class="valor-label">OGU DJ</MudText>
+                                <MudText Typo="Typo.body2" Class="valor-original">R$ @_habitacaoData.OGUDj.ValorOriginal.ToString("N2", _cultura)</MudText>
+                            </div>
+                            <MudTextField @bind-Value="_habitacaoData.OGUDj.ValorEditavel" T="decimal" Variant="Variant.Outlined" Immediate="true" Margin="Margin.Dense" Adornment="Adornment.Start" AdornmentText="R$" Culture="_cultura" Class="valor-editavel-input" />
+                        </MudItem>
+                        <MudItem xs="12" sm="4">
+                            <div class="value-info-row">
+                                <MudText Typo="Typo.body2" Class="valor-label">Pró-Cotista</MudText>
+                                <MudText Typo="Typo.body2" Class="valor-original">R$ @_habitacaoData.ProCostista.ValorOriginal.ToString("N2", _cultura)</MudText>
+                            </div>
+                            <MudTextField @bind-Value="_habitacaoData.ProCostista.ValorEditavel" T="decimal" Variant="Variant.Outlined" Immediate="true" Margin="Margin.Dense" Adornment="Adornment.Start" AdornmentText="R$" Culture="_cultura" Class="valor-editavel-input" />
+                        </MudItem>
+                        <MudItem xs="12" sm="4">
+                            <div class="value-info-row">
+                                <MudText Typo="Typo.body2" Class="valor-label">TOTAL GERAL</MudText>
+                                <MudText Typo="Typo.body2" Class="valor-original">R$ @_habitacaoData.TotalGeral.ValorOriginal.ToString("N2", _cultura)</MudText>
+                            </div>
+                            <MudTextField @bind-Value="_habitacaoData.TotalGeral.ValorEditavel" T="decimal" Variant="Variant.Outlined" Immediate="true" Margin="Margin.Dense" Adornment="Adornment.Start" AdornmentText="R$" Culture="_cultura" Class="valor-editavel-input" />
+                        </MudItem>
+
+                        @* Botão de Salvar e Status *@
+                        <MudItem xs="12" Class="pt-4">
+                            <div class="action-button-stack">
+                                <MudText Typo="Typo.body2" Class="status-stack status-area">
+                                    <span>Última alteração: @_lastUpdatedHabi.ToString("dd/MM/yy HH:mm")</span>
+                                </MudText>
+                                <MudButton Variant="Variant.Filled" Color="Color.Secondary" Class="flex-grow-0" OnClick="SalvarAlteracaoHab" StartIcon="@Icons.Material.Filled.Save">
+                                    Salvar
+                                </MudButton>
+                            </div>
+                        </MudItem>
+                    </MudGrid>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        @* CARD 2: Saneamento e Infraestrutura - Mantém xs=12 e lg=10 para a estrutura de coluna *@
+        <MudItem xs="12" lg="12">
+            <MudCard Elevation="4" Class="card-border-left-novo">
+                <div class="card-header-clean">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="@Icons.Material.Filled.Layers" Color="Color.Primary"></MudIcon>
+                        <MudText Typo="Typo.h5" Color="Color.Primary">Saneamento, Infraestrutura Urbana, Transporte e Pró-Moradia</MudText>
+                    </MudStack>
+                </div>
+                <div class="card-title-separator-container">
+                    <div class="card-title-separator"></div>
+                </div>
+
+                <MudCardContent Class="card-content-padding">
+                    <MudGrid Spacing="3">
+                        @* Linha 1: SANEPAR, ESTIMADO, TOTAL GERAL (3 colunas em telas médias/grandes) *@
+                        <MudItem xs="12" sm="4">
+                            <div class="value-info-row">
+                                <MudText Typo="Typo.body2" Class="valor-label">SANEPAR</MudText>
+                                <MudText Typo="Typo.body2" Class="valor-original">R$ @_saneamentoData.Sanepar.ValorOriginal.ToString("N2", _cultura)</MudText>
+                            </div>
+                            <MudTextField @bind-Value="_saneamentoData.Sanepar.ValorEditavel" T="decimal" Variant="Variant.Outlined" Immediate="true" Margin="Margin.Dense" Adornment="Adornment.Start" AdornmentText="R$" Culture="_cultura" Class="valor-editavel-input" />
+                        </MudItem>
+                        <MudItem xs="12" sm="4">
+                            <div class="value-info-row">
+                                <MudText Typo="Typo.body2" Class="valor-label">ESTIMADO</MudText>
+                                <MudText Typo="Typo.body2" Class="valor-original">R$ @_saneamentoData.Estimado.ValorOriginal.ToString("N2", _cultura)</MudText>
+                            </div>
+                            <MudTextField @bind-Value="_saneamentoData.Estimado.ValorEditavel" T="decimal" Variant="Variant.Outlined" Immediate="true" Margin="Margin.Dense" Adornment="Adornment.Start" AdornmentText="R$" Culture="_cultura" Class="valor-editavel-input" />
+                        </MudItem>
+                        <MudItem xs="12" sm="4">
+                            <div class="value-info-row">
+                                <MudText Typo="Typo.body2" Class="valor-label">TOTAL GERAL</MudText>
+                                <MudText Typo="Typo.body2" Class="valor-original">R$ @_saneamentoData.TotalGeral.ValorOriginal.ToString("N2", _cultura)</MudText>
+                            </div>
+                            <MudTextField @bind-Value="_saneamentoData.TotalGeral.ValorEditavel" T="decimal" Variant="Variant.Outlined" Immediate="true" Margin="Margin.Dense" Adornment="Adornment.Start" AdornmentText="R$" Culture="_cultura" Class="valor-editavel-input" />
+                        </MudItem>
+
+                        @* Botão de Salvar e Status *@
+                        <MudItem xs="12" Class="pt-4">
+                            <div class="action-button-stack">
+                                <MudText Typo="Typo.body2" Class="status-stack status-area">
+
+                                    <span>Status: Salvo - Última alteração: @_lastUpdatedSane.ToString("dd/MM/yy HH:mm")</span>
+
+                                </MudText>
+                                <MudButton Variant="Variant.Filled" Color="Color.Secondary" Class="flex-grow-0" OnClick="SalvarAlteracaoSane" StartIcon="@Icons.Material.Filled.Save">
+                                    Salvar
+                                </MudButton>
+                            </div>
+                        </MudItem>
+                    </MudGrid>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        @* CARD 3: Resumo - Mantém xs=12 e lg=10 para a estrutura de coluna *@
+        <MudItem xs="12" lg="12">
+            <MudCard Elevation="4" Class="card-border-left-novo card-resumo-full-height">
+                <div class="card-header-clean">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="@Icons.Material.Filled.Receipt" Color="Color.Primary"></MudIcon>
+                        <MudText Typo="Typo.h5" Color="Color.Primary">Resumo</MudText>
+                    </MudStack>
+                </div>
+                <div class="card-title-separator-container">
+                    <div class="card-title-separator"></div>
+                </div>
+
+                <MudCardContent Class="card-content-padding resumo-content-wrapper">
+                    <MudGrid Spacing="3">
+                        @* Setor Público e Privado lado a lado em telas médias/grandes *@
+                        <MudItem xs="12" sm="6">
+                            <div class="value-info-row">
+                                <MudText Typo="Typo.body2" Class="valor-label">Setor Público</MudText>
+                                <MudText Typo="Typo.body2" Class="valor-original">R$ @_resumoData.ST_PUBLICO.ValorOriginal.ToString("N2", _cultura)</MudText>
+                            </div>
+                            <MudTextField @bind-Value="_resumoData.ST_PUBLICO.ValorEditavel"
+                                          T="decimal"
+                                          Variant="Variant.Outlined"
+                                          Immediate="true"
+                                          Margin="Margin.Dense"
+                                          Adornment="Adornment.Start"
+                                          AdornmentText="R$"
+                                          Culture="_cultura"
+                                          Disabled="true"
+                                          Class="valor-editavel-input" />
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+                            <div class="value-info-row">
+                                <MudText Typo="Typo.body2" Class="valor-label">Setor Privado</MudText>
+                                <MudText Typo="Typo.body2" Class="valor-original">R$ @_resumoData.ST_PRIVADO.ValorOriginal.ToString("N2", _cultura)</MudText>
+                            </div>
+                            <MudTextField @bind-Value="_resumoData.ST_PRIVADO.ValorEditavel"
+                                          T="decimal"
+                                          Disabled="true"
+                                          Variant="Variant.Outlined"
+                                          Immediate="true"
+                                          Margin="Margin.Dense"
+                                          Adornment="Adornment.Start"
+                                          AdornmentText="R$"
+                                          Culture="_cultura"
+                                          Class="valor-editavel-input" />
+                        </MudItem>
+                    </MudGrid>
+
+                    @* Botão de Enviar e Status *@
+                    <div class="pt-4">
+                        <div class="action-button-stack">
+                            <MudText Typo="Typo.caption" Class="status-stack status-area">
+
+                                <span>Último envio: @_lastUpdatedResumo.ToString("dd/MM/yy HH:mm")</span>
+
+                            </MudText>
+                            <MudButton Variant="Variant.Filled"
+                                       Color="Color.Primary"
+                                       Class="flex-grow-0"
+                                       OnClick="SalvarAlteracaoResumo"
+                                       StartIcon="@Icons.Material.Filled.Send">
+                                Enviar
+                            </MudButton>
+                        </div>
+                    </div>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+@code {
+
+    // Adição de cores e tema para um visual mais profissional
+    private MudTheme _customTheme = new()
+        {
+            PaletteLight = new PaletteLight()
+            {
+                Primary = "#005CA9",    // Azul (Cor principal)
+                Secondary = "#D87B00",  // Laranja (Botão Salvar)
+                Background = "#F5F7F9", // Fundo levemente cinza
+                Surface = "#FFFFFF",    // Card branco
+                Divider = "#E0E0E0"     // Divisor de linha suave
+            }
+        };
+
+    // Variáveis de estado para controle de salvamento por seção
+    private bool _isSavedSane = false;
+    private bool _isSavedHabi = false;
+    private bool _isSavedResumo = false;
+
+    // Variáveis para as datas de última atualização por seção
+    private DateTime _lastUpdatedSane = DateTime.Now;
+    private DateTime _lastUpdatedHabi = DateTime.Now;
+    private DateTime _lastUpdatedResumo = DateTime.Now;
+
+    // Métodos de Salvar com atualização específica
+    private void SalvarAlteracaoSane()
+    {
+        _isSavedSane = true; // Definir como salvo
+        _lastUpdatedSane = DateTime.Now;
+        StateHasChanged();
+    }
+    private void SalvarAlteracaoHab()
+    {
+        _isSavedHabi = true; // Definir como salvo
+        _lastUpdatedHabi = DateTime.Now;
+        StateHasChanged();
+    }
+    private void SalvarAlteracaoResumo()
+    {
+        _isSavedResumo = true; // Definir como enviado
+        _lastUpdatedResumo = DateTime.Now;
+        StateHasChanged();
+    }
+
+    // Cultura para formatação R$ BRL
+    private CultureInfo _cultura = new CultureInfo("pt-BR");
+
+
+    // ########## Classes de Dados (Mantidas) ##########
+    public class ValorComparativo
+    {
+        public decimal ValorOriginal { get; set; }
+        public decimal ValorEditavel { get; set; }
+    }
+
+    public class Resumo
+    {
+        public ValorComparativo ST_PUBLICO { get; set; } = new ValorComparativo();
+        public ValorComparativo ST_PRIVADO { get; set; } = new ValorComparativo();
+    }
+
+    public class Saneamento
+    {
+        public DateTime Data { get; set; }
+        public ValorComparativo Sanepar { get; set; } = new ValorComparativo();
+        public ValorComparativo Estimado { get; set; } = new ValorComparativo();
+        public ValorComparativo TotalGeral { get; set; } = new ValorComparativo();
+    }
+
+    public class Habitacao
+    {
+        public DateTime Data { get; set; }
+        public ValorComparativo Principal { get; set; } = new ValorComparativo();
+        public ValorComparativo Desconto { get; set; } = new ValorComparativo();
+        public ValorComparativo TaxaADM { get; set; } = new ValorComparativo();
+        public ValorComparativo DifJuros { get; set; } = new ValorComparativo();
+        public ValorComparativo OGUDesc { get; set; } = new ValorComparativo();
+        public ValorComparativo OGUTa { get; set; } = new ValorComparativo();
+        public ValorComparativo OGUDj { get; set; } = new ValorComparativo();
+        public ValorComparativo ProCostista { get; set; } = new ValorComparativo();
+        public ValorComparativo TotalGeral { get; set; } = new ValorComparativo();
+    }
+
+    // ########## Instâncias de Dados (Valores de Exemplo) ##########
+    private Saneamento _saneamentoData = new Saneamento()
+        {
+            Data = new DateTime(2025, 9, 9),
+            Sanepar = new ValorComparativo { ValorOriginal = 1500000.00M, ValorEditavel = 1500000.00M },
+            Estimado = new ValorComparativo { ValorOriginal = 2680238.69M, ValorEditavel = 2680238.69M },
+            // Soma dos dois acima
+            TotalGeral = new ValorComparativo { ValorOriginal = 4180238.69M, ValorEditavel = 4180238.69M }
+        };
+
+    private Habitacao _habitacaoData = new Habitacao()
+        {
+            Data = new DateTime(2025, 9, 9),
+            Principal = new ValorComparativo { ValorOriginal = 4349495.33M, ValorEditavel = 4349495.33M },
+            Desconto = new ValorComparativo { ValorOriginal = 78156.00M, ValorEditavel = 78156.00M },
+            TaxaADM = new ValorComparativo { ValorOriginal = 8769.00M, ValorEditavel = 8769.00M },
+            DifJuros = new ValorComparativo { ValorOriginal = 39037.66M, ValorEditavel = 39037.66M },
+            OGUDesc = new ValorComparativo { ValorOriginal = 146.00M, ValorEditavel = 146.00M },
+            OGUTa = new ValorComparativo { ValorOriginal = 10000.00M, ValorEditavel = 10000.00M },
+            OGUDj = new ValorComparativo { ValorOriginal = 5000.00M, ValorEditavel = 5000.00M },
+            ProCostista = new ValorComparativo { ValorOriginal = 25000.00M, ValorEditavel = 25000.00M },
+            // Exemplo: Soma de todos os valores acima
+            TotalGeral = new ValorComparativo { ValorOriginal = 4516593.99M, ValorEditavel = 4516593.99M }
+        };
+
+    private Resumo _resumoData = new Resumo()
+        {
+            // Exemplo: Soma dos Totais Gerais
+            ST_PUBLICO = new ValorComparativo { ValorOriginal = 8696832.68M, ValorEditavel = 8696832.68M },
+            ST_PRIVADO = new ValorComparativo { ValorOriginal = 6349495.33M, ValorEditavel = 6349495.33M }
+        };
+
+
+    // Inicialização do estado de salvamento com a data atual (ou carregar do banco)
+    protected override void OnInitialized()
+    {
+        // Simulação de carregamento de estado anterior
+        _isSavedSane = true;
+        _isSavedHabi = true;
+        _isSavedResumo = false; // Exemplo: Resumo ainda não enviado
+        _lastUpdatedSane = new DateTime(2025, 10, 28, 14, 30, 0);
+        _lastUpdatedHabi = new DateTime(2025, 10, 28, 14, 35, 0);
+        _lastUpdatedResumo = new DateTime(2025, 10, 28, 15, 0, 0);
+    }
+}

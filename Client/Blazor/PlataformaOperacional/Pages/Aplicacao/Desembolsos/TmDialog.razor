@@ -1,0 +1,112 @@
+﻿@using PlataformaOperacional.Model.DesembososModel
+@using System.Globalization
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="2">
+
+            <MudPaper Elevation="0" Style="padding:16px; border-radius:12px; background-color:#f8fafc;">
+                <MudStack Spacing="1">
+                    <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                        <MudText Typo="Typo.subtitle2" Style="color:#64747a;">TO01</MudText>
+                        @if (Desembolso.VrTo01.HasValue)
+                        {
+                            <MudText Typo="Typo.body2" Style="font-weight:400; color:#22292e;">@Desembolso.VrTo01.Value.ToString("'R$' #,##0.00", new CultureInfo("pt-BR"))</MudText>
+                        }
+                    </MudStack>
+                    <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                        <MudText Typo="Typo.subtitle2" Style="color:#64747a;">TO02</MudText>
+                        @if (Desembolso.VrTo02.HasValue)
+                        {
+                            <MudText Typo="Typo.body2" Style="font-weight:400; color:#22292e;">@Desembolso.VrTo02.Value.ToString("'R$' #,##0.00", new CultureInfo("pt-BR"))</MudText>
+                        }
+                    </MudStack>
+
+                    <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                        <MudText Typo="Typo.subtitle2" Style="color:#64747a;">TO03</MudText>
+                        @if (Desembolso.VrTo03.HasValue)
+                        {
+                            <MudText Typo="Typo.body2" Style="font-weight:400; color:#22292e;">@Desembolso.VrTo03.Value.ToString("'R$' #,##0.00", new CultureInfo("pt-BR"))</MudText>
+                        }
+                    </MudStack>
+                    <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                        <MudText Typo="Typo.subtitle2" Style="color:#64747a;">TO04</MudText>
+                        @if (Desembolso.VrTo04.HasValue)
+                        {
+                            <MudText Typo="Typo.body2" Style="font-weight:400; color:#22292e;">@Desembolso.VrTo04.Value.ToString("'R$' #,##0.00", new CultureInfo("pt-BR"))</MudText>
+                        }
+                    </MudStack>
+                    <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                        <MudText Typo="Typo.subtitle2" Style="color:#64747a;">TO05</MudText>
+                        @if (Desembolso.VrTo05.HasValue)
+                        {
+                            <MudText Typo="Typo.body2" Style="font-weight:400; color:#22292e;">@Desembolso.VrTo05.Value.ToString("'R$' #,##0.00", new CultureInfo("pt-BR"))</MudText>
+                        }
+                    </MudStack>
+                    <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                        <MudText Typo="Typo.subtitle2" Style="color:#64747a;">TO06</MudText>
+                        @if (Desembolso.VrTo06.HasValue)
+                        {
+                            <MudText Typo="Typo.body2" Style="font-weight:400; color:#22292e;">@Desembolso.VrTo06.Value.ToString("'R$' #,##0.00", new CultureInfo("pt-BR"))</MudText>
+                        }
+                    </MudStack>
+                    <MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                        <MudText Typo="Typo.subtitle2" Style="color:#64747a;">TO07</MudText>
+                        @if (Desembolso.VrTo07.HasValue)
+                        {
+                            <MudText Typo="Typo.body2" Style="font-weight:400; color:#22292e;">@Desembolso.VrTo07.Value.ToString("'R$' #,##0.00", new CultureInfo("pt-BR"))</MudText>
+                        }
+                    </MudStack>
+                </MudStack>
+            </MudPaper>
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mr-6" OnClick="CloseDialog"><MudText>Fechar</MudText></MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code
+{
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Inject]
+    private ISnackbar Snackbar { get; set; } = default!;
+
+    [Inject]
+    private IDialogService DialogService { get; set; } = default!;
+
+    [Parameter]
+    public Desembolso Desembolso { get; set; } = default!;
+
+    private StringComparison _sc = StringComparison.OrdinalIgnoreCase;
+
+    private void CloseDialog()
+    {
+        MudDialog?.Close();
+    }
+
+    protected override Task OnInitializedAsync()
+    {
+        string situacao = Desembolso.Situacao
+            ?? throw new InvalidOperationException("Não foi possível identificar a situação do desembolso: " + Desembolso.Situacao); ;
+
+        return base.OnInitializedAsync();
+    }
+
+    private async Task ConfirmacaoDialogo(
+        DesembolsosDialogConfirmacao.UserAction userAction,
+        Desembolso desembolso)
+    {
+        var options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            CloseButton = true
+        };
+
+        StateHasChanged();
+        await OnInitializedAsync();
+    }
+}
+

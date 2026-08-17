@@ -1,0 +1,17 @@
+﻿
+
+@if (ListaAlertas.Any())
+{
+	<MudStack Spacing="2" Class="mb-4">
+		@foreach (var alerta in ListaAlertas)
+		{
+			<MudAlert Severity="alerta.AlertaSeverity" Variant="Variant.Text">
+				@alerta.MensagemDeAlerta
+			</MudAlert>
+		}
+	</MudStack>
+}
+@code {
+	[Parameter] public List<PlataformaAlerta> ListaAlertas { get; set; }
+
+}

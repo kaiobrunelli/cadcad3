@@ -1,0 +1,480 @@
+﻿@using PlataformaOperacional.Model.DesembososModel
+
+
+<MudDialog Class="blur dialog-background action-dialog"
+           ContentClass="dialog-background-surface action-dialog-content"
+           ActionsClass="dialog-background-surface action-dialog-actions"
+           Style="width: min(92vw, 480px);">
+
+
+    <DialogContent>
+        <MudStack Spacing="3">
+
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                <MudIcon Icon="@GetActionIcon(Action)"
+                         Color="@GetActionColor(Action)"
+                         Size="Size.Small" />
+
+                <MudText Typo="Typo.subtitle1" Class="font-weight-bold">
+                    @DialogTitle
+                </MudText>
+            </MudStack>
+
+            @if (Action == UserAction.Tratar)
+            {
+                <MudForm @ref="_form" Class="manual-form">
+                    <MudPaper Outlined="true" Class="manual-form-card">
+
+                        <MudStack Spacing="2">
+
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                <MudIcon Icon="@Icons.Material.Filled.EditNote"
+                                         Color="Color.Primary"
+                                         Size="Size.Small" />
+
+                                <MudText Typo="Typo.body2" Class="font-weight-bold">
+                                    Dados do contrato
+                                </MudText>
+                            </MudStack>
+
+                            <MudGrid Spacing="2">
+                                <MudItem xs="8">
+
+                                    <MudTextField T="string"
+                                                  @bind-Value="Nmg"
+                                                  Label="NMG"
+                                                  Variant="Variant.Outlined"
+                                                  Margin="Margin.Dense"
+                                                  Immediate="true"
+                                                  MaxLength="3"
+                                                  Required="true"
+                                                  Validation="@ExactTextLengthValidator(3, "NMG")" />
+
+                                </MudItem>
+
+                                <MudItem xs="4">
+                                    <MudTextField T="string"
+                                                  @bind-Value="NmgDv"
+                                                  Label="DV"
+                                                  Variant="Variant.Outlined"
+                                                  Margin="Margin.Dense"
+                                                  Immediate="true"
+                                                  MaxLength="1"
+                                                  Required="true"
+                                                  Validation="@ExactTextLengthValidator(1, "DV")" />
+                                </MudItem>
+
+                                <MudItem xs="6">
+                                    <MudTextField T="string"
+                                                  @bind-Value="Drp"
+                                                  Label="DRP"
+                                                  Variant="Variant.Outlined"
+                                                  Margin="Margin.Dense"
+                                                  Immediate="true"
+                                                  MaxLength="7"
+                                                  Required="true"
+                                                  Validation="@ExactTextLengthValidator(7, "DRP")" />
+                                </MudItem>
+
+                                <MudItem xs="3">
+                                    <MudTextField T="string"
+                                                  @bind-Value="DrpDv"
+                                                  Label="DV"
+                                                  Variant="Variant.Outlined"
+                                                  Margin="Margin.Dense"
+                                                  Immediate="true"
+                                                  MaxLength="1"
+                                                  Required="true"
+                                                  Validation="@ExactTextLengthValidator(1, "DV")" />
+                                </MudItem>
+
+                                <MudItem xs="3">
+                                    <MudTextField T="string"
+                                                  @bind-Value="DrpSenha"
+                                                  Label="Senha"
+                                                  Variant="Variant.Outlined"
+                                                  Margin="Margin.Dense"
+                                                  Immediate="true"
+                                                  MaxLength="5"
+                                                  Required="true"
+                                                  Validation="@ExactTextLengthValidator(5, "Senha")" />
+                                </MudItem>
+                            </MudGrid>
+                        </MudStack>
+                    </MudPaper>
+                </MudForm>
+
+                <MudText Typo="Typo.body2">
+                    Contrato será marcado como
+                    <strong class="text-primary">tratado manualmente</strong>.
+                    Confirma?
+                </MudText>
+            }
+            else
+            {
+                <MudText Typo="Typo.body2">
+                    Deseja mesmo
+                    <strong class="@ActionTextClass">@Action</strong>
+                    esse desembolso?
+                </MudText>
+            }
+
+            <MudPaper Outlined="true" Class="summary-card">
+                <MudStack Spacing="1">
+
+                    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            FID
+                        </MudText>
+
+                        <MudText Typo="Typo.body2" Color="Color.Info">@Fid</MudText>
+                    </MudStack>
+
+                    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            Contrato
+                        </MudText>
+
+                        <MudText Typo="Typo.body2" Class="font-weight-bold">
+                            @ContratoFormatado
+                        </MudText>
+                    </MudStack>
+
+                    @if (Action == UserAction.Tratar)
+                    {
+                        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                NMG
+                            </MudText>
+
+                            <MudText Typo="Typo.body2" Class="font-weight-bold">
+                                @NmgFormatado
+                            </MudText>
+                        </MudStack>
+
+                        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                DRP
+                            </MudText>
+
+                            <MudText Typo="Typo.body2" Class="font-weight-bold">
+                                @DrpFormatado
+                            </MudText>
+                        </MudStack>
+
+                        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                Senha
+                            </MudText>
+
+                            <MudText Typo="Typo.body2" Class="font-weight-bold">
+                                @SenhaFormatada
+                            </MudText>
+                        </MudStack>
+                    }
+                </MudStack>
+            </MudPaper>
+
+            @if (Action == UserAction.Expurgar)
+            {
+                <MudTextField T="string"
+                              @bind-Value="Resposta"
+                              Lines="3"
+                              MaxLength="3000"
+                              Counter="3000"
+                              Variant="Variant.Outlined"
+                              Validation="@(new Func<string, string?>(ValidarResposta))"
+                              Immediate="true"
+                              Label="Justificativa"
+                              Placeholder="Informe uma justificativa com pelo menos 10 caracteres..."
+                              Class="justification-field" />
+            }
+
+        </MudStack>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Variant="Variant.Text"
+                   Color="Color.Default"
+                   Size="Size.Small"
+                   OnClick="Cancel">
+            Cancelar
+        </MudButton>
+
+        <MudButton Variant="Variant.Filled"
+                   StartIcon="@GetActionIcon(Action)"
+                   Color="@GetActionColor(Action)"
+                   Disabled="@(!CanConfirm)"
+                   Size="Size.Small"
+                   Class="confirm-button"
+                   OnClick="Submit">
+            @ConfirmButtonText
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+<style>
+    .blur {
+        backdrop-filter: blur(10px);
+    }
+
+    .dialog-background {
+        background-color: transparent;
+    }
+
+    .dialog-background-surface {
+        background: var(--mud-palette-surface);
+    }
+
+
+    .action-dialog-content {
+        padding: 12px 16px 8px 16px !important;
+        margin: 0 !important;
+    }
+
+    .action-dialog-actions {
+        padding: 6px 16px 12px 16px !important;
+    }
+
+    .manual-form-card {
+        padding: 14px;
+        border-radius: 14px;
+        background: color-mix(in srgb, var(--mud-palette-primary) 4%, var(--mud-palette-surface));
+        border-color: color-mix(in srgb, var(--mud-palette-primary) 28%, transparent);
+        transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+    }
+
+
+        .manual-form-card:hover {
+            border-color: var(--mud-palette-primary);
+            box-shadow: var(--mud-elevation-2);
+        }
+
+
+    .summary-card {
+        padding: 12px 14px;
+        border-radius: 14px;
+        background: var(--mud-palette-background-grey);
+    }
+
+    .compact-alert {
+        border-radius: 12px;
+    }
+
+    .justification-field {
+        margin-top: 4px;
+    }
+
+    .confirm-button {
+        min-width: 112px;
+        border-radius: 10px;
+        font-weight: 600;
+        text-transform: none;
+    }
+
+    .text-primary {
+        color: var(--mud-palette-primary);
+    }
+
+    .text-error {
+        color: var(--mud-palette-error);
+    }
+
+    .text-info {
+        color: var(--mud-palette-info);
+    }
+</style>
+
+@code
+{
+    [CascadingParameter]
+    private IMudDialogInstance? MudDialog { get; set; }
+
+    [Parameter]
+    public UserAction Action { get; set; } = UserAction.Undefined;
+
+    [Parameter]
+    public Desembolso? Desembolso { get; set; }
+
+    private MudForm? _form;
+
+    private string? Nmg { get; set; }
+    private string? NmgDv { get; set; }
+    private string? Drp { get; set; }
+    private string? DrpDv { get; set; }
+    private string? DrpSenha { get; set; }
+
+    public string Resposta { get; set; } = string.Empty;
+
+    public enum UserAction
+    {
+        Undefined,
+        Reprocessar,
+        Expurgar,
+        Tratar
+    }
+
+    private bool IsExpurgar => Action == UserAction.Expurgar;
+    private bool IsTratar => Action == UserAction.Tratar;
+
+    private bool HasValidJustificativa =>
+        !IsExpurgar || !string.IsNullOrWhiteSpace(Resposta) && Resposta.Trim().Length >= 10;
+
+
+    private static bool HasExactDigits(string? value, int length)
+    {
+        return !string.IsNullOrWhiteSpace(value)
+            && value.Length == length
+            && value.All(char.IsDigit);
+    }
+
+    private bool HasValidTratamento =>
+        !IsTratar ||
+        HasExactDigits(Nmg, 3) &&
+        HasExactDigits(NmgDv, 1) &&
+        HasExactDigits(Drp, 7) &&
+        HasExactDigits(DrpDv, 1) &&
+        HasExactDigits(DrpSenha, 5);
+
+    private bool CanConfirm =>
+        Action != UserAction.Undefined &&
+        Desembolso is not null &&
+        HasValidJustificativa &&
+        HasValidTratamento;
+
+    private string DialogTitle => Action switch
+    {
+        UserAction.Reprocessar => "Reprocessar desembolso",
+        UserAction.Expurgar => "Expurgar desembolso",
+        UserAction.Tratar => "Tratamento manual",
+        _ => "Ação não definida"
+    };
+
+    private string ConfirmButtonText => Action switch
+    {
+        UserAction.Tratar => "CONFIRMAR",
+        UserAction.Expurgar => "EXPURGAR",
+        UserAction.Reprocessar => "REPROCESSAR",
+        _ => "CONFIRMAR"
+    };
+
+    private string ActionTextClass => Action switch
+    {
+        UserAction.Expurgar => "text-error",
+        UserAction.Reprocessar => "text-info",
+        UserAction.Tratar => "text-primary",
+        _ => string.Empty
+    };
+
+    private string Fid =>
+        Desembolso?.Fid?.ToString() ?? "Não informado";
+
+    private string ContratoFormatado =>
+        Desembolso?.NuContrato is null
+            ? "Não informado"
+            : $"{Desembolso.NuContrato}-{Desembolso.NuContratoDv}";
+
+
+    private string NmgFormatado =>
+        HasExactDigits(Nmg, 3) && HasExactDigits(NmgDv, 1)
+            ? $"{Nmg}-{NmgDv}"
+            : "-";
+
+    private string DrpFormatado =>
+        HasExactDigits(Drp, 7) && HasExactDigits(DrpDv, 1)
+            ? $"{Drp}-{DrpDv}"
+            : "-";
+
+    private string SenhaFormatada =>
+        HasExactDigits(DrpSenha, 5)
+            ? DrpSenha!
+            : "-";
+
+
+    private static Color GetActionColor(UserAction action)
+    {
+        return action switch
+        {
+            UserAction.Reprocessar => Color.Primary,
+            UserAction.Expurgar => Color.Error,
+            UserAction.Tratar => Color.Primary,
+            _ => Color.Default
+        };
+    }
+
+    private static string? GetActionIcon(UserAction action)
+    {
+        return action switch
+        {
+            UserAction.Reprocessar => Icons.Material.Filled.Replay,
+            UserAction.Expurgar => Icons.Material.Filled.Delete,
+            UserAction.Tratar => Icons.Material.Filled.EditNote,
+            _ => null
+        };
+    }
+
+
+
+    private static Func<string?, string?> ExactTextLengthValidator(int length, string fieldName)
+    {
+        return value =>
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return $"Informe {fieldName}.";
+
+            if (!value.All(char.IsDigit))
+                return $"{fieldName} deve conter apenas números.";
+
+            return value.Length == length
+                ? null
+                : $"{fieldName} deve conter exatamente {length} dígitos.";
+        };
+    }
+
+
+
+    private string? ValidarResposta(string value)
+    {
+        if (!IsExpurgar)
+            return null;
+
+        if (string.IsNullOrWhiteSpace(value) || value.Trim().Length < 10)
+            return "Justificativa deve conter pelo menos 10 caracteres.";
+
+        return null;
+    }
+
+    private async Task Submit()
+    {
+        if (!CanConfirm)
+            return;
+
+        if (_form is not null)
+        {
+            await _form.ValidateAsync();
+
+            if (!_form.IsValid)
+                return;
+        }
+
+        var result = new DesembolsosDialogConfirmacaoResult
+        {
+            Action = Action,
+            Justificativa = IsExpurgar ? Resposta.Trim() : null,
+
+            Nmg = IsTratar ? Nmg : null,
+            NmgDv = IsTratar ? NmgDv : null,
+
+            Drp = IsTratar ? Drp : null,
+            DrpDv = IsTratar ? DrpDv : null,
+            DrpSenha = IsTratar ? DrpSenha : null
+        };
+
+        MudDialog?.Close(DialogResult.Ok(result));
+    }
+
+    private void Cancel()
+    {
+        MudDialog?.Cancel();
+    }
+}

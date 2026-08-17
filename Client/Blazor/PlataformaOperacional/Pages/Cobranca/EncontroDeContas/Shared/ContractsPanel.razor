@@ -1,0 +1,110 @@
+<section class="card" aria-label="Contratos a executar">
+    <div class="card-head">
+        <div style="min-width:0; flex:1;">
+            <div class="card-title">
+                <span class="icon">☰</span>
+                Contratos a executar
+            </div>
+            <div class="card-desc">
+                Informe os números e adicione à lista. A execução percorrerá cada contrato.
+            </div>
+        </div>
+        <div class="card-head-meta">
+            <span class="pill">@Contracts.Count na lista</span>
+        </div>
+    </div>
+
+    <div class="card-body">
+        <div class="contract-input-row"
+             style="@($"opacity:{(!Running ? 1 : 0.45)}; pointer-events:{(!Running ? "auto" : "none")};")">
+            <div class="input-wrap">
+                <span class="prefix">Nº</span>
+                <input @bind="_num" @bind:event="oninput"
+                       @onkeydown="OnKey"
+                       placeholder="0000000-00"
+                       disabled="@Running" />
+            </div>
+            <button class="btn-add" @onclick="Add"
+                    disabled="@(Running || string.IsNullOrWhiteSpace(_num))">
+                + Adicionar à lista
+            </button>
+        </div>
+
+        <div class="queue">
+            <div class="queue-head">
+                <span>Lista de execução</span>
+                <span class="queue-count">@Contracts.Count contrato@(Contracts.Count == 1 ? "" : "s")</span>
+            </div>
+            @if (Contracts.Count == 0)
+            {
+                <div class="queue-empty">
+                    📦 Nenhum contrato na lista. Adicione um contrato acima para começar.
+                </div>
+            }
+            else
+            {
+                <div class="queue-list">
+                    @for (int i = 0; i < Contracts.Count; i++)
+                    {
+                        var c = Contracts[i];
+                        var idx = i;
+                        var statusClass = c.Status switch
+                        {
+                            ContractStatus.Processing => "processing",
+                            ContractStatus.Done => "done",
+                            ContractStatus.Error => "error",
+                            _ => ""
+                        };
+                        <div class="queue-item @statusClass">
+                            <span class="queue-status-dot">
+                                @switch (c.Status)
+                                {
+                                    case ContractStatus.Processing:
+                                        <span class="spin">↻</span>
+                                        break;
+                                    case ContractStatus.Done:
+                                        <span>✓</span>
+                                        break;
+                                    case ContractStatus.Error:
+                                        <span>✕</span>
+                                        break;
+                                    default:
+                                        <span style="font-family:var(--font-mono); font-size:10px; font-weight:600;">@((idx + 1).ToString("D2"))</span>
+                                        break;
+                                }
+                            </span>
+                            <div class="queue-contract">
+                                <div class="queue-num">@c.Number</div>
+                            </div>
+                            @if (!Running && c.Status == ContractStatus.Ready)
+                            {
+                                <button class="queue-remove" @onclick="() => OnRemove.InvokeAsync(c.Id)" aria-label="Remover">🗑</button>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+@code {
+    [Parameter] public List<Contract> Contracts { get; set; } = new();
+    [Parameter] public bool Running { get; set; }
+    [Parameter] public EventCallback<(string number, TipoDeMovimentacao type)> OnAdd { get; set; }
+    [Parameter] public EventCallback<string> OnRemove { get; set; }
+
+    private string _num = "";
+
+    private async Task Add()
+    {
+        if (string.IsNullOrWhiteSpace(_num)) return;
+        await OnAdd.InvokeAsync((_num, TipoDeMovimentacao.CCI));
+        _num = "";
+    }
+
+    private async Task OnKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await Add();
+    }
+}

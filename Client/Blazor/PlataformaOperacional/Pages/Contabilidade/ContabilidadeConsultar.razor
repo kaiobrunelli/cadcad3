@@ -1,0 +1,123 @@
+﻿ @page "/ConsultarLoteContabil"
+ @inject HttpClient httpClient
+
+ @inject DialogServicePlataformaOperacional DialogServicePlataformaOperacional
+ @inject ContabilidadeService ContabilidadeService
+
+@code {
+    private string rowsPerPageString = "Linhas por página:";
+    private string MensagemDeErro = "";
+
+    private List<BreadcrumbItem> _items =
+    [
+        new("Home", href: "/"),
+        new("Contabilidade", href: "/contabilidadeHome"),
+        new("Consultar Lote", href: null, disabled: true)
+    ];
+ }
+
+<PageTitle>Consultar Lote</PageTitle>
+
+<MudContainer >
+<MudGrid  Spacing="10">
+    <MudItem xs="12" > 
+        @if (!string.IsNullOrEmpty(MensagemDeErro))
+        {
+            <MudAlert Class="mt-4" Severity="Severity.Error">
+                @MensagemDeErro
+            </MudAlert>
+        }
+        @* <MudCard Class="ml-6" Elevation="0"> *@
+        <MudCard Elevation="0">
+        @* <MudCard Class="d-flex flex-column pb-4 mt-2" Elevation="0">
+            <MudCard Class="d-flex flex-row mt-2 gap-1" Elevation="0">
+                <MudIcon Icon="@Icons.Material.Filled.Search" Size="Size.Large" ></MudIcon>
+                <MudText Typo="Typo.h3" Color="Color.Secondary" Style="font-weight:400">Consultar Lote</MudText>
+            </MudCard>
+            <MudDivider Class="mt-2 flex-grow-1" DividerType="DividerType.FullWidth"></MudDivider>
+            </MudCard> *@
+        @* <MudBreadcrumbs Items="_items"></MudBreadcrumbs> *@
+        <MudPaper Class="card-body">
+            <MudItem Class="d-flex gap-6 mb-4">
+                <MudTextField T="DateTime?" @bind-Value="DataInicial" Format="yyyy-MM-dd" Label="Data Inicial" InputType="InputType.Date" />
+                <MudTextField T="DateTime?" @bind-Value="DataFinal" Format="yyyy-MM-dd" Label="Data Final" InputType="InputType.Date" />
+                <MudNumericField HideSpinButtons="true" ShrinkLabel Label="Buscar por lote" @bind-Value="NumeroLote" FullWidth @onclick="HandlerFocus" />
+                <MudTextField  ShrinkLabel Label="Buscar por matrícula" @bind-Value="NumeroMatricula" FullWidth @onclick="HandlerFocus" />
+            </MudItem>
+            <MudItem Class="d-flex justify-end gap-6 ">
+                 <MudButton Class="btn-caixa-small" 
+                            Variant="Variant.Filled" 
+                            Color="Color.Primary" 
+                            OnClick="async () =>await  BuscarLoteOuMatricula()" 
+                            FullWidth>Buscar lote</MudButton>
+                <MudButton Class="btn-caixa-small" 
+                            Variant="Variant.Filled" 
+                            Color="Color.Primary" 
+                            OnClick="async () =>await  BuscarListaLotesContabilidade()" 
+                            FullWidth>Todos lotes</MudButton>
+            </MudItem>
+            @if (ListaContabilidadeConsulta.Any())
+            {
+                <MudItem Class="d-flex justify-end gap-6 mb-2">
+                    <MudTable Style="align-center" Hover="true" Items="@ListaContabilidadeConsulta" Striped="true">
+                        <ToolBarContent>
+                            <MudText Style="color:white; margin-left:10px;white-space:nowrap; font-size:18px;">Lista de Lotes</MudText>
+                            <MudSpacer />
+                        </ToolBarContent>
+                        <HeaderContent>
+                            <MudTh>NºLote</MudTh>
+                            <MudTh>Responsável</MudTh>
+                            <MudTh>Data Carga Inicio</MudTh>
+                            <MudTh>Data Carga Final</MudTh>
+                            <MudTh>Data Inicial Informada</MudTh>
+                            <MudTh>Data Final Informada</MudTh>
+                            <MudTh>Carregado</MudTh>
+                            <MudTh>Processado</MudTh>
+                            <MudTh>Qtde Processados</MudTh>
+                            <MudTh>Ações</MudTh>
+                        </HeaderContent>
+                        <RowTemplate >
+                            <MudTd Align="Center">@context.NumeroDoLote</MudTd>
+                            <MudTd Align="Center">@context.Responsavel</MudTd>
+                            <MudTd Align="Center">@context.DataCargaInicio</MudTd>
+                            <MudTd Align="Center">@context.DataCargaFinal</MudTd>
+                            <MudTd Align="Center">@context.DataInicialInformada</MudTd>
+                            <MudTd Align="Center">@context.DataFinalInformada</MudTd>
+                            <MudTd Align="Center">@context.Carregado</MudTd>
+                            <MudTd Align="Center">@context.Processado</MudTd>
+                            <MudTd Align="Center">@context.QtdeProcessados</MudTd>
+                            <MudTd Style="display:flex; gap: 2px; align-content:center">
+                                @if (@context.QtdeProcessados < 100)
+                                {
+                                    <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                                                   Color="Color.Primary"
+                                                   OnClick="@(async ()=> await ContabilidadeService.AtualizarLote(context.NumeroDoLote))" />
+                                }
+                                else
+                                {
+                                    <div style="width: 31px;"></div>
+                                }
+                                <MudIconButton Icon="@Icons.Material.Filled.Download"
+                                               Color="Color.Secondary"
+                                               OnClick="@(async()=>await ContabilidadeService.BaixarLote(context.NumeroDoLote))" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                               Color="Color.Error"
+                                               OnClick="@(async()=>await ContabilidadeService.RemoverLote(context.NumeroDoLote))" />
+                            </MudTd>
+                        </RowTemplate>
+
+                        <PagerContent>
+                            <MudTablePager Style="color:white" RowsPerPageString="@rowsPerPageString" />
+                        </PagerContent>
+                    </MudTable>
+                </MudItem>
+            }           
+        </MudPaper>
+    </MudCard>
+    </MudItem>
+</MudGrid>
+    
+</MudContainer>
+<MudTFootRow Class="container-footer-item align-center pl-4">
+    <MudText Typo="Typo.body2">2025 - CN Ativo do FTGS - CEFGA   <span class="footer-text ">#INTERNO.CONFIDENCIAL</span></MudText>
+</MudTFootRow>

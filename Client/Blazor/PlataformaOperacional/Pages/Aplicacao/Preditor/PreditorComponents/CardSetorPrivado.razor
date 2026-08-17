@@ -1,0 +1,530 @@
+﻿@using System.Globalization
+@inject PreditorService PreditorService
+<style>
+	:root {
+		-mud-palette-background-grey: #f6f6f8 !important;
+	}
+
+	.valores-preditor {
+		background-color: #f6f6f8;
+		border: 1px solid #e5e7eb;
+	}
+
+	.mud-input > input.mud-input-root {
+		margin-top: 0px !important;
+	}
+
+	.rounded-custom {
+		border-radius: 12px;
+	}
+
+
+	.rounded-custom {
+		border-radius: 12px;
+	}
+
+	.input-wrapper {
+		position: relative;
+		display: flex;
+		align-items: center;
+		width: 100%;
+	}
+
+	.currency-symbol {
+		position: absolute;
+		left: 12px;
+		color: #64748b; /* slate-500 */
+		font-weight: 500;
+		pointer-events: none; /* impede que o usuário clique no R$ */
+	}
+
+	.input-field::-webkit-outer-spin-button,
+	.input-field::-webkit-inner-spin-button {
+		-webkit-appearance: none;
+		margin: 0;
+	}
+
+
+
+	.input-field {
+		width: 100%;
+		-moz-appearance: textfield;
+		appearance: textfield;
+		padding: 12px 12px 12px 35px; /* O padding-left (35px) abre espaço para o R$ */
+		border-radius: 0.75rem; /* rounded-xl */
+		background-color: #f8fafc; /* bg-slate-50 */
+		border: 1px solid #e2e8f0;
+		font-size: 0.95rem;
+		outline: none;
+		font-weight: 400;
+		transition: border-color 0.2s;
+	}
+
+		.input-field:focus {
+			border-color: #594AE2; /* Seu azul muddraw */
+			box-shadow: 0 0 0 2px rgba(0, 92, 169, 0.1);
+		}
+</style>
+
+<MudPaper Class="rounded-custom border border-solid mud-border-lines-default overflow-hidden d-flex flex-column h-100" Elevation="0">
+	@* <div class="pa-6 d-flex justify-space-between align-center cabecalho-cartao"> *@
+
+	<MudGrid Class="pa-6 mb-3">
+		<MudItem xs="12" md="12" lg="12">
+
+			<MudStack Row="true" AlignItems="AlignItems.Start" Class="gap-3" Justify="Justify.SpaceBetween">
+				<MudStack Row="true" AlignItems="AlignItems.Center" Style="min-height:64px">
+					@* <div class="d-flex align-center gap-3"> *@
+					<MudAvatar Color="@IconColor" Variant="Variant.Filled" Size="Size.Medium" Class="rounded-icon">
+						<MudIcon Icon="@Icon" />
+					</MudAvatar>
+					<div>
+						<MudText Typo="Typo.h6" Style="color:#424242;">@Title</MudText>
+						<MudText Typo="Typo.caption" Color="Color.Tertiary">@Subtitle</MudText>
+
+					</div>
+				</MudStack>
+				<MudChip T="string" Color="@_statusColor" Size="Size.Small" Variant="Variant.Text" Class="font-weight-bold">
+					@_statusText
+				</MudChip>
+			</MudStack>
+		</MudItem>
+
+
+
+
+		<MudItem md="6" lg="6" xs="12">
+			<MudText Typo="Typo.body2" Class="mb-2" Style="font-weight:600">Legado</MudText>
+			<div class="input-wrapper">
+				<span class="currency-symbol" style="font-weight:600">R$</span>
+				<input class="input-field" readonly="@_desabilitarInputValor"
+					   type="text"
+					   value="@valorExibicaoLegado"
+					   @oninput="@(e => OnInputChanged(e, "Legado"))" />
+			</div>
+
+		@* 	<div class="input-wrapper">
+				<span class="currency-symbol" style="font-weight:600">R$</span>
+				<input class="input-field" readonly="@_desabilitarInputValor"
+					   type="number"
+					   value="@(AnalisarPrivado.ValorLegado.HasValue
+						? AnalisarPrivado.ValorLegado.Value.ToString(CultureInfo.InvariantCulture)
+						: 0.00)"
+					   @oninput="@(e => OnInputChanged(e, "Legado"))" />
+				@* <input class="input-field" placeholder="0,00" type="number" step="false" @bind="AnalisarPrivado.ValorLegado" /> 
+			</div> *@
+		</MudItem>
+		<MudItem md="6" lg="6" xs="12">
+			<MudText Typo="Typo.body2" Class="mb-2" Style="font-weight:600">Pró-Cotista</MudText>
+			<div class="input-wrapper">
+				<span class="currency-symbol" style="font-weight:600">R$</span>
+				<input class="input-field" readonly="@_desabilitarInputValor"
+					   type="text"
+					   value="@valorExibicaoProCotista"
+					   @oninput="@(e => OnInputChanged(e, "ProCotista"))" />
+			</div>
+
+		@* 	<div class="input-wrapper">
+				<span class="currency-symbol" style="font-weight:600">R$</span>
+				<input class="input-field" readonly="@_desabilitarInputValor"
+					   type="number"
+					   value="@(AnalisarPrivado.ValorProCotista.HasValue
+						? AnalisarPrivado.ValorProCotista.Value.ToString(CultureInfo.InvariantCulture)
+						: 0.00)"
+					   @oninput="@(e => OnInputChanged(e, "ProCotista"))" />
+				@* <input class="input-field" placeholder="0,00" type="number" step="false" @bind="AnalisarPrivado.ValorProCotista" />
+			</div> *@
+		</MudItem>
+		<MudItem md="6" lg="6" xs="12">
+			<MudText Typo="Typo.body2" Class="mb-2" Style="font-weight:600">Consolidado</MudText>
+			@* 	<div class="input-wrapper">
+
+			<span class="currency-symbol" style="font-weight:600">R$</span>
+			<input class="input-field" readonly="@_desabilitarInputValor"
+			type="text"
+			value="@valorExibicaoConsolidado"
+			@oninput="HandleInput"
+			placeholder="0,00" />
+			</div> *@
+
+
+			<div class="input-wrapper">
+				<span class="currency-symbol" style="font-weight:600">R$</span>
+				<input class="input-field" readonly="@_desabilitarInputValor"
+					   type="text"
+					   value="@valorExibicaoConsolidado"
+					   @oninput="@(e => OnInputChanged(e, "Consolidado"))" />
+			</div>
+
+
+		@* 	<div class="input-wrapper">
+				<span class="currency-symbol" style="font-weight:600">R$</span>
+				<input class="input-field" readonly="@_desabilitarInputValor"
+					   type="number"
+					   value="@(AnalisarPrivado.ValorConsolidado.HasValue
+			? AnalisarPrivado.ValorConsolidado.Value.ToString(CultureInfo.InvariantCulture)
+			: 0.00)"
+					   @oninput="@(e => OnInputChanged(e, "Consolidado"))" />
+			</div> *@
+
+		</MudItem>
+
+		@* <input class="input-field" placeholder="0,00" type="number" step="false" @bind="AnalisarPrivado.ValorConsolidado" /> *@
+		<MudFlexBreak />
+
+
+
+
+		@* 	<MudGrid Spacing="2" Class="mb-2"> *@
+		<MudItem md="6" lg="6" xs="12">
+			<MudPaper Class="pa-3 rounded-lg border-solid mud-border-lines-default valores-detalhes valores-preditor" Elevation="0">
+				<MudText Typo="Typo.caption" Color="Color.Primary" Style="font-weight:400;">Calculado Inicial</MudText>
+				<MudText Typo="Typo.body1" Style="font-weight:600;">R$ @(AnalisarPrivado.ValorCalculado.HasValue? FmtValor(AnalisarPrivado.ValorCalculado.Value) : "0")</MudText>
+			</MudPaper>
+		</MudItem>
+		<MudItem md="6" lg="6" xs="12">
+			<MudPaper Class="pa-3 rounded-lg border-solid mud-border-lines-default valores-detalhes valores-preditor" Elevation="0">
+				<MudText Typo="Typo.caption" Color="Color.Primary" Style="font-weight:400;">Total Previsto</MudText>
+				<MudText Typo="Typo.body1" Style="font-weight:600;">R$ @(AnalisarPrivado.ValorTotal.HasValue? FmtValor(AnalisarPrivado.ValorTotal.Value) : "0")</MudText>
+			</MudPaper>
+		</MudItem>
+	</MudGrid>
+
+
+
+	<div class="pa-4 d-flex justify-end gap-2" style="background-color: var(--mud-palette-background-grey); border-top: 1px solid var(--mud-palette-lines-default);">
+
+		<MudStack Row="true" AlignItems="AlignItems.Center">
+			@if (!HabilitarBotaoSalvar && PreditorNaoFinalizado)
+			{
+				<MudTooltip Delay="300" Duration="300" Text="Editar valor">
+					<MudIconButton Icon="@Icons.Material.Filled.Edit"
+								   Color="Color.Primary"	
+								   Size="Size.Small"
+								   Disabled="@(HabilitarBotaoSalvar)"
+								   OnClick="OnClickResetar">
+					</MudIconButton>
+				</MudTooltip>
+
+			}
+			<MudButton Variant="@ButtonVariant"
+					   Color="@ButtonColor"
+					   Size="Size.Medium"
+					   StartIcon="@Icons.Material.Filled.Save"
+					   Class="font-bold px-6 py-2 shadow-sm rounded-lg"
+					   Style="letter-spacing:1px;text-transform: none !important "
+					   Disabled="@(!HabilitarBotaoSalvar)"
+					   OnClick="Salvar">
+				@ButtonText
+			</MudButton>
+		</MudStack>
+	</div>
+
+</MudPaper>
+
+@code {
+	/* ── Formatação de valores ───────────────────────────────── */
+	private string FmtValor(decimal valor) =>valor.ToString("N0", culturaBR);  // ex: 1.250
+
+
+
+	private CultureInfo culturaBR = new CultureInfo("pt-BR");
+
+	private void HandleInput(ChangeEventArgs e)
+	{
+		string input = e.Value?.ToString() ?? "";
+
+		// 1. Mantém apenas números e a primeira vírgula encontrada
+		string apenasNumerosEVirgula = LimparInput(input);
+
+		if (string.IsNullOrEmpty(apenasNumerosEVirgula))
+		{
+			valorDecimalConsolidado = 0;
+			valorExibicaoConsolidado = "";
+			return;
+		}
+
+		// 2. Tenta converter para decimal usando a cultura brasileira
+		if (decimal.TryParse(apenasNumerosEVirgula, NumberStyles.Any, culturaBR, out decimal resultado))
+		{
+			valorDecimalConsolidado = resultado;
+
+			// 3. Formatação Inteligente:
+			// Se o usuário acabou de digitar a vírgula (ex: "1.000,"),
+			// não formatamos com "N2" ainda, senão o "N2" forçaria "1.000,00" imediatamente
+			if (apenasNumerosEVirgula.EndsWith(","))
+			{
+				valorExibicaoConsolidado = resultado.ToString("N0", culturaBR) + ",";
+			}
+			else
+			{
+				// Formata com milhares e mantém as casas decimais que o usuário digitou
+				valorExibicaoConsolidado = formatarDinamicamente(resultado, apenasNumerosEVirgula);
+			}
+		}
+	}
+
+	private string LimparInput(string input)
+	{
+		// Remove tudo que não é dígito ou vírgula
+		var regex = new System.Text.RegularExpressions.Regex(@"[^0-9,]");
+		string limpo = regex.Replace(input, "");
+
+		// Garante que só exista uma vírgula
+		int primeiraVirgula = limpo.IndexOf(',');
+		if (primeiraVirgula != -1)
+		{
+			string parteInteira = limpo.Substring(0, primeiraVirgula);
+			string parteDecimal = limpo.Substring(primeiraVirgula + 1).Replace(",", "");
+			return parteInteira + "," + parteDecimal;
+		}
+		return limpo;
+	}
+
+	// private string formatarDinamicamente(decimal valor, string inputOriginal)
+	// {
+
+	// 	if (inputOriginal.Contains(","))
+	// 		return inputOriginal;
+
+	// 	if (!inputOriginal.Contains(","))
+	// 		return valor.ToString("N0", culturaBR);
+
+	// 	int casasDecimais = inputOriginal.Split(',')[1].Length;
+	// 	// Cria uma máscara dinâmica como "N1", "N2", etc., baseada no que foi digitado
+	// 	return valor.ToString("N" + casasDecimais, culturaBR);
+	// }
+
+	private string formatarDinamicamente(decimal valor, string inputOriginal)
+	{
+		if (inputOriginal.Contains(","))
+			return inputOriginal;
+		
+		return valor.ToString("N0", culturaBR);
+	}
+
+	#region Parameters
+	[Parameter] public decimal? VrLegado { get; set; }
+	[Parameter] public decimal? VrProCotista { get; set; }
+	[Parameter] public decimal? VrConsolidado { get; set; }
+	private string _VrLegadoFormatado => VrLegado?.ToString("N2") ?? "0,00";
+	private string _VrProCotistaFormatado => VrProCotista?.ToString("N2") ?? "0,00";
+	private string _VrConsolidadoFormatado => VrConsolidado?.ToString("N2") ?? "0,00";
+
+
+
+	[Parameter] public AnaliticoSetorPrivado AnalisarPrivado { get; set; } = new();
+
+	[Parameter] public decimal? ValorCalculado { get; set; }
+	[Parameter] public decimal? ValorEfetivado { get; set; }
+	[Parameter] public bool PreditorNaoFinalizado { get; set; }
+	private bool _desabilitarInputValor => PreditorNaoFinalizado ? false : true;
+	[Parameter] public bool HabilitarBotaoSalvar { get; set; }
+	[Parameter] public bool HabilitarEditar { get; set; }
+	[Parameter] public decimal? Value { get; set; }
+	[Parameter] public string Title { get; set; } = "";
+	[Parameter] public string Subtitle { get; set; } = "";
+	[Parameter] public string Icon { get; set; }
+	[Parameter] public Color IconColor { get; set; } = Color.Primary;
+
+	[Parameter] public string ButtonText { get; set; }
+	[Parameter] public Variant ButtonVariant { get; set; } = Variant.Filled;
+	[Parameter] public Color ButtonColor { get; set; } = Color.Primary;
+	#endregion
+	#region Events
+	private bool _finalizouSetor = false;
+	[Parameter] public EventCallback ValueChanged { get; set; }
+	[Parameter] public EventCallback OnClickSalvar { get; set; }
+	[Parameter] public EventCallback OnClickResetar { get; set; }
+	[Parameter] public EventCallback<bool> FinalizouChanged { get; set; }
+	#endregion
+
+
+	private decimal _valorCalculado = 0;
+	private string _statusText => HabilitarBotaoSalvar ? "Pendente" : "Finalizado";
+	private Color _statusColor => HabilitarBotaoSalvar ? Color.Warning : Color.Success;
+	private bool _desabilitarBtnEditar => !HabilitarBotaoSalvar;
+
+	private decimal valorDecimalConsolidado;
+	private string valorExibicaoConsolidado = "";
+	private decimal valorDecimalLegado;
+	private string valorExibicaoLegado = "";
+	private decimal valorDecimalProCotista;
+	private string valorExibicaoProCotista = "";
+	private async Task OnInputChanged(ChangeEventArgs e, string campo)
+	{
+
+		// decimal.TryParse(e.Value?.ToString()?.Replace(".", ","), out decimal novoValor);
+		string input = e.Value?.ToString() ?? "";
+		string apenasNumerosEVirgula = LimparInput(input);
+		switch (campo)
+		{
+			case "Legado":
+
+				if (string.IsNullOrEmpty(apenasNumerosEVirgula))
+				{
+					valorDecimalLegado = 0;
+					valorExibicaoLegado = "";
+
+				}
+
+				// 2. Tenta converter para decimal usando a cultura brasileira
+				if (decimal.TryParse(apenasNumerosEVirgula, NumberStyles.Any, culturaBR, out decimal resultadoLegado))
+				{
+					valorDecimalLegado = resultadoLegado;
+					if (apenasNumerosEVirgula.EndsWith(","))
+					{
+						valorExibicaoLegado = resultadoLegado.ToString("N0", culturaBR) + ",";
+					}
+					else
+					{
+						valorExibicaoLegado = formatarDinamicamente(resultadoLegado, apenasNumerosEVirgula);
+					}
+				}
+				AnalisarPrivado.ValorLegado = resultadoLegado;
+
+				break;
+			case "ProCotista":
+
+				if (string.IsNullOrEmpty(apenasNumerosEVirgula))
+				{
+					valorDecimalProCotista = 0;
+					valorExibicaoProCotista = "";
+
+				}
+				// 2. Tenta converter para decimal usando a cultura brasileira
+				if (decimal.TryParse(apenasNumerosEVirgula, NumberStyles.Any, culturaBR, out decimal resultadoProCotista))
+				{
+					valorDecimalProCotista = resultadoProCotista;
+					if (apenasNumerosEVirgula.EndsWith(","))
+					{
+						valorExibicaoProCotista = resultadoProCotista.ToString("N0", culturaBR) + ",";
+					}
+					else
+					{
+						valorExibicaoProCotista = formatarDinamicamente(resultadoProCotista, apenasNumerosEVirgula);
+					}
+				}
+				AnalisarPrivado.ValorProCotista = resultadoProCotista;
+
+				break;
+			case "Consolidado":
+
+				if (string.IsNullOrEmpty(apenasNumerosEVirgula))
+				{
+					valorDecimalConsolidado = 0;
+					valorExibicaoConsolidado = "";
+
+				}
+				// 2. Tenta converter para decimal usando a cultura brasileira
+				if (decimal.TryParse(apenasNumerosEVirgula, NumberStyles.Any, culturaBR, out decimal resultadoConsolidado))
+				{
+					valorDecimalConsolidado = resultadoConsolidado;
+					if (apenasNumerosEVirgula.EndsWith(","))
+					{
+						valorExibicaoConsolidado = resultadoConsolidado.ToString("N0", culturaBR) + ",";
+					}
+					else
+					{
+						valorExibicaoConsolidado = formatarDinamicamente(resultadoConsolidado, apenasNumerosEVirgula);
+					}
+				}
+				AnalisarPrivado.ValorConsolidado = resultadoConsolidado;
+				break;
+		}
+
+		AnalisarPrivado.ValorTotal = (AnalisarPrivado.ValorLegado ?? 0) +
+										(AnalisarPrivado.ValorProCotista ?? 0) +
+										(AnalisarPrivado.ValorConsolidado ?? 0);
+		StateHasChanged();
+	}
+
+	private async Task Resetar()
+	{
+		await OnClickResetar.InvokeAsync();
+	
+		await FinalizouChanged.InvokeAsync(_finalizouSetor);
+	}
+	private async Task Salvar()
+	{
+		// var dto = new AtualizarPreditorPrivado()
+		// 	{
+		// 		ValorConsolidado = 1,
+		// 		ValorLegado = VrLegado,
+		// 		ValorProCotista = VrProCotista,
+		// 		ValorTotal = ValorEfetivado,
+		// 	};
+		await OnClickSalvar.InvokeAsync();
+		_finalizouSetor = true;
+		await FinalizouChanged.InvokeAsync(_finalizouSetor);
+		
+	}
+	// protected override void OnParametersSet()
+	// {
+
+	// 	AtualizarStatusDoSetor();
+	// }
+	protected override void OnParametersSet()
+	{
+		// Se já vier valor no model, popula a string exibida
+		// (Você pode controlar pra não sobrescrever enquanto usuário digita, se quiser)
+		if (AnalisarPrivado is not null)
+		{
+			if (AnalisarPrivado.ValorLegado.HasValue)
+			{
+				valorDecimalLegado = AnalisarPrivado.ValorLegado.Value;
+				// valorExibicaoLegado = AnalisarPrivado.ValorLegado.Value.ToString("N2", culturaBR);
+				valorExibicaoLegado = FmtValor(AnalisarPrivado.ValorLegado.Value);
+			}
+			else
+			{
+				valorDecimalLegado = 0m;
+				valorExibicaoLegado = "";
+			}
+
+			if (AnalisarPrivado.ValorProCotista.HasValue)
+			{
+				valorDecimalProCotista = AnalisarPrivado.ValorProCotista.Value;
+				// valorExibicaoProCotista = AnalisarPrivado.ValorProCotista.Value.ToString("N2", culturaBR);
+				valorExibicaoProCotista = FmtValor(AnalisarPrivado.ValorProCotista.Value);
+			}
+			else
+			{
+				valorDecimalProCotista = 0m;
+				valorExibicaoProCotista = "";
+			}
+
+			if (AnalisarPrivado.ValorConsolidado.HasValue)
+			{
+				valorDecimalConsolidado = AnalisarPrivado.ValorConsolidado.Value;
+				// valorExibicaoConsolidado = AnalisarPrivado.ValorConsolidado.Value.ToString("N2", culturaBR);
+				valorExibicaoConsolidado = FmtValor(AnalisarPrivado.ValorConsolidado.Value);
+			}
+			else
+			{
+				valorDecimalConsolidado = 0m;
+				valorExibicaoConsolidado = "";
+			}
+
+			// Recalcula total ao receber parâmetros
+			AnalisarPrivado.ValorTotal =
+				(AnalisarPrivado.ValorLegado ?? 0m) +
+				(AnalisarPrivado.ValorProCotista ?? 0m) +
+				(AnalisarPrivado.ValorConsolidado ?? 0m);
+		}
+	
+
+
+		AtualizarStatusDoSetor();
+	}
+	private void AtualizarStatusDoSetor()
+	{
+
+	}
+
+	private async Task OnValueChanged(decimal? novoValor)
+	{
+		Value = novoValor;
+		await ValueChanged.InvokeAsync(novoValor);
+	}
+}
